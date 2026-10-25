@@ -973,7 +973,6 @@ const LOOK_TINT = {
 // On the own site, some characters wear one of the sample avatars unless the person picks another look.
 const DEFAULT_LOOK = { genki: 'sample-b', ottori: 'sample-a', sora: 'sample-c' };
 // Official VRoid sample avatars (VRoid Project / pixiv Inc.; commercial use, edits and redistribution allowed).
-// Own-site build only: the claude.ai version ships just the default model.
 const SAMPLE_LOOKS = {
   'sample-a': { ja: 'ショートヘアの女の子', zh: '短发女孩', ko: '단발 소녀', en: 'Short-haired girl', sw: ['#5b3a2e', '#f4efe9', '#8a5a3c', '#5b3a2e'] },
   'sample-b': { ja: '星飾りの女の子', zh: '星星发饰女孩', ko: '별 장식 소녀', en: 'Girl with star clips', sw: ['#4a3a7a', '#2a2a33', '#e0b040', '#4a3a7a'] },
@@ -1902,6 +1901,8 @@ $('#photo-btn').addEventListener('click', async () => {
   say('photo', {}, { toastNew: false });
   await new Promise((r) => setTimeout(r, 900)); // let the smile and nod show
   await takePhoto();
+  // inside the claude.ai viewer, files cannot be handed over by a link: long-press the picture instead
+  $('#photo-save').hidden = IN_CLAUDE; $('#photo-share').hidden = IN_CLAUDE;
   openSheet('#sheet-photo');
   const fresh = checkMedals(false); if (fresh.length) toast(T('medalGet', { m: medalName(fresh[0]) }));
 });
@@ -3361,7 +3362,7 @@ $('#reset-yes').addEventListener('click', () => {
    Looks: the 3D model each character uses
    ========================================================= */
 let lookPid = 'kohai';
-const lookIdFor = (pid) => (S().looks || {})[pid] || (!IN_CLAUDE && DEFAULT_LOOK[pid]) || 'michi';
+const lookIdFor = (pid) => (S().looks || {})[pid] || DEFAULT_LOOK[pid] || 'michi';
 const tintFor = (pid) => LOOK_TINT[pid === 'custom' ? (Store.state.custom?.base || 'kohai') : pid] || null;
 const memModels = new Map(); // models we could not store on the device
 const sampleBufs = new Map();
@@ -3374,7 +3375,7 @@ async function loadLookModel(key, onProgress) {
     if (!Char.michiBuf) Char.michiBuf = await fetchBundledModel(onProgress);
     await loadModel(Char.michiBuf.slice(0));
   } else if (SAMPLE_LOOKS[key]) {
-    if (!sampleBufs.has(key)) sampleBufs.set(key, await fetchBundledModel(onProgress, `models/${key}.vrm`));
+    if (!sampleBufs.has(key)) sampleBufs.set(key, await fetchBundledModel(onProgress, `models/${key}${MODEL_URL.endsWith('.b64.txt') ? '.vrm.b64.txt' : '.vrm'}`));
     await loadModel(sampleBufs.get(key).slice(0));
   } else {
     const bytes = await bytesForLook(key);
@@ -3421,7 +3422,7 @@ async function renderLookSheet() {
   const bi = $('#look-builtin'); bi.textContent = '';
   const builtin = [['michi', T('lookTinted'), tintFor(pid)], ['michi-orig', T('lookOriginal'), null]];
   if (!tintFor(pid)) builtin.splice(1, 1);
-  if (!IN_CLAUDE) for (const [id, sl] of Object.entries(SAMPLE_LOOKS)) builtin.push([id, sl[lang()] || sl.ja, null, sl.sw, `models/${id}.jpg`]);
+  for (const [id, sl] of Object.entries(SAMPLE_LOOKS)) builtin.push([id, sl[lang()] || sl.ja, null, sl.sw, `models/${id}.jpg`]);
   for (const [id, label, t, sw, thumb] of builtin) {
     const b = document.createElement('button'); b.className = 'look-cell' + (cur === id ? ' on' : '');
     const s = document.createElement('span'); s.textContent = label;

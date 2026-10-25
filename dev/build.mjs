@@ -29,6 +29,11 @@ const vrm = fs.readFileSync(P('docs/models/michi.vrm'));
 const b64 = vrm.toString('base64');
 fs.mkdirSync(P('web/models'), { recursive: true });
 fs.writeFileSync(P('web/models/michi.vrm.b64.txt'), b64);
+// sample avatars and their thumbnails (claude.ai only serves web file types, so the models go as base64 text)
+for (const id of ['sample-a', 'sample-b', 'sample-c']) {
+  fs.writeFileSync(P(`web/models/${id}.vrm.b64.txt`), fs.readFileSync(P(`docs/models/${id}.vrm`)).toString('base64'));
+  fs.copyFileSync(P(`docs/models/${id}.jpg`), P(`web/models/${id}.jpg`));
+}
 let artifact = swap(app, 'const MODEL_BYTES = 7593724;', `const MODEL_BYTES = ${b64.length};`);
 fs.writeFileSync(P('web/index.html'), artifact);
 console.log('artifact: web/index.html', artifact.length, 'bytes');
