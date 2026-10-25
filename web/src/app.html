@@ -1,0 +1,1751 @@
+<title>ミチのドライブ相棒</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=B612+Mono:wght@400;700&family=BIZ+UDPGothic:wght@400;700&family=Zen+Maru+Gothic:wght@500;700&family=Noto+Sans+SC:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap">
+<style>
+/* Layout: one-screen phone app. The character stands on a time-of-day sky (the "stage");
+   below it sits an instrument-cluster panel whose readouts use a dark LCD in both themes.
+   Rest-stop cards borrow the colours of Japanese road guide signs (green = expressway, blue = general road). */
+:root {
+  --bg: #e7ecf1;
+  --panel: #f7f9fb;
+  --ink: #132031;
+  --muted: #586a7e;
+  --line: #cbd5df;
+  --accent: #b35c00;
+  --accent-ink: #fffaf3;
+  --accent-soft: #f6e3cc;
+  --lcd-bg: #0e1622;
+  --lcd-fg: #ffc266;
+  --lcd-dim: #75869b;
+  --lcd-line: #223047;
+  --bubble: rgba(247, 249, 251, 0.95);
+  --warn: #c2410c;
+  --ok: #2e7d4f;
+  --sign-green: #16784a;
+  --sign-blue: #1d5aa6;
+  --sign-ink: #ffffff;
+  --shadow: 0 6px 24px rgba(16, 30, 48, 0.14);
+
+  --font-ui: "BIZ UDPGothic", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
+  --font-voice: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", sans-serif;
+  --font-meter: "B612 Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.5rem;
+  --fs-meter: 2.75rem;
+  --radius: 14px;
+}
+:root[lang="zh"] {
+  --font-ui: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-voice: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+:root[lang="ko"] {
+  --font-ui: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-voice: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a111c; --panel: #111a28; --ink: #e4ebf3; --muted: #8b9bb0; --line: #233149;
+    --accent: #ffb547; --accent-ink: #1c1306; --accent-soft: #3a2a12;
+    --lcd-bg: #060b12; --lcd-fg: #ffc266; --lcd-dim: #64748a; --lcd-line: #1b2738;
+    --bubble: rgba(17, 26, 40, 0.94); --warn: #ff8a5c; --ok: #6fd39a;
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a111c; --panel: #111a28; --ink: #e4ebf3; --muted: #8b9bb0; --line: #233149;
+  --accent: #ffb547; --accent-ink: #1c1306; --accent-soft: #3a2a12;
+  --lcd-bg: #060b12; --lcd-fg: #ffc266; --lcd-dim: #64748a; --lcd-line: #1b2738;
+  --bubble: rgba(17, 26, 40, 0.94); --warn: #ff8a5c; --ok: #6fd39a;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  line-height: 1.6;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+#app {
+  position: relative;
+  height: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ---------- top bar ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  z-index: 3;
+}
+.brand {
+  display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;
+  background: none; border: 0; padding: 4px 2px; text-align: left; white-space: nowrap; overflow: hidden;
+}
+.brand b { flex: none; font-family: var(--font-voice); font-weight: 700; font-size: var(--fs-xl); letter-spacing: 0.04em; line-height: 1; }
+.brand .caret { flex: none; width: 18px; height: 18px; stroke: var(--muted); fill: none; stroke-width: 2; }
+.brand span { color: var(--muted); font-size: var(--fs-xs); letter-spacing: 0.06em; overflow: hidden; text-overflow: ellipsis; }
+.aff-chip {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  padding: 3px 10px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--ink);
+  font-size: var(--fs-xs); white-space: nowrap;
+}
+.aff-chip b { font-family: var(--font-meter); color: var(--accent); }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px; flex: none;
+  min-width: 44px; height: 40px; padding: 0 8px;
+  border: 1px solid var(--line); border-radius: 10px; background: transparent;
+  font-size: var(--fs-xs);
+}
+.icon-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- stage ---------- */
+#stage { position: relative; flex: 1 1 auto; min-height: 220px; overflow: hidden; }
+.sky { position: absolute; inset: 0; transition: background 1.2s ease; }
+#stage[data-tod="dawn"]  .sky { background: linear-gradient(180deg, #86aed4 0%, #c9c6d6 45%, #f4c9a6 82%, #f7dcc2 100%); }
+#stage[data-tod="day"]   .sky { background: linear-gradient(180deg, #5f9fd8 0%, #9cc6ea 50%, #d8e8f4 100%); }
+#stage[data-tod="dusk"]  .sky { background: linear-gradient(180deg, #2f3b66 0%, #8c4f78 48%, #e48c5a 85%, #f2b177 100%); }
+#stage[data-tod="night"] .sky { background: linear-gradient(180deg, #0a1430 0%, #172650 62%, #2a3b63 100%); }
+#stage[data-tod="late"]  .sky { background: linear-gradient(180deg, #04070e 0%, #0b1325 70%, #141e35 100%); }
+.sky::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 26%;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 6px),
+    linear-gradient(180deg, rgba(20,28,40,0.0), rgba(20,28,40,0.28));
+}
+#c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: manipulation; }
+body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.55) saturate(0.8); transition: filter 0.6s; }
+
+.loading {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.5); font-size: var(--fs-sm);
+  pointer-events: none;
+}
+.loading .meter { width: 160px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.loading .meter i { display: block; height: 100%; width: 0; background: #fff; transition: width 0.2s; }
+.fallback-face {
+  position: absolute; left: 50%; top: 18%; transform: translateX(-50%);
+  width: 132px; height: 132px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--panel); color: var(--accent); border: 3px solid var(--accent);
+  font-family: var(--font-voice); font-size: 3.5rem; font-weight: 700;
+  box-shadow: var(--shadow);
+}
+
+.bubble {
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: 14px;
+  max-width: 460px; margin: 0 auto;
+  padding: 10px 14px 12px;
+  background: var(--bubble);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  font-family: var(--font-voice);
+  font-weight: 500;
+  font-size: var(--fs-md);
+  line-height: 1.65;
+  min-height: 4.6em;
+}
+.bubble::before {
+  content: ""; position: absolute; top: -9px; left: 50%; margin-left: -9px;
+  width: 16px; height: 16px; background: var(--bubble);
+  border-left: 1px solid var(--line); border-top: 1px solid var(--line);
+  transform: rotate(45deg);
+}
+.bubble .who { display: block; font-size: var(--fs-xs); font-weight: 700; color: var(--accent); letter-spacing: 0.1em; }
+.bubble p { margin: 0; min-height: 3.3em; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- panel ---------- */
+#panel {
+  flex: 0 0 auto;
+  max-height: 62%;
+  overflow-y: auto;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  padding-block: 14px 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  z-index: 2;
+}
+.pane { display: flex; flex-direction: column; gap: 12px; }
+.pane-title { margin: 0; font-size: var(--fs-lg); font-weight: 700; text-wrap: balance; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > * { flex: 1 1 140px; }
+.row.split { justify-content: space-between; }
+.row.split > * { flex: 0 0 auto; }
+
+.btn {
+  position: relative; overflow: hidden;
+  min-height: 48px; padding: 10px 16px;
+  border-radius: 12px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink);
+  font-weight: 700; font-size: var(--fs-md);
+  user-select: none; -webkit-user-select: none;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; min-height: 54px; font-size: var(--fs-lg); }
+.btn.small { min-height: 40px; padding: 6px 14px; font-size: var(--fs-sm); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:not(:disabled):active { transform: translateY(1px); }
+.btn .fill { position: absolute; inset: 0; background: rgba(255,255,255,0.28); transform: scaleX(0); transform-origin: left; pointer-events: none; }
+.btn .lbl { position: relative; }
+.link { background: none; border: 0; padding: 6px 2px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; font-size: var(--fs-sm); }
+.link.danger { color: var(--warn); }
+
+/* LCD readouts */
+.lcd {
+  background: var(--lcd-bg); color: var(--lcd-fg);
+  border-radius: 12px; padding: 12px 14px;
+  font-family: var(--font-meter);
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 0 0 1px var(--lcd-line), inset 0 8px 18px rgba(0,0,0,0.35);
+}
+.lcd .lab { display: block; font-size: 0.6875rem; color: var(--lcd-dim); letter-spacing: 0.14em; font-family: var(--font-meter); line-height: 1.3; }
+.lcd .lab.jp { font-family: var(--font-ui); letter-spacing: 0.06em; }
+.lcd b { font-weight: 700; font-size: var(--fs-xl); line-height: 1.15; }
+.lcd .unit { font-size: var(--fs-xs); color: var(--lcd-dim); margin-left: 3px; }
+.lcd-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.lcd-grid > div { min-width: 0; }
+.lcd-grid > div + div { border-left: 1px solid var(--lcd-line); padding-left: 10px; }
+
+.aff { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 10px; font-size: var(--fs-sm); }
+.aff .name { font-weight: 700; }
+.aff .next { color: var(--muted); font-size: var(--fs-xs); }
+.bar { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 4px; transition: width 0.8s ease; }
+.last { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
+
+/* checks */
+.checks { display: flex; flex-direction: column; gap: 8px; }
+.check {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  min-height: 52px; padding: 8px 14px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--bg);
+  font-size: var(--fs-md);
+}
+.check .box { flex: none; width: 26px; height: 26px; border-radius: 7px; border: 2px solid var(--muted); display: grid; place-items: center; }
+.check[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.check[aria-pressed="true"] .box { background: var(--accent); border-color: var(--accent); }
+.check[aria-pressed="true"] .box::after { content: ""; width: 7px; height: 13px; border: solid var(--accent-ink); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+
+/* drive */
+.trip-head { display: flex; align-items: center; gap: 8px; }
+.trip-head .lab { flex: 1; }
+.chip { font-size: 0.6875rem; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--lcd-fg); color: var(--lcd-fg); letter-spacing: 0.1em; }
+.wake { font-size: 0.6875rem; color: var(--lcd-dim); font-family: var(--font-ui); }
+.big { font-size: var(--fs-meter); font-weight: 700; letter-spacing: 0.02em; line-height: 1.1; margin: 4px 0 10px; }
+.trip-sub { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; border-top: 1px solid var(--lcd-line); padding-top: 8px; }
+.trip-sub b { font-size: var(--fs-lg); }
+.trip-sub .due { color: #ff8a5c; }
+.hint { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
+
+/* rest-stop card */
+.stop-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 2px solid var(--sign-green); border-radius: 12px; background: var(--bg); }
+.stop-card[data-kind="michi"] { border-color: var(--sign-blue); }
+.stop-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.stop-kind { flex: none; padding: 1px 7px; border-radius: 4px; background: var(--sign-green); color: var(--sign-ink); font-family: var(--font-meter); font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; }
+.stop-card[data-kind="michi"] .stop-kind { background: var(--sign-blue); }
+.stop-top b { font-size: var(--fs-lg); min-width: 0; }
+.stop-dist { margin-left: auto; font-family: var(--font-meter); font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { font-size: var(--fs-xs); padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink); }
+.tag.c0 { border-color: var(--ok); color: var(--ok); }
+.tag.c1 { border-color: var(--accent); color: var(--accent); }
+.tag.c2 { border-color: var(--warn); color: var(--warn); }
+.listen { display: flex; align-items: center; gap: 8px; margin: 0; font-size: var(--fs-xs); color: var(--muted); }
+.listen.on::before { content: ""; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--warn); animation: pulse 1.1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.25; } }
+.stop-state { margin: 0; font-weight: 700; font-size: var(--fs-sm); color: var(--ok); }
+
+/* arrive */
+.sum { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+.sum b { font-size: var(--fs-lg); }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-sm); }
+.field > span:first-child { color: var(--muted); }
+.field .inline { display: flex; align-items: center; gap: 8px; }
+.field input[type="text"], .field input[type="number"], .field select {
+  min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--bg); font-size: var(--fs-md); width: 100%; min-width: 0;
+}
+.field input[type="range"] { width: 100%; accent-color: var(--accent); }
+.toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: var(--fs-md); }
+.toggle input { flex: none; width: 22px; height: 22px; accent-color: var(--accent); }
+.toggle span { min-width: 0; }
+.note { margin: 0; color: var(--muted); font-size: var(--fs-xs); }
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg label { position: relative; display: grid; place-items: center; min-height: 44px; padding: 6px; text-align: center; font-size: var(--fs-sm); cursor: pointer; background: var(--bg); }
+.seg label + label { border-left: 1px solid var(--line); }
+.seg input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.seg label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: -3px; }
+
+/* ---------- sheets ---------- */
+.sheet {
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  animation: rise 0.22s ease-out;
+}
+@keyframes rise { from { transform: translateY(16px); } to { transform: none; } }
+.sheet-head {
+  display: flex; align-items: center; gap: 10px;
+  padding-block: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.sheet-head h2 { flex: 1; margin: 0; font-size: var(--fs-lg); }
+.sheet-body {
+  flex: 1; overflow-y: auto;
+  padding-block: 16px 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 16px;
+}
+.group { display: flex; flex-direction: column; gap: 12px; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.group h3 { margin: 0; font-size: var(--fs-sm); color: var(--muted); letter-spacing: 0.06em; }
+.hist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.hist li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 10px 2px; border-bottom: 1px solid var(--line); }
+.hist .d { font-weight: 700; }
+.hist .m { color: var(--muted); font-size: var(--fs-xs); }
+.hist .t { font-family: var(--font-meter); font-variant-numeric: tabular-nums; text-align: right; font-weight: 700; }
+.hist .k { font-family: var(--font-meter); font-variant-numeric: tabular-nums; text-align: right; color: var(--muted); font-size: var(--fs-xs); }
+.credits { font-size: var(--fs-xs); color: var(--muted); line-height: 1.7; }
+
+/* persona cards */
+.cards { display: flex; flex-direction: column; gap: 10px; }
+.pcard { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.pcard.on { border-color: var(--accent); background: var(--accent-soft); }
+.pcard .pn { font-family: var(--font-voice); font-weight: 700; font-size: var(--fs-lg); line-height: 1.3; }
+.pcard .pt { color: var(--muted); font-size: var(--fs-xs); }
+.pcard .ps { grid-column: 1 / -1; margin: 6px 0 0; font-family: var(--font-voice); font-size: var(--fs-sm); }
+.pcard .pb { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.pcard .badge { font-size: var(--fs-xs); font-weight: 700; color: var(--accent); }
+
+@media (max-width: 420px) { .brand span { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .sheet { animation: none; }
+  .sky, .bar i { transition: none; }
+  .listen.on::before { animation: none; }
+}
+</style>
+
+<div id="app">
+  <header class="topbar">
+    <button class="brand" id="open-persona" aria-haspopup="dialog">
+      <b id="char-name">ミチ</b>
+      <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      <span data-i18n="brandSub">ドライブ相棒</span>
+    </button>
+    <span class="aff-chip"><b>Lv<span id="chip-lv">1</span></b><span id="chip-name">はじめまして</span></span>
+    <button class="icon-btn" id="open-history" data-i18n-aria="historyAria" aria-label="ドライブ記録">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-4 3 2 4-6"/></svg>
+    </button>
+    <button class="icon-btn" id="open-settings" data-i18n-aria="settingsAria" aria-label="設定">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+    </button>
+  </header>
+
+  <section id="stage" data-tod="day">
+    <div class="sky"></div>
+    <canvas id="c" role="img" aria-label=""></canvas>
+    <div class="loading" id="loading"><div><span id="loading-text" data-i18n="loading">キャラを呼んでいます…</span><div class="meter"><i id="loading-bar"></i></div></div></div>
+    <div class="fallback-face" id="fallback" hidden>ミ</div>
+    <div class="bubble"><span class="who" id="bubble-who">ミチ</span><p id="line" aria-hidden="true"></p></div>
+    <div class="sr-only" aria-live="polite" id="line-sr"></div>
+  </section>
+
+  <section id="panel">
+    <!-- HOME -->
+    <div class="pane" id="p-home">
+      <div class="lcd lcd-grid">
+        <div><span class="lab">ODO</span><b id="odo-km">0</b><span class="unit">km</span></div>
+        <div><span class="lab">DRIVES</span><b id="odo-n">0</b></div>
+        <div><span class="lab">TIME</span><b id="odo-h">0:00</b></div>
+      </div>
+      <div class="aff">
+        <span class="name" id="aff-name"></span>
+        <span></span>
+        <span class="next" id="aff-next"></span>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="aff-bar-wrap"><i id="aff-bar"></i></div>
+      </div>
+      <button class="btn primary" id="go-check" data-i18n="goCheck">出発前チェックへ</button>
+      <div class="row"><button class="btn" id="go-demo" data-i18n="goDemo">デモ走行(120倍速)</button></div>
+      <p class="last" id="last-drive"></p>
+    </div>
+
+    <!-- CHECK -->
+    <div class="pane" id="p-check" hidden>
+      <h2 class="pane-title" data-i18n="checkTitle">出発前チェック</h2>
+      <div class="checks">
+        <button class="check" data-k="belt" aria-pressed="false"><span class="box" aria-hidden="true"></span><span data-i18n="checkBelt"></span></button>
+        <button class="check" data-k="mirror" aria-pressed="false"><span class="box" aria-hidden="true"></span><span data-i18n="checkMirror"></span></button>
+        <button class="check" data-k="route" aria-pressed="false"><span class="box" aria-hidden="true"></span><span data-i18n="checkRoute"></span></button>
+      </div>
+      <button class="btn primary" id="depart" disabled data-i18n="depart">出発する</button>
+      <div class="row split"><button class="link" id="check-back" data-i18n="back">戻る</button><button class="link" id="depart-skip" data-i18n="departSkip">チェックせずに出発</button></div>
+    </div>
+
+    <!-- DRIVE -->
+    <div class="pane" id="p-drive" hidden>
+      <div class="lcd">
+        <div class="trip-head"><span class="lab" data-i18n="tripLabel">TRIP A</span><span class="chip" id="demo-chip" hidden>DEMO ×120</span><span class="wake" id="wake-note"></span></div>
+        <div class="big" id="trip-time">00:00:00</div>
+        <div class="trip-sub">
+          <div><span class="lab jp" data-i18n="distLabel">距離</span><b id="trip-km">—</b></div>
+          <div><span class="lab jp" data-i18n="nextBreak">次の休憩めやす</span><b id="trip-break"></b></div>
+        </div>
+      </div>
+      <div class="stop-card" id="stop-card" hidden>
+        <div class="stop-top"><span class="stop-kind" id="stop-kind">SA</span><b id="stop-name"></b><span class="stop-dist" id="stop-dist"></span></div>
+        <div class="chips" id="stop-tags"></div>
+        <p class="stop-state" id="stop-state" hidden></p>
+        <div class="row" id="stop-actions">
+          <button class="btn" id="stop-no" data-i18n="no">通過</button>
+          <button class="btn primary" id="stop-yes" data-i18n="yes">寄る</button>
+        </div>
+        <p class="listen" id="stop-listen"></p>
+        <p class="note" data-i18n="sampleData"></p>
+      </div>
+      <p class="hint" id="drive-hint" data-i18n="driveHint"></p>
+      <div class="row">
+        <button class="btn" id="break-btn" data-i18n="breakBtn">休憩した</button>
+        <button class="btn primary" id="arrive-btn"><span class="fill" id="arrive-fill"></span><span class="lbl" data-i18n="arriveBtn">長押しで到着</span></button>
+      </div>
+    </div>
+
+    <!-- ARRIVE -->
+    <div class="pane" id="p-arrive" hidden>
+      <h2 class="pane-title" id="arrive-title"></h2>
+      <div class="lcd sum">
+        <div><span class="lab jp" data-i18n="sumTime">運転時間</span><b id="sum-time">0:00</b></div>
+        <div><span class="lab jp" data-i18n="sumDist">距離</span><b id="sum-km">—</b></div>
+        <div><span class="lab jp" data-i18n="sumBreaks">休憩</span><b id="sum-breaks">0</b></div>
+        <div><span class="lab jp" data-i18n="sumBond">なかよし</span><b id="sum-pts">+0</b></div>
+      </div>
+      <label class="field" id="km-field"><span data-i18n="kmField">トリップメーターの距離(任意)</span>
+        <span class="inline"><input type="number" id="km-input" inputmode="decimal" min="0" max="3000" step="0.1" data-i18n-ph="kmPh"><span>km</span></span>
+      </label>
+      <button class="btn primary" id="save-drive"></button>
+      <div class="row split"><span></span><button class="link" id="discard-drive" data-i18n="discard">記録しないで戻る</button></div>
+    </div>
+  </section>
+
+  <!-- PERSONA SHEET -->
+  <div class="sheet" id="sheet-persona" role="dialog" aria-modal="true" aria-labelledby="p-title" hidden>
+    <div class="sheet-head"><h2 id="p-title" data-i18n="personaTitle">キャラを選ぶ</h2><button class="icon-btn" data-close data-i18n="close">閉じる</button></div>
+    <div class="sheet-body">
+      <div class="group">
+        <h3 data-i18n="presets">プリセット</h3>
+        <div class="cards" id="persona-cards"></div>
+      </div>
+      <div class="group" id="builder">
+        <h3 data-i18n="builderTitle">3つの個性を組み合わせて作る</h3>
+        <p class="note" data-i18n="builderNote"></p>
+        <label class="field"><span data-i18n="traitRel">関係・口調</span><select id="tr-rel"></select></label>
+        <label class="field"><span data-i18n="traitTemp">性格</span><select id="tr-temp"></select></label>
+        <label class="field"><span data-i18n="traitQuirk">クセ</span><select id="tr-quirk"></select></label>
+        <div class="row">
+          <button class="btn" id="tr-random" data-i18n="random">ランダム</button>
+          <button class="btn primary" id="tr-generate" data-i18n="generate">このキャラを作る</button>
+        </div>
+        <p class="note" id="gen-status" aria-live="polite"></p>
+        <div><button class="link" id="gen-cancel" data-i18n="clearNo" hidden>やめる</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY SHEET -->
+  <div class="sheet" id="sheet-history" role="dialog" aria-modal="true" aria-labelledby="h-title" hidden>
+    <div class="sheet-head"><h2 id="h-title" data-i18n="histTitle">ドライブ記録</h2><button class="icon-btn" data-close data-i18n="close">閉じる</button></div>
+    <div class="sheet-body">
+      <div class="lcd lcd-grid">
+        <div><span class="lab">ODO</span><b id="h-km">0</b><span class="unit">km</span></div>
+        <div><span class="lab">DRIVES</span><b id="h-n">0</b></div>
+        <div><span class="lab">TIME</span><b id="h-h">0:00</b></div>
+      </div>
+      <ol class="hist" id="hist-list"></ol>
+      <p class="note" id="hist-empty" data-i18n="histEmpty"></p>
+      <p class="note" id="store-note"></p>
+      <div>
+        <button class="link danger" id="clear-start" data-i18n="clearAll">記録をすべて消す</button>
+        <span id="clear-confirm" hidden><span data-i18n="clearConfirm"></span> <button class="link danger" id="clear-yes" data-i18n="clearYes">消す</button> <button class="link" id="clear-no" data-i18n="clearNo">やめる</button></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS SHEET -->
+  <div class="sheet" id="sheet-settings" role="dialog" aria-modal="true" aria-labelledby="s-title" hidden>
+    <div class="sheet-head"><h2 id="s-title" data-i18n="settingsTitle">設定</h2><button class="icon-btn" data-close data-i18n="close">閉じる</button></div>
+    <div class="sheet-body">
+      <div class="group">
+        <h3 data-i18n="grpLang">言語</h3>
+        <label class="field"><span data-i18n="langLabel">表示と声の言語</span>
+          <select id="set-lang"><option value="ja">日本語</option><option value="zh">中文(简体)</option><option value="ko">한국어</option><option value="en">English</option></select>
+        </label>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpName">呼び方</h3>
+        <label class="field"><span id="call-label"></span><input type="text" id="set-name" maxlength="12"></label>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpTalk">おしゃべりの量</h3>
+        <div class="seg" role="radiogroup">
+          <label><input type="radio" name="verb" value="guide"><span data-i18n="verbGuide">案内だけ</span></label>
+          <label><input type="radio" name="verb" value="normal"><span data-i18n="verbNormal">ふつう</span></label>
+          <label><input type="radio" name="verb" value="chatty"><span data-i18n="verbChatty">たくさん</span></label>
+        </div>
+        <p class="note" data-i18n="verbNote"></p>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpVoice">声</h3>
+        <label class="toggle"><input type="checkbox" id="set-voice"><span data-i18n="voiceOn">声で話す</span></label>
+        <label class="field"><span data-i18n="pitchLabel">声の高さ</span><input type="range" id="set-pitch" min="-0.4" max="0.4" step="0.05"></label>
+        <button class="btn" id="voice-test" data-i18n="voiceTest">声を試す</button>
+        <p class="note" id="voice-note"></p>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpStops">SA・PA・道の駅</h3>
+        <label class="toggle"><input type="checkbox" id="set-stops"><span data-i18n="stopsOn"></span></label>
+        <label class="toggle"><input type="checkbox" id="set-stops-info"><span data-i18n="stopsInfo"></span></label>
+        <label class="toggle"><input type="checkbox" id="set-voice-reply"><span data-i18n="voiceReply"></span></label>
+        <p class="note" data-i18n="stopsNote"></p>
+        <p class="note" id="mic-note"></p>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpDrive">運転</h3>
+        <label class="field"><span data-i18n="breakLabel">休憩をすすめる間隔</span>
+          <select id="set-break"><option value="60" data-i18n="break60"></option><option value="90" data-i18n="break90"></option><option value="120" data-i18n="break120"></option></select>
+        </label>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpModel">キャラクターの見た目</h3>
+        <label class="field"><span data-i18n="vrmLabel">自分のVRMファイルを読み込む</span><input type="file" id="vrm-file" accept=".vrm,.glb"></label>
+        <p class="note" data-i18n="vrmNote"></p>
+        <p class="note" id="vrm-note"></p>
+        <div><button class="link" id="vrm-reset" data-i18n="vrmReset">最初の見た目に戻す</button></div>
+      </div>
+      <div class="credits" data-i18n="credits"></div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+    "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.4.4/lib/three-vrm.module.min.js"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// On claude.ai the model ships as base64 text (that host only serves web file types); the own-site build serves the .vrm directly.
+const MODEL_URL = 'models/michi.vrm.b64.txt';
+const MODEL_BYTES = 7593724;
+const LS_KEY = 'drive-buddy-state-v1';
+
+/* =========================================================
+   Data (inlined at build time from web/src)
+   ========================================================= */
+const I18N = __I18N__;
+const PRESETS = __PERSONAS__;
+const PRESET_ORDER = ['kohai', 'onee', 'genki', 'ottori'];
+const LANGS = ['ja', 'zh', 'ko', 'en'];
+
+// Emotion + gesture for each line key ([emo, gesture], or a list matched to variant index).
+const META = {
+  greetDawn: [['happy', 'wave'], ['relaxed', 'tilt']], greetDay: [['happy', 'wave'], ['relaxed', 'tilt']],
+  greetDusk: [['neutral', 'nod'], ['neutral', 'tilt']], greetNight: [['happy', 'wave'], ['neutral', 'nod']],
+  greetLate: [['sad', 'down'], ['sad', 'tilt']],
+  tap: [['surprised', 'tilt'], ['angry', 'shake'], ['happy', 'nod'], ['relaxed', 'tilt'], ['happy', 'nod']],
+  tapAnnoyed: ['angry', 'shake'],
+  checkIntro: ['relaxed', 'nod'], checkBelt: ['happy', 'nod'], checkMirror: ['happy', 'nod'], checkRoute: ['relaxed', 'tilt'], checkDone: ['happy', 'hop'],
+  depart: [['happy', 'hop'], ['relaxed', 'nod']], departSkip: ['sad', 'tilt'], departLate: ['sad', 'down'],
+  hourly: ['relaxed', 'nod'], chat: [['happy', 'tilt'], ['relaxed', 'nod'], ['happy', 'nod']],
+  breakDue: ['neutral', 'nod'], breakNag: ['angry', 'shake'], breakTaken: [['happy', 'hop'], ['relaxed', 'nod']],
+  arriveShort: ['happy', 'hop'], arriveMid: ['happy', 'nod'], arriveLong: ['relaxed', 'nod'], arriveVlong: ['relaxed', 'nod'],
+  saved: ['happy', 'wave'], discarded: ['neutral', 'nod'], levelUp: ['happy', 'hop'], milestone: ['happy', 'nod'],
+  demoStart: ['relaxed', 'nod'], demoEnd: ['happy', 'wave'], voiceTest: ['happy', 'wave'], newModel: ['surprised', 'tilt'], hello: ['happy', 'wave'],
+  stopAhead: ['neutral', 'tilt'], stopAheadBreak: ['neutral', 'nod'], stopYes: ['happy', 'nod'], stopNo: ['neutral', 'nod'],
+  stopNoReply: ['neutral', 'tilt'], stopReached: ['relaxed', 'nod'],
+};
+// In "guidance only" mode these lines still show in the bubble but are not spoken.
+const QUIET_IN_GUIDE = new Set(['checkIntro', 'checkBelt', 'checkMirror', 'checkRoute', 'checkDone', 'hourly', 'chat', 'breakTaken', 'saved', 'discarded', 'levelUp', 'milestone', 'newModel']);
+const LINE_KEYS = Object.keys(PRESETS.kohai.lines.ja);
+
+// Rest stops for the demo route (Tokyo → Mt. Fuji on the Tomei Expressway). Sample data, not live.
+const DEMO_STOPS = [
+  { at: 26, km: 4, kind: 'SA', hours: '24h', crowd: 2, name: { ja: '海老名サービスエリア', zh: '海老名服务区', ko: '에비나 휴게소', en: 'Ebina Service Area' }, short: { ja: '海老名SA(下り)', zh: '海老名服务区(下行)', ko: '에비나 휴게소(하행)', en: 'Ebina SA (westbound)' } },
+  { at: 58, km: 3, kind: 'PA', hours: '24h', crowd: 0, name: { ja: '鮎沢パーキングエリア', zh: '鲇泽停车区', ko: '아유자와 주차구역', en: 'Ayuzawa Parking Area' }, short: { ja: '鮎沢PA(下り)', zh: '鲇泽停车区(下行)', ko: '아유자와 PA(하행)', en: 'Ayuzawa PA (westbound)' } },
+  { at: 106, km: 6, kind: 'SA', hours: '24h', crowd: 1, name: { ja: '足柄サービスエリア', zh: '足柄服务区', ko: '아시가라 휴게소', en: 'Ashigara Service Area' }, short: { ja: '足柄SA(下り)', zh: '足柄服务区(下行)', ko: '아시가라 휴게소(하행)', en: 'Ashigara SA (westbound)' } },
+  { at: 150, km: 2, kind: 'michi', hours: [8, 18], crowd: 0, name: { ja: '道の駅すばしり', zh: '公路休息站「须走」', ko: '미치노에키 스바시리', en: 'Michi-no-Eki Subashiri' }, short: { ja: '道の駅 すばしり', zh: '公路休息站 须走', ko: '미치노에키 스바시리', en: 'Roadside Station Subashiri' } },
+];
+const DEMO_KMH = 80;
+
+// Trait combinations for the custom builder.
+const TRAITS = {
+  rel: ['kohai', 'onee', 'friend', 'butler', 'mentor'],
+  temp: ['cool', 'genki', 'ottori', 'sewa', 'tsun'],
+  quirk: ['doku', 'tennen', 'shinpai', 'kuishinbo', 'monoshiri', 'kansai'],
+};
+const TEMP_BASE = { cool: 'onee', genki: 'genki', ottori: 'ottori', sewa: 'kohai', tsun: 'kohai' };
+const TEMP_VOICE = { cool: { pitch: 0.95, rate: 0.98 }, genki: { pitch: 1.4, rate: 1.12 }, ottori: { pitch: 1.15, rate: 0.9 }, sewa: { pitch: 1.2, rate: 1.02 }, tsun: { pitch: 1.3, rate: 1.06 } };
+
+/* =========================================================
+   Storage: per-person private doc in the artifact db,
+   else this browser, else memory only.
+   ========================================================= */
+function defaultLang() {
+  const l = (navigator.language || 'ja').toLowerCase();
+  if (l.startsWith('zh')) return 'zh';
+  if (l.startsWith('ko')) return 'ko';
+  if (l.startsWith('en')) return 'en';
+  return 'ja';
+}
+const defaultSettings = () => ({
+  lang: defaultLang(), persona: 'kohai', callName: '', voice: true, pitchAdj: 0, breakMin: 120,
+  verbosity: 'normal', stopsOn: true, stopsInfo: true, voiceReply: true,
+});
+const defaultState = () => ({ v: 2, settings: defaultSettings(), points: 0, drives: [], custom: null });
+function normalize(d) {
+  const base = defaultState();
+  if (!d || typeof d !== 'object') return base;
+  const s = { ...base.settings, ...(d.settings || {}) };
+  if (d.v !== 2) { // from v0.1: "先輩" was the default, now the persona decides
+    if (s.callName === '先輩') s.callName = '';
+    if (!d.settings || !d.settings.lang) s.lang = 'ja';
+  }
+  if (!LANGS.includes(s.lang)) s.lang = 'ja';
+  delete s.pitch;
+  return {
+    v: 2, settings: s,
+    points: Number(d.points) || 0,
+    drives: Array.isArray(d.drives) ? d.drives.slice(0, 500) : [],
+    custom: d.custom && typeof d.custom === 'object' && d.custom.lines ? d.custom : null,
+  };
+}
+const Store = {
+  kind: 'memory', state: defaultState(), ref: null, chain: Promise.resolve(),
+  async init() {
+    try {
+      if (window.claude && typeof window.claude.use === 'function') {
+        const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+        const uid = user ? await user.id() : null;
+        if (db && uid) {
+          this.ref = db.doc(`data/users/${uid}/state`);
+          const snap = await this.ref.get();
+          if (snap.exists) this.state = normalize(snap.data());
+          this.kind = 'cloud';
+          return;
+        }
+      }
+    } catch (e) { console.warn('db unavailable', e); this.ref = null; }
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) this.state = normalize(JSON.parse(raw));
+      localStorage.setItem(LS_KEY + '-probe', '1');
+      this.kind = 'local';
+    } catch { this.kind = 'memory'; }
+  },
+  save() {
+    const data = JSON.parse(JSON.stringify(this.state));
+    if (this.kind === 'cloud' && this.ref) {
+      this.chain = this.chain.then(() => this.ref.set(data)).catch((e) => {
+        console.warn('save failed', e);
+        try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch {}
+      });
+    } else if (this.kind === 'local') {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch {}
+    }
+  },
+};
+const S = () => Store.state.settings;
+let saveSoonTimer;
+function saveSoon() { clearTimeout(saveSoonTimer); saveSoonTimer = setTimeout(() => Store.save(), 700); }
+
+/* =========================================================
+   Language + persona helpers
+   ========================================================= */
+const lang = () => S().lang;
+function T(key, vars) {
+  const d = I18N[lang()] || I18N.ja;
+  let v = d[key] ?? I18N.ja[key] ?? key;
+  if (typeof v === 'string' && vars) v = v.replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ''));
+  return v;
+}
+function persona() {
+  if (S().persona === 'custom' && Store.state.custom) return Store.state.custom;
+  return PRESETS[S().persona] || PRESETS.kohai;
+}
+const isCustom = (p) => p.id === 'custom';
+function baseOf(p) { return isCustom(p) ? (PRESETS[p.base] || PRESETS.kohai) : p; }
+const swappedCache = new Map();
+function linesOf(p) {
+  if (isCustom(p)) {
+    if (p.lang === lang()) return p.lines;
+    // Written in another language: borrow the base character's lines, but keep the custom name.
+    const b = baseOf(p), L = lang(), key = `${p.name}|${b.id}|${L}`;
+    if (!swappedCache.has(key)) {
+      const from = b.name[L];
+      const swap = (v) => (Array.isArray(v) ? v.map(swap) : String(v).split(from).join(p.name));
+      swappedCache.set(key, Object.fromEntries(Object.entries(b.lines[L]).map(([k, v]) => [k, swap(v)])));
+    }
+    return swappedCache.get(key);
+  }
+  return p.lines[lang()] || p.lines.ja;
+}
+function nameOf(p) { return isCustom(p) ? p.name : (p.name[lang()] || p.name.ja); }
+function taglineOf(p) { return isCustom(p) ? p.tagline : (p.tagline[lang()] || p.tagline.ja); }
+function defaultCall(p) {
+  if (isCustom(p) && p.lang === lang() && p.call) return p.call;
+  const b = baseOf(p);
+  return b.call[lang()] || b.call.ja;
+}
+const callName = () => (S().callName || '').trim() || defaultCall(persona());
+
+/* =========================================================
+   3D character
+   ========================================================= */
+const stage = $('#stage');
+const canvas = $('#c');
+const Char = {
+  vrm: null, headY: 1.42, flip: 1,
+  emotion: 'neutral', emoW: {}, speaking: false,
+  blinkAt: 2, blinkT: -1, mouth: { aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 }, mouthTarget: null, mouthNext: 0,
+  gesture: null, lowPower: false, expr: 1,
+};
+let renderer = null, scene, camera, clock;
+const loader = new GLTFLoader();
+loader.register((parser) => new VRMLoaderPlugin(parser));
+
+function initGL() {
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
+  } catch (e) {
+    console.warn('WebGL unavailable', e);
+    return false;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(26, 1, 0.1, 20);
+  const key = new THREE.DirectionalLight(0xffffff, 2.7);
+  key.position.set(0.6, 1.2, 1.6).normalize();
+  scene.add(key);
+  clock = new THREE.Clock();
+  new ResizeObserver(resize).observe(stage);
+  resize();
+  renderer.setAnimationLoop(loop);
+  return true;
+}
+function resize() {
+  if (!renderer) return;
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  frame();
+}
+function frame() {
+  // Frame from the waist up; keep the face in the upper part of the stage, clear of the speech bubble.
+  const H = 1.08;
+  const fov = THREE.MathUtils.degToRad(camera.fov);
+  let d = (H / 2) / Math.tan(fov / 2);
+  const minW = 0.66, visW = H * camera.aspect;
+  if (visW < minW) d *= minW / visW;
+  const ty = Char.headY - 0.25;
+  camera.position.set(0, ty + 0.04, d);
+  camera.lookAt(0, ty, 0);
+}
+
+async function fetchBundledModel(onProgress) {
+  const res = await fetch(MODEL_URL);
+  if (!res.ok) throw new Error(`model fetch failed (${res.status})`);
+  const total = Number(res.headers.get('content-length')) || MODEL_BYTES;
+  let bytes;
+  if (res.body && res.body.getReader) {
+    const reader = res.body.getReader(); const parts = []; let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value); got += value.length;
+      onProgress && onProgress(Math.min(1, got / total));
+    }
+    bytes = new Uint8Array(got); let o = 0;
+    for (const p of parts) { bytes.set(p, o); o += p.length; }
+  } else bytes = new Uint8Array(await res.arrayBuffer());
+  if (!MODEL_URL.endsWith('.b64.txt')) return bytes.buffer;
+  const bin = atob(new TextDecoder().decode(bytes).trim());
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out.buffer;
+}
+async function loadModel(source) {
+  const gltf = source instanceof ArrayBuffer ? await loader.parseAsync(source, '') : await loader.loadAsync(source);
+  const vrm = gltf.userData.vrm;
+  if (!vrm) throw new Error('not a VRM');
+  VRMUtils.removeUnnecessaryVertices(gltf.scene);
+  VRMUtils.combineSkeletons(gltf.scene);
+  VRMUtils.rotateVRM0(vrm);
+  vrm.scene.traverse((o) => { o.frustumCulled = false; });
+  if (Char.vrm) { scene.remove(Char.vrm.scene); VRMUtils.deepDispose(Char.vrm.scene); }
+  Char.vrm = vrm;
+  Char.flip = vrm.meta && vrm.meta.metaVersion === '0' ? -1 : 1;
+  Char.emoW = {};
+  Char.hipsBaseY = null;
+  scene.add(vrm.scene);
+  if (vrm.lookAt) vrm.lookAt.target = camera;
+  vrm.scene.updateMatrixWorld(true);
+  const head = vrm.humanoid.getRawBoneNode('head');
+  if (head) { const v = new THREE.Vector3(); head.getWorldPosition(v); Char.headY = v.y; }
+  frame();
+  return vrm;
+}
+
+const bone = (n) => Char.vrm.humanoid.getNormalizedBoneNode(n);
+function rot(n, x, y, z) {
+  const b = bone(n); if (!b) return;
+  b.rotation.set(x * Char.flip, y, z * Char.flip);
+}
+const env = (p) => Math.sin(Math.PI * Math.min(1, Math.max(0, p)));
+
+function applyPose(t) {
+  const br = Math.sin(t * 1.7);
+  const sw = Math.sin(t * 0.55);
+  const g = Char.gesture;
+  let p = 0, k = null;
+  if (g) { p = (t - g.t0) / g.dur; k = g.kind; if (p >= 1) { Char.gesture = null; k = null; } }
+  const e = k ? env(p) : 0;
+  const amp = (reduceMotion ? 0.4 : 1) * (0.6 + 0.4 * Char.expr);
+
+  let lUz = -1.22 + br * 0.015, rUz = 1.22 - br * 0.015;
+  let lLy = -0.32, rLy = 0.32, rLz = 0, rUy = 0;
+  let headX = Math.sin(t * 0.9) * 0.015, headY = sw * 0.05, headZ = Math.sin(t * 0.43) * 0.03;
+  let spineZ = sw * 0.012, hipsY = 0, chestX = br * 0.012;
+
+  if (k === 'nod') headX += 0.16 * Math.sin(p * Math.PI * 2) ** 2 * amp;
+  if (k === 'tilt') { headZ += 0.2 * e * amp; spineZ += 0.04 * e * amp; }
+  if (k === 'down') { headX += 0.22 * e * amp; lUz += 0.08 * e; rUz -= 0.08 * e; }
+  if (k === 'shake') headY += 0.14 * Math.sin(p * Math.PI * 6) * e * amp;
+  if (k === 'hop') {
+    hipsY = 0.035 * Math.abs(Math.sin(p * Math.PI * 2)) * amp;
+    lUz += 0.35 * e; rUz -= 0.35 * e;
+    headZ += 0.08 * e * amp;
+  }
+  if (k === 'surprised') { headX -= 0.12 * e * amp; lUz += 0.25 * e; rUz -= 0.25 * e; }
+  if (k === 'wave') {
+    rUz = THREE.MathUtils.lerp(rUz, 0.42, e);
+    rUy = THREE.MathUtils.lerp(0, 0.3, e);
+    rLz = THREE.MathUtils.lerp(0, -1.75, e) + (reduceMotion ? 0 : Math.sin(t * 10) * 0.3 * e);
+    rLy = THREE.MathUtils.lerp(rLy, 0, e);
+    headZ += 0.1 * e * amp;
+  }
+
+  rot('leftUpperArm', 0, 0, lUz);
+  rot('rightUpperArm', 0, rUy, rUz);
+  rot('leftLowerArm', 0, lLy, 0);
+  rot('rightLowerArm', 0, rLy, rLz);
+  rot('leftHand', 0, 0, -0.1);
+  rot('rightHand', 0, 0, 0.1);
+  rot('spine', br * 0.008, 0, spineZ);
+  rot('chest', chestX, 0, 0);
+  rot('neck', 0, headY * 0.4, 0);
+  rot('head', headX, headY * 0.6, headZ);
+  const hips = bone('hips');
+  if (hips) { if (Char.hipsBaseY == null) Char.hipsBaseY = hips.position.y; hips.position.y = Char.hipsBaseY + hipsY; }
+}
+
+const EMO_W = { happy: 0.75, relaxed: 0.7, sad: 0.65, angry: 0.6, surprised: 0.7 };
+const damp = (x, target, k, dt) => x + (target - x) * (1 - Math.exp(-k * dt));
+function updateFace(dt, t) {
+  const em = Char.vrm.expressionManager; if (!em) return;
+  for (const name of Object.keys(EMO_W)) {
+    const target = Char.emotion === name ? EMO_W[name] * Char.expr : 0;
+    Char.emoW[name] = damp(Char.emoW[name] || 0, target, 7, dt);
+    em.setValue(name, Char.emoW[name]);
+  }
+  let blink = 0;
+  if (Char.blinkT >= 0) {
+    Char.blinkT += dt;
+    const p = Char.blinkT / 0.16;
+    blink = p < 1 ? Math.sin(Math.PI * p) : 0;
+    if (p >= 1) { Char.blinkT = -1; Char.blinkAt = t + 1.8 + Math.random() * 4; }
+  } else if (t >= Char.blinkAt) Char.blinkT = 0;
+  const closed = Math.max(Char.emoW.happy || 0, Char.emoW.relaxed || 0);
+  em.setValue('blink', blink * Math.max(0, 1 - closed * 1.4));
+  const vowels = ['aa', 'ih', 'ou', 'ee', 'oh'];
+  if (Char.speaking) {
+    if (t >= Char.mouthNext) {
+      Char.mouthTarget = Math.random() < 0.18 ? null : vowels[(Math.random() * vowels.length) | 0];
+      Char.mouthNext = t + 0.07 + Math.random() * 0.09;
+    }
+  } else Char.mouthTarget = null;
+  for (const v of vowels) {
+    const target = Char.mouthTarget === v ? (v === 'aa' ? 0.75 : 0.6) : 0;
+    Char.mouth[v] = damp(Char.mouth[v], target, 22, dt);
+    em.setValue(v, Char.mouth[v]);
+  }
+}
+
+let frameSkip = 0;
+function loop() {
+  const dt = Math.min(clock.getDelta(), 0.1);
+  if (Char.lowPower && (frameSkip++ % 4)) return; // ~15fps while driving to save battery
+  const t = clock.elapsedTime;
+  if (Char.vrm) {
+    applyPose(t);
+    updateFace(Char.lowPower ? dt * 4 : dt, t);
+    Char.vrm.update(Char.lowPower ? Math.min(dt * 4, 0.1) : dt);
+  }
+  renderer.render(scene, camera);
+}
+
+/* =========================================================
+   Voice + speech bubble
+   ========================================================= */
+const VOICE_PREF = {
+  ja: /Nanami|Kyoko|O-ren|Haruka|Ayumi|Google 日本語/i,
+  zh: /Xiaoxiao|Xiaoyi|Tingting|Huihui|Yaoyao|Google 普通话/i,
+  ko: /SunHi|Yuna|Heami|Google 한국/i,
+  en: /Jenny|Aria|Samantha|Zira|Google US English/i,
+};
+const Voice = {
+  ok: 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined',
+  voice: null,
+  pick() {
+    if (!this.ok) return;
+    const L = lang(), tts = T('ttsLang').toLowerCase();
+    const vs = speechSynthesis.getVoices();
+    const inLang = vs.filter((v) => (v.lang || '').toLowerCase().replace('_', '-').startsWith(L));
+    this.voice = inLang.find((v) => VOICE_PREF[L].test(v.name) && v.lang.toLowerCase().replace('_', '-') === tts)
+      || inLang.find((v) => VOICE_PREF[L].test(v.name))
+      || inLang.find((v) => v.lang.toLowerCase().replace('_', '-') === tts)
+      || inLang[0] || null;
+  },
+};
+if (Voice.ok) { Voice.pick(); speechSynthesis.addEventListener?.('voiceschanged', () => Voice.pick()); }
+let activated = false;
+addEventListener('pointerdown', () => { activated = true; }, { capture: true });
+addEventListener('keydown', () => { activated = true; }, { capture: true });
+
+let sayToken = 0, typeTimer = 0;
+const lastPicked = new Map();
+function pickIndex(key, n) {
+  if (n <= 1) return 0;
+  let i; const prev = lastPicked.get(key);
+  do { i = (Math.random() * n) | 0; } while (i === prev);
+  lastPicked.set(key, i);
+  return i;
+}
+function fill(text, vars = {}) {
+  return String(text).replace(/\{(\w+)\}/g, (_, k) => (k === 'name' ? callName() : (vars[k] ?? '')));
+}
+const GEST_DUR = { nod: 1.0, tilt: 1.6, down: 1.8, shake: 1.0, hop: 1.0, surprised: 1.0, wave: 2.2 };
+function gesture(kind) {
+  if (!kind || !clock) return;
+  Char.gesture = { kind, t0: clock.elapsedTime, dur: GEST_DUR[kind] || 1.2 };
+}
+function typeText(text) {
+  const el = $('#line');
+  clearInterval(typeTimer);
+  $('#line-sr').textContent = text;
+  if (reduceMotion) { el.textContent = text; return; }
+  let i = 0; el.textContent = '';
+  const chars = [...text];
+  typeTimer = setInterval(() => { i += 1; el.textContent = chars.slice(0, i).join(''); if (i >= chars.length) clearInterval(typeTimer); }, 38);
+}
+function lineText(key, vars) {
+  const lines = linesOf(persona());
+  let entry = lines[key];
+  if (entry == null) entry = PRESETS.kohai.lines[lang()][key];
+  let idx = 0;
+  if (Array.isArray(entry)) { idx = pickIndex(key, entry.length); entry = entry[idx]; }
+  return { text: fill(entry, vars), idx };
+}
+/** Show and speak one line. Resolves when the voice (or its stand-in timing) has finished. */
+function say(key, vars = {}, opts = {}) {
+  const p = persona();
+  let { text, idx } = lineText(key, vars);
+  if (opts.extra) text += T('joinSuffix') + lineText(opts.extra, vars).text;
+  let m = META[key] || ['neutral', null];
+  if (Array.isArray(m[0])) m = m[idx % m.length];
+  const emo = (p.emoMap && p.emoMap[m[0]]) || m[0];
+  const gest = (p.gestMap && p.gestMap[m[1]]) || m[1];
+  const speakIt = !opts.silent && !(S().verbosity === 'guide' && QUIET_IN_GUIDE.has(key));
+  const my = ++sayToken;
+  Char.emotion = emo;
+  gesture(gest);
+  typeText(text);
+  if (drive) drive.lastSpoke = elapsedSec() / 60;
+  return new Promise((resolve) => {
+    let finished = false;
+    const done = () => {
+      if (finished) return; finished = true;
+      if (my === sayToken) {
+        Char.speaking = false;
+        setTimeout(() => { if (my === sayToken) Char.emotion = 'neutral'; }, 2200);
+      }
+      resolve(my === sayToken);
+    };
+    const estimate = Math.min(9000, 700 + [...text].length * (lang() === 'en' ? 55 : 120));
+    if (speakIt && Voice.ok && S().voice && activated) {
+      try {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = T('ttsLang');
+        if (Voice.voice) u.voice = Voice.voice;
+        const base = (isCustom(p) ? p.voice : p.voice) || { pitch: 1.2, rate: 1 };
+        u.pitch = Math.min(2, Math.max(0.1, base.pitch + (Number(S().pitchAdj) || 0)));
+        u.rate = base.rate || 1;
+        u.onstart = () => { if (my === sayToken) Char.speaking = true; };
+        u.onend = done; u.onerror = done;
+        Char.speaking = true;
+        speechSynthesis.speak(u);
+        setTimeout(done, estimate + 4000);
+        return;
+      } catch (e) { console.warn(e); }
+    }
+    Char.speaking = speakIt;
+    setTimeout(done, speakIt ? estimate : Math.min(estimate, 2500));
+  });
+}
+
+/* =========================================================
+   Time of day + formatting
+   ========================================================= */
+function tod(d = new Date()) {
+  const h = d.getHours();
+  if (h < 5) return 'late';
+  if (h < 9) return 'dawn';
+  if (h < 16) return 'day';
+  if (h < 19) return 'dusk';
+  return 'night';
+}
+const GREET_KEY = { dawn: 'greetDawn', day: 'greetDay', dusk: 'greetDusk', night: 'greetNight', late: 'greetLate' };
+function updateSky() { stage.dataset.tod = tod(); }
+setInterval(updateSky, 5 * 60 * 1000);
+
+const pad = (n) => String(n).padStart(2, '0');
+const hms = (s) => { s = Math.max(0, Math.floor(s)); return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`; };
+const hm = (min) => { min = Math.max(0, Math.round(min)); return `${Math.floor(min / 60)}:${pad(min % 60)}`; };
+function fmtDur(min) {
+  min = Math.max(0, Math.round(min)); const h = Math.floor(min / 60), m = min % 60; const d = T('dur');
+  if (!h) return d.m.replace('{m}', m);
+  if (!m) return d.h.replace('{h}', h);
+  return d.hm.replace('{h}', h).replace('{m}', m);
+}
+const fmtKm = (km) => (km >= 100 ? Math.round(km).toLocaleString('en-US') : (Math.round(km * 10) / 10).toFixed(1));
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return T('dateFmt', { M: d.getMonth() + 1, D: d.getDate(), W: T('weekdays')[d.getDay()], hh: pad(d.getHours()), mm: pad(d.getMinutes()) });
+}
+function fmtHours(h) {
+  if (h === '24h') return T('hours24');
+  const f = (x) => (lang() === 'en' ? `${x % 12 || 12} ${x < 12 ? 'a.m.' : 'p.m.'}` : x);
+  return T('hoursRange', { o: f(h[0]), c: f(h[1]) });
+}
+
+/* =========================================================
+   Affinity + home/history rendering
+   ========================================================= */
+const LEVEL_PTS = [0, 30, 80, 160, 300, 500];
+function levelOf(pts) { let i = 0; LEVEL_PTS.forEach((min, k) => { if (pts >= min) i = k; }); return i; }
+function renderAffinity() {
+  const pts = Store.state.points, i = levelOf(pts), names = T('levels');
+  const min = LEVEL_PTS[i], next = LEVEL_PTS[i + 1];
+  $('#chip-lv').textContent = i + 1;
+  $('#chip-name').textContent = names[i];
+  $('#aff-name').textContent = `${T('bond')} Lv${i + 1} ${names[i]}`;
+  const pct = next != null ? ((pts - min) / (next - min)) * 100 : 100;
+  $('#aff-bar').style.width = `${Math.max(3, pct)}%`;
+  const wrap = $('#aff-bar-wrap'); wrap.setAttribute('aria-valuenow', Math.round(pct)); wrap.setAttribute('aria-label', T('bond'));
+  $('#aff-next').textContent = next != null ? T('nextLv', { n: next - pts }) : T('maxLv');
+}
+function totals() {
+  const ds = Store.state.drives;
+  return { n: ds.length, min: ds.reduce((a, d) => a + (d.min || 0), 0), km: ds.reduce((a, d) => a + (typeof d.km === 'number' ? d.km : 0), 0) };
+}
+function renderHome() {
+  const t = totals();
+  $('#odo-km').textContent = fmtKm(t.km);
+  $('#odo-n').textContent = t.n;
+  $('#odo-h').textContent = hm(t.min);
+  const last = Store.state.drives[0];
+  $('#last-drive').textContent = last
+    ? T('lastDrive', { date: fmtDate(last.start), dur: fmtDur(last.min), km: typeof last.km === 'number' ? `${T('listSep')}${fmtKm(last.km)} km` : '' })
+    : T('lastNone');
+  renderAffinity();
+}
+function renderHistory() {
+  const t = totals();
+  $('#h-km').textContent = fmtKm(t.km);
+  $('#h-n').textContent = t.n;
+  $('#h-h').textContent = hm(t.min);
+  const list = $('#hist-list');
+  list.textContent = '';
+  for (const d of Store.state.drives) {
+    const li = document.createElement('li');
+    const a = document.createElement('span'); a.className = 'd'; a.textContent = fmtDate(d.start);
+    const b = document.createElement('span'); b.className = 't'; b.textContent = hm(d.min);
+    const c = document.createElement('span'); c.className = 'm';
+    c.textContent = [d.checked ? T('checked') : T('unchecked'), T('breaksN', { n: d.breaks || 0 })].join(T('listSep'));
+    const e = document.createElement('span'); e.className = 'k'; e.textContent = typeof d.km === 'number' ? `${fmtKm(d.km)} km` : '— km';
+    li.append(a, b, c, e);
+    list.append(li);
+  }
+  $('#hist-empty').hidden = Store.state.drives.length > 0;
+  $('#store-note').textContent = T({ cloud: 'storeCloud', local: 'storeLocal', memory: 'storeMemory' }[Store.kind]);
+}
+function renderIdentity() {
+  const p = persona();
+  const nm = nameOf(p);
+  $('#char-name').textContent = nm;
+  $('#bubble-who').textContent = nm;
+  $('#fallback').textContent = [...nm][0] || '?';
+  canvas.setAttribute('aria-label', nm);
+  Char.expr = p.expr ?? baseOf(p).expr ?? 1;
+}
+function applyI18n() {
+  document.documentElement.lang = lang();
+  $$('[data-i18n]').forEach((el) => { el.textContent = T(el.dataset.i18n); });
+  $$('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', T(el.dataset.i18nAria)));
+  $$('[data-i18n-ph]').forEach((el) => el.setAttribute('placeholder', T(el.dataset.i18nPh)));
+  renderIdentity();
+  renderHome();
+  if (!$('#sheet-history').hidden) renderHistory();
+  if (!$('#sheet-settings').hidden) renderSettings();
+  if (!$('#sheet-persona').hidden) renderPersonaSheet();
+  if (pending) renderArrive();
+  if (drive) tick();
+}
+
+/* =========================================================
+   Modes
+   ========================================================= */
+function setMode(m) {
+  document.body.dataset.mode = m;
+  for (const id of ['home', 'check', 'drive', 'arrive']) $('#p-' + id).hidden = id !== m;
+  Char.lowPower = m === 'drive' && !(drive && drive.demo);
+  if (renderer) renderer.setPixelRatio(Char.lowPower ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+  resize();
+  $('#panel').scrollTop = 0;
+}
+
+/* ---------- check ---------- */
+const checks = { belt: false, mirror: false, route: false };
+const CHECK_KEY = { belt: 'checkBelt', mirror: 'checkMirror', route: 'checkRoute' };
+$('#go-check').addEventListener('click', () => {
+  for (const k in checks) checks[k] = false;
+  $$('.check').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+  $('#depart').disabled = true;
+  setMode('check');
+  say('checkIntro');
+});
+$$('.check').forEach((btn) => btn.addEventListener('click', () => {
+  const k = btn.dataset.k;
+  checks[k] = !checks[k];
+  btn.setAttribute('aria-pressed', String(checks[k]));
+  const all = Object.values(checks).every(Boolean);
+  $('#depart').disabled = !all;
+  if (checks[k]) say(all ? 'checkDone' : CHECK_KEY[k]);
+}));
+$('#check-back').addEventListener('click', () => setMode('home'));
+$('#depart').addEventListener('click', () => startDrive({ demo: false, checked: true }));
+$('#depart-skip').addEventListener('click', () => startDrive({ demo: false, checked: false }));
+$('#go-demo').addEventListener('click', () => startDrive({ demo: true, checked: true }));
+
+/* ---------- drive ---------- */
+let drive = null, driveTimer = 0, wake = null;
+function startDrive({ demo, checked }) {
+  const now = Date.now();
+  drive = {
+    demo, checked, startedAt: now, sim: 0, lastReal: now,
+    breaks: 0, lastHour: 0, breakAt: Number(S().breakMin) || 120, dueSaid: false, nagAt: Infinity,
+    km: 0, gps: demo ? 'demo' : 'pending', lastPos: null, watch: null,
+    lastSpoke: 0, nextChat: 25, stops: demo ? DEMO_STOPS.map((s) => ({ ...s, state: 'ahead' })) : [], stop: null,
+  };
+  hideStopCard();
+  setMode('drive');
+  $('#demo-chip').hidden = !demo;
+  $('#wake-note').textContent = '';
+  if (demo) say('demoStart');
+  else if (tod(new Date(now)) === 'late') say('departLate');
+  else if (!checked) say('departSkip');
+  else say('depart');
+  if (!demo) startGPS();
+  requestWake();
+  clearInterval(driveTimer);
+  driveTimer = setInterval(tick, demo ? 250 : 1000);
+  tick();
+}
+// Demo time runs at 120×, but slows down while a rest stop is being asked about or approached.
+function curSpeed() {
+  if (!drive || !drive.demo) return 1;
+  const st = drive.stop;
+  if (st && st.state === 'asking') return 2;
+  if (st && st.state === 'going') return 30;
+  return 120;
+}
+function elapsedSec() {
+  if (!drive) return 0;
+  const now = Date.now();
+  drive.sim += ((now - drive.lastReal) / 1000) * curSpeed();
+  drive.lastReal = now;
+  return drive.sim;
+}
+function tick() {
+  if (!drive) return;
+  const s = elapsedSec(), m = s / 60;
+  $('#trip-time').textContent = hms(s);
+  if (drive.demo) $('#demo-chip').textContent = `DEMO ×${curSpeed()}`;
+  const br = $('#trip-break');
+  const stopBusy = drive.stop && (drive.stop.state === 'asking' || drive.stop.state === 'going');
+  if (m >= drive.breakAt) {
+    br.textContent = T('breakNow');
+    br.classList.add('due');
+    if (!stopBusy) {
+      if (!drive.dueSaid) { drive.dueSaid = true; drive.nagAt = m + 30; say('breakDue', { t: fmtDur(m) }); }
+      else if (m >= drive.nagAt) { drive.nagAt = m + 30; say('breakNag'); }
+    }
+  } else {
+    br.textContent = T('breakIn', { t: hm(drive.breakAt - m) });
+    br.classList.remove('due');
+    const h = Math.floor(m / 60);
+    if (h >= 1 && h > drive.lastHour) {
+      drive.lastHour = h;
+      if (drive.breakAt - m > 5 && !stopBusy && S().verbosity !== 'guide') say('hourly', { h });
+    }
+  }
+  if (drive.demo) drive.km = (m / 60) * DEMO_KMH;
+  const kmEl = $('#trip-km');
+  if (drive.gps === 'on' || drive.gps === 'demo') kmEl.textContent = `${fmtKm(drive.km)} km`;
+  else if (drive.gps === 'pending') kmEl.textContent = T('gpsPending');
+  else kmEl.textContent = T('gpsOff');
+
+  if (!drive) return;
+  updateStops(m);
+  // small talk in chatty mode, only when nothing else was said recently
+  if (S().verbosity === 'chatty' && m >= drive.nextChat && !drive.stop && m - drive.lastSpoke > 8 && m < drive.breakAt - 5) {
+    drive.nextChat = m + 25;
+    say('chat');
+  }
+}
+$('#break-btn').addEventListener('click', () => {
+  if (!drive) return;
+  takeBreak();
+  say('breakTaken');
+  tick();
+});
+function takeBreak() {
+  const m = elapsedSec() / 60;
+  drive.breaks += 1;
+  drive.breakAt = m + (Number(S().breakMin) || 120);
+  drive.dueSaid = false; drive.nagAt = Infinity;
+  drive.lastHour = Math.floor(m / 60);
+}
+
+/* ---------- rest stops (demo data) ---------- */
+let listenTimer = 0, recog = null, micBlocked = false;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+function stopTags(st) {
+  const box = $('#stop-tags'); box.textContent = '';
+  const a = document.createElement('span'); a.className = 'tag'; a.textContent = fmtHours(st.hours);
+  const b = document.createElement('span'); b.className = `tag c${st.crowd}`; b.textContent = T('crowd')[st.crowd];
+  box.append(a, b);
+}
+function renderStopCard() {
+  const st = drive && drive.stop; if (!st) return;
+  const card = $('#stop-card');
+  card.dataset.kind = st.kind;
+  $('#stop-kind').textContent = st.kind === 'michi' ? ({ ja: '道の駅', zh: '休息站', ko: '미치노에키', en: 'ROADSIDE' })[lang()] : st.kind;
+  $('#stop-name').textContent = st.short[lang()] || st.short.ja;
+  stopTags(st);
+  const m = elapsedSec() / 60;
+  const left = Math.max(0, (st.reachAt - m) * (DEMO_KMH / 60));
+  $('#stop-dist').textContent = T('stopAway', { d: T('distShow', { n: left.toFixed(1) }) });
+  const asking = st.state === 'asking';
+  $('#stop-actions').hidden = !asking;
+  $('#stop-state').hidden = asking;
+  if (!asking) $('#stop-state').textContent = st.state === 'going' ? `✓ ${T('yes')}` : T('no');
+  card.hidden = false;
+  $('#drive-hint').hidden = true;
+}
+function hideStopCard() {
+  $('#stop-card').hidden = true; $('#drive-hint').hidden = false;
+  stopListening();
+}
+function updateStops(m) {
+  if (!drive.stops.length) return;
+  const st = drive.stop;
+  if (st) {
+    if (st.state === 'going' && m >= st.reachAt) {
+      drive.stop = null; hideStopCard();
+      takeBreak();
+      say('stopReached', { stop: st.name[lang()] || st.name.ja });
+      return;
+    }
+    if (st.state === 'passed' && m >= st.reachAt) { drive.stop = null; hideStopCard(); return; }
+    renderStopCard();
+    return;
+  }
+  if (!S().stopsOn) return;
+  const next = drive.stops.find((s) => s.state === 'ahead' && m >= s.at);
+  if (next) announceStop(next, m);
+}
+async function announceStop(st, m) {
+  st.state = 'asking';
+  st.reachAt = st.at + st.km / (DEMO_KMH / 60);
+  drive.stop = st;
+  renderStopCard();
+  const info = S().stopsInfo ? T('info', { hours: fmtHours(st.hours), crowd: T('crowd')[st.crowd] }) : '';
+  const key = m >= drive.breakAt - 15 ? 'stopAheadBreak' : 'stopAhead';
+  setListenNote('');
+  const finished = await say(key, { stop: st.name[lang()] || st.name.ja, dist: T('distSpeak', { n: st.km }), info });
+  if (!drive || drive.stop !== st || st.state !== 'asking') return;
+  if (finished) startListening(st);
+  clearTimeout(listenTimer);
+  listenTimer = setTimeout(() => { if (drive && drive.stop === st && st.state === 'asking') answerStop(null); }, 12000);
+}
+function setListenNote(text, on = false) {
+  const el = $('#stop-listen'); el.textContent = text; el.classList.toggle('on', on);
+}
+function startListening(st) {
+  if (!S().voiceReply) { setListenNote(''); return; }
+  if (!SR || micBlocked) { setListenNote(T('micUnavailable')); return; }
+  try {
+    recog = new SR();
+    recog.lang = T('ttsLang');
+    recog.interimResults = false;
+    recog.maxAlternatives = 3;
+    recog.onresult = (ev) => {
+      const alts = [...ev.results[0]].map((a) => a.transcript.toLowerCase());
+      const words = alts.join(' ');
+      setListenNote(T('heard', { w: alts[0] }), true);
+      if (T('noWords').some((w) => words.includes(w))) answerStop(false);
+      else if (T('yesWords').some((w) => words.includes(w))) answerStop(true);
+    };
+    recog.onerror = (ev) => {
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed' || ev.error === 'audio-capture') {
+        micBlocked = true; setListenNote(T('micUnavailable'));
+      }
+    };
+    recog.onend = () => { if (drive && drive.stop === st && st.state === 'asking' && !micBlocked) setListenNote(T('micUnavailable')); };
+    recog.start();
+    setListenNote(T('listening'), true);
+  } catch { micBlocked = true; setListenNote(T('micUnavailable')); }
+}
+function stopListening() { try { recog && recog.abort(); } catch {} recog = null; clearTimeout(listenTimer); }
+function answerStop(yes) {
+  const st = drive && drive.stop; if (!st || st.state !== 'asking') return;
+  stopListening();
+  const name = st.name[lang()] || st.name.ja;
+  if (yes === true) { st.state = 'going'; say('stopYes', { stop: name }); }
+  else { st.state = 'passed'; say(yes === false ? 'stopNo' : 'stopNoReply', { stop: name }); }
+  setListenNote('');
+  renderStopCard();
+}
+$('#stop-yes').addEventListener('click', () => answerStop(true));
+$('#stop-no').addEventListener('click', () => answerStop(false));
+
+/* ---------- GPS + wake lock ---------- */
+function haversine(a, b) {
+  const R = 6371000, toR = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * toR, dLon = (b.lon - a.lon) * toR;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * toR) * Math.cos(b.lat * toR) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+function startGPS() {
+  if (!('geolocation' in navigator)) { drive.gps = 'off'; return; }
+  try {
+    drive.watch = navigator.geolocation.watchPosition((pos) => {
+      if (!drive) return;
+      drive.gps = 'on';
+      const { latitude: lat, longitude: lon, accuracy } = pos.coords;
+      if (accuracy > 60) return;
+      const here = { lat, lon };
+      if (!drive.lastPos) { drive.lastPos = here; return; }
+      const d = haversine(drive.lastPos, here);
+      if (d > 10) { if (d < 5000) drive.km += d / 1000; drive.lastPos = here; }
+    }, () => { if (drive) drive.gps = 'off'; }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
+  } catch { drive.gps = 'off'; }
+}
+function stopGPS(d) { try { if (d && d.watch != null) navigator.geolocation.clearWatch(d.watch); } catch {} }
+async function requestWake() {
+  try {
+    if (!('wakeLock' in navigator)) return;
+    wake = await navigator.wakeLock.request('screen');
+    $('#wake-note').textContent = T('wakeOn');
+    wake.addEventListener('release', () => { $('#wake-note').textContent = ''; });
+  } catch { $('#wake-note').textContent = ''; }
+}
+function releaseWake() { try { wake && wake.release(); } catch {} wake = null; }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && drive && document.body.dataset.mode === 'drive' && (!wake || wake.released)) requestWake();
+});
+
+/* ---------- arrive (long press prevents accidental taps) ---------- */
+(function holdToArrive() {
+  const btn = $('#arrive-btn'), fillEl = $('#arrive-fill');
+  const MS = 800; let start = 0, raf = 0, holding = false;
+  const reset = () => { holding = false; cancelAnimationFrame(raf); fillEl.style.transform = 'scaleX(0)'; };
+  const step = () => {
+    const p = Math.min(1, (performance.now() - start) / MS);
+    fillEl.style.transform = `scaleX(${p})`;
+    if (p >= 1) { reset(); arrive(); } else raf = requestAnimationFrame(step);
+  };
+  btn.addEventListener('pointerdown', (e) => { if (e.button > 0) return; holding = true; start = performance.now(); raf = requestAnimationFrame(step); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, () => { if (holding) reset(); }));
+  btn.addEventListener('click', (e) => { if (e.detail === 0) arrive(); });
+  btn.addEventListener('contextmenu', (e) => e.preventDefault());
+})();
+
+let pending = null;
+function arrive() {
+  if (!drive) return;
+  clearInterval(driveTimer);
+  stopGPS(drive);
+  releaseWake();
+  const min = elapsedSec() / 60;
+  const d = drive; drive = null;
+  hideStopCard();
+  const km = d.gps === 'on' || d.demo ? d.km : null;
+  const long = min >= 90;
+  const pts = d.demo ? 0 : 10 + Math.min(12, Math.floor(min / 10)) + (d.checked ? 5 : 0) + (long && d.breaks > 0 ? 5 : 0);
+  pending = { start: new Date(d.startedAt).toISOString(), min: Math.max(1, Math.round(min)), rawMin: min, km, breaks: d.breaks, checked: d.checked, demo: d.demo, pts };
+  setMode('arrive');
+  renderArrive();
+  $('#km-input').value = '';
+  const cat = min < 15 ? 'arriveShort' : min < 60 ? 'arriveMid' : min < 120 ? 'arriveLong' : 'arriveVlong';
+  let extra = null;
+  if (!d.demo && tod() === 'late') extra = 'arriveLate';
+  else if (long && d.breaks > 0) extra = 'arriveGoodBreak';
+  else if (min >= Number(S().breakMin || 120) + 30 && d.breaks === 0) extra = 'arriveNoBreak';
+  say(cat, {}, { extra });
+}
+function renderArrive() {
+  const p = pending; if (!p) return;
+  $('#arrive-title').textContent = p.demo ? T('demoOver') : T('arriveTitle');
+  $('#sum-time').textContent = fmtDur(p.rawMin);
+  $('#sum-km').textContent = p.km != null ? `${fmtKm(p.km)} km` : '—';
+  $('#sum-breaks').textContent = T('times', { n: p.breaks });
+  $('#sum-pts').textContent = p.demo ? T('demoTag') : `+${p.pts}`;
+  $('#km-field').hidden = p.demo || p.km != null;
+  $('#save-drive').textContent = p.demo ? T('backHome') : T('save');
+  $('#discard-drive').hidden = p.demo;
+}
+$('#save-drive').addEventListener('click', () => {
+  if (!pending) { setMode('home'); return; }
+  const p = pending; pending = null;
+  if (p.demo) { setMode('home'); renderHome(); say('demoEnd'); return; }
+  const kmIn = parseFloat($('#km-input').value);
+  const rec = {
+    id: Math.random().toString(36).slice(2, 10), start: p.start, min: p.min,
+    km: p.km != null ? Math.round(p.km * 10) / 10 : (Number.isFinite(kmIn) && kmIn > 0 ? Math.round(kmIn * 10) / 10 : null),
+    breaks: p.breaks, checked: p.checked,
+  };
+  const beforeLv = levelOf(Store.state.points);
+  Store.state.drives = [rec, ...Store.state.drives].slice(0, 500);
+  Store.state.points += p.pts;
+  Store.save();
+  setMode('home');
+  renderHome();
+  const n = Store.state.drives.length, afterLv = levelOf(Store.state.points);
+  if (afterLv > beforeLv) say('levelUp', { lv: T('levels')[afterLv] });
+  else if ([5, 10, 20, 30, 50, 100, 200].includes(n)) say('milestone', { n });
+  else say('saved');
+});
+$('#discard-drive').addEventListener('click', () => { pending = null; setMode('home'); say('discarded'); });
+
+/* ---------- tapping the character ---------- */
+let taps = [];
+canvas.addEventListener('click', () => {
+  if (document.body.dataset.mode === 'drive') return;
+  const now = Date.now();
+  taps = taps.filter((x) => now - x < 4000); taps.push(now);
+  if (taps.length >= 5) { taps = []; say('tapAnnoyed'); } else say('tap');
+});
+
+/* ---------- sheets ---------- */
+let lastFocus = null;
+function openSheet(id) {
+  lastFocus = document.activeElement;
+  const el = $(id); el.hidden = false;
+  if (id === '#sheet-history') renderHistory();
+  if (id === '#sheet-settings') renderSettings();
+  if (id === '#sheet-persona') renderPersonaSheet();
+  el.querySelector('[data-close]').focus();
+}
+function closeSheets() {
+  $$('.sheet').forEach((s) => { s.hidden = true; });
+  $('#clear-confirm').hidden = true; $('#clear-start').hidden = false;
+  if (lastFocus && lastFocus.focus) lastFocus.focus();
+}
+$('#open-history').addEventListener('click', () => openSheet('#sheet-history'));
+$('#open-settings').addEventListener('click', () => openSheet('#sheet-settings'));
+$('#open-persona').addEventListener('click', () => openSheet('#sheet-persona'));
+$$('[data-close]').forEach((b) => b.addEventListener('click', closeSheets));
+addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
+
+$('#clear-start').addEventListener('click', () => { $('#clear-start').hidden = true; $('#clear-confirm').hidden = false; });
+$('#clear-no').addEventListener('click', () => { $('#clear-start').hidden = false; $('#clear-confirm').hidden = true; });
+$('#clear-yes').addEventListener('click', () => {
+  Store.state.drives = []; Store.state.points = 0; Store.save();
+  $('#clear-start').hidden = false; $('#clear-confirm').hidden = true;
+  renderHistory(); renderHome();
+});
+
+/* ---------- settings ---------- */
+function renderSettings() {
+  const p = persona();
+  $('#set-lang').value = lang();
+  $('#call-label').textContent = T('callLabel', { char: nameOf(p) });
+  $('#set-name').value = S().callName || '';
+  $('#set-name').placeholder = T('callPh', { call: defaultCall(p) });
+  $('#set-voice').checked = !!S().voice;
+  $('#set-pitch').value = S().pitchAdj || 0;
+  $('#set-break').value = String(S().breakMin);
+  $$('input[name="verb"]').forEach((r) => { r.checked = r.value === S().verbosity; });
+  $('#set-stops').checked = !!S().stopsOn;
+  $('#set-stops-info').checked = !!S().stopsInfo;
+  $('#set-voice-reply').checked = !!S().voiceReply;
+  $('#mic-note').textContent = !SR || micBlocked ? T('micUnavailable') : '';
+  $('#voice-note').textContent = !Voice.ok ? T('voiceNoTTS') : (Voice.voice ? T('voiceUsing', { v: Voice.voice.name }) : T('voiceNoLang'));
+}
+$('#set-lang').addEventListener('change', (e) => {
+  S().lang = e.target.value; saveSoon();
+  Voice.pick();
+  applyI18n();
+  say('hello');
+});
+$('#set-name').addEventListener('input', (e) => { S().callName = e.target.value.trim(); saveSoon(); });
+$('#set-voice').addEventListener('change', (e) => { S().voice = e.target.checked; if (!S().voice && Voice.ok) speechSynthesis.cancel(); saveSoon(); });
+$('#set-pitch').addEventListener('input', (e) => { S().pitchAdj = Number(e.target.value); saveSoon(); });
+$('#set-break').addEventListener('change', (e) => { S().breakMin = Number(e.target.value); saveSoon(); });
+$$('input[name="verb"]').forEach((r) => r.addEventListener('change', (e) => { if (e.target.checked) { S().verbosity = e.target.value; saveSoon(); } }));
+$('#set-stops').addEventListener('change', (e) => { S().stopsOn = e.target.checked; saveSoon(); });
+$('#set-stops-info').addEventListener('change', (e) => { S().stopsInfo = e.target.checked; saveSoon(); });
+$('#set-voice-reply').addEventListener('change', (e) => { S().voiceReply = e.target.checked; saveSoon(); });
+$('#voice-test').addEventListener('click', () => { activated = true; Voice.pick(); say('voiceTest'); renderSettings(); });
+
+$('#vrm-file').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f || !renderer) return;
+  const note = $('#vrm-note');
+  note.textContent = T('vrmLoading');
+  const url = URL.createObjectURL(f);
+  try {
+    const vrm = await loadModel(url);
+    const nm = vrm.meta && (vrm.meta.name || vrm.meta.title);
+    note.textContent = T('vrmLoaded', { n: nm ? `: ${nm}` : '' });
+    closeSheets();
+    say('newModel');
+  } catch {
+    note.textContent = T('vrmFail');
+  } finally { URL.revokeObjectURL(url); }
+});
+$('#vrm-reset').addEventListener('click', async () => {
+  if (!renderer) return;
+  $('#vrm-note').textContent = T('vrmLoading');
+  try { await loadModel(await fetchBundledModel()); $('#vrm-note').textContent = T('vrmBack'); closeSheets(); say('tap'); }
+  catch { $('#vrm-note').textContent = T('vrmFail'); }
+});
+
+/* ---------- persona sheet ---------- */
+function setPersona(id) {
+  S().persona = id; saveSoon();
+  renderIdentity();
+  renderPersonaSheet();
+  closeSheets();
+  say('hello');
+}
+function personaCard(p, id) {
+  const on = S().persona === id;
+  const card = document.createElement('div'); card.className = 'pcard' + (on ? ' on' : '');
+  const n = document.createElement('div'); n.className = 'pn'; n.textContent = nameOf(p);
+  const t = document.createElement('div'); t.className = 'pt'; t.textContent = taglineOf(p);
+  let actionEl;
+  if (on) { actionEl = document.createElement('span'); actionEl.className = 'badge pb'; actionEl.textContent = T('inUse'); }
+  else { actionEl = document.createElement('button'); actionEl.className = 'btn small pb'; actionEl.textContent = T('use'); actionEl.addEventListener('click', () => setPersona(id)); }
+  const sample = document.createElement('p'); sample.className = 'ps';
+  const lines = linesOf(p);
+  sample.textContent = '「' + String(lines.hello || '').replace(/\{name\}/g, (S().callName || '').trim() || defaultCall(p)) + '」';
+  card.append(n, actionEl, t, sample);
+  if (isCustom(p) && p.lang !== lang()) {
+    const warn = document.createElement('p'); warn.className = 'note'; warn.style.gridColumn = '1 / -1';
+    warn.textContent = T('genNeedLang', { lang: I18N[p.lang]?.langName || p.lang });
+    card.append(warn);
+  }
+  return card;
+}
+function fillSelect(sel, keys, labels, value) {
+  sel.textContent = '';
+  for (const k of keys) { const o = document.createElement('option'); o.value = k; o.textContent = labels[k]; sel.append(o); }
+  if (value) sel.value = value;
+}
+function renderPersonaSheet() {
+  const box = $('#persona-cards'); box.textContent = '';
+  for (const id of PRESET_ORDER) box.append(personaCard(PRESETS[id], id));
+  if (Store.state.custom) box.append(personaCard(Store.state.custom, 'custom'));
+  const c = Store.state.custom && Store.state.custom.traits;
+  fillSelect($('#tr-rel'), TRAITS.rel, T('rels'), $('#tr-rel').value || c?.rel || 'onee');
+  fillSelect($('#tr-temp'), TRAITS.temp, T('temps'), $('#tr-temp').value || c?.temp || 'cool');
+  fillSelect($('#tr-quirk'), TRAITS.quirk, T('quirks'), $('#tr-quirk').value || c?.quirk || 'monoshiri');
+  $('#tr-generate').textContent = Store.state.custom && Store.state.custom.lang !== lang() && sameTraits() ? T('regenerate') : T('generate');
+}
+function sameTraits() {
+  const c = Store.state.custom && Store.state.custom.traits; if (!c) return false;
+  return c.rel === $('#tr-rel').value && c.temp === $('#tr-temp').value && c.quirk === $('#tr-quirk').value;
+}
+const rnd = (arr) => arr[(Math.random() * arr.length) | 0];
+$('#tr-random').addEventListener('click', () => {
+  $('#tr-rel').value = rnd(TRAITS.rel); $('#tr-temp').value = rnd(TRAITS.temp); $('#tr-quirk').value = rnd(TRAITS.quirk);
+  renderPersonaSheet();
+});
+['#tr-rel', '#tr-temp', '#tr-quirk'].forEach((s) => $(s).addEventListener('change', renderPersonaSheet));
+
+let genCtl = null;
+function buildPrompt(traits, L, base) {
+  const ja = I18N.ja, cur = I18N[L];
+  const ref = JSON.stringify(base.lines[L], null, 1);
+  return [
+    'You are writing voice lines for a character in a smartphone "drive buddy" app. The character appears on screen and talks to the driver before, during and after a drive. Every line is read aloud by text-to-speech, so keep each line short (one or two sentences), natural to say out loud, and easy to follow without looking at the screen.',
+    '',
+    'Combine all three traits into one consistent character:',
+    `- Relationship / speech register: ${ja.rels[traits.rel]} (${I18N.en.rels[traits.rel]})`,
+    `- Temperament: ${ja.temps[traits.temp]} (${I18N.en.temps[traits.temp]})`,
+    `- Quirk: ${ja.quirks[traits.quirk]} (${I18N.en.quirks[traits.quirk]})`,
+    '',
+    `Write everything in ${cur.langName} (${L}).`,
+    '',
+    'Rules:',
+    '- Driving safety comes first. Never encourage speeding, using the phone while driving, or driving while sleepy. Advice about breaks and sleep stays sincere even when the character teases.',
+    '- Friendly only: no romantic or sexual content.',
+    '- Keep each {placeholder} wherever the reference line for the same key uses it, spelled exactly the same. {name} = how the character addresses the driver, {h} = a number of hours, {t} = an elapsed-time phrase, {n} = a count, {lv} = a bond level name, {dist} = a distance phrase, {stop} = a rest-stop name, {info} = a short sentence about opening hours and crowding (it may be empty, so the line must still read well without it).',
+    '- When the reference value for a key is a list, return a list with the same number of items.',
+    '- arriveGoodBreak, arriveNoBreak and arriveLate are short add-on sentences appended right after an arrival line.',
+    '',
+    'Reply with only one JSON object of this shape:',
+    '{"name": "<short character name, at most 8 characters>", "tagline": "<one-line description, at most 30 characters>", "call": "<default way the character addresses the driver, at most 8 characters>", "lines": {<the same keys as the reference>}}',
+    '',
+    'Reference lines from a different character (match the keys, placeholders and length, not the personality):',
+    ref,
+  ].join('\n');
+}
+function validateCustom(raw, base, L) {
+  if (!raw || typeof raw !== 'object' || !raw.lines || typeof raw.lines !== 'object') throw new Error('shape');
+  const refLines = base.lines[L];
+  const out = {};
+  let used = 0;
+  for (const k of LINE_KEYS) {
+    const ref = refLines[k], got = raw.lines[k];
+    const need = new Set((JSON.stringify(ref).match(/\{(h|t|n|lv|dist|stop|info)\}/g) || []));
+    const okStr = (s) => typeof s === 'string' && s.trim() && s.length <= 220 && [...need].every((ph) => s.includes(ph) || (Array.isArray(ref)));
+    if (Array.isArray(ref)) {
+      const arr = Array.isArray(got) ? got.filter((s) => typeof s === 'string' && s.trim() && s.length <= 220) : [];
+      const fine = arr.filter((s) => [...need].every((ph) => s.includes(ph)));
+      out[k] = fine.length ? fine.slice(0, ref.length) : ref; if (fine.length) used++;
+    } else {
+      out[k] = okStr(got) ? got.trim() : ref; if (okStr(got)) used++;
+    }
+  }
+  if (used < LINE_KEYS.length * 0.6) throw new Error('too few usable lines');
+  const clip = (s, n, fb) => (typeof s === 'string' && s.trim() ? [...s.trim()].slice(0, n).join('') : fb);
+  return {
+    name: clip(raw.name, 12, base.name[L]),
+    tagline: clip(raw.tagline, 40, ''),
+    call: clip(raw.call, 12, base.call[L]),
+    lines: out,
+  };
+}
+$('#tr-generate').addEventListener('click', async () => {
+  const status = $('#gen-status'), btn = $('#tr-generate'), cancel = $('#gen-cancel');
+  const traits = { rel: $('#tr-rel').value, temp: $('#tr-temp').value, quirk: $('#tr-quirk').value };
+  const L = lang(), baseId = TEMP_BASE[traits.temp] || 'kohai', base = PRESETS[baseId];
+  let sample = null;
+  try { sample = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('sample') : null; } catch {}
+  if (!sample) { status.textContent = T('genNoSample'); return; }
+  genCtl = new AbortController();
+  btn.disabled = true; cancel.hidden = false;
+  status.textContent = T('generating');
+  try {
+    const raw = await sample.json(buildPrompt(traits, L, base), {
+      signal: genCtl.signal, cache: false,
+      onText: ({ text }) => { status.textContent = `${T('generating')} ${[...text].length}`; },
+    });
+    const v = validateCustom(raw, base, L);
+    Store.state.custom = {
+      id: 'custom', base: baseId, lang: L, traits, ...v,
+      voice: TEMP_VOICE[traits.temp] || base.voice, expr: base.expr, emoMap: base.emoMap, gestMap: base.gestMap,
+    };
+    Store.save();
+    status.textContent = T('genDone');
+    setPersona('custom');
+  } catch (e) {
+    status.textContent = e && e.code === 'cancelled' ? '' : (e && (e.code === 'not_granted' || e.code === 'sampling_disabled') ? T('genNoSample') : T('genFail'));
+  } finally {
+    btn.disabled = false; cancel.hidden = true; genCtl = null;
+  }
+});
+$('#gen-cancel').addEventListener('click', () => { if (genCtl) genCtl.abort(); });
+
+/* =========================================================
+   Boot
+   ========================================================= */
+updateSky();
+applyI18n();
+setMode('home');
+const glOK = initGL();
+const storeReady = Store.init().then(() => { Voice.pick(); applyI18n(); });
+const settled = Promise.race([storeReady, new Promise((r) => setTimeout(r, 4000))]);
+const greet = () => settled.then(() => say(GREET_KEY[tod()]));
+if (glOK) {
+  fetchBundledModel((p) => { $('#loading-bar').style.width = `${Math.round(p * 100)}%`; })
+    .then((buf) => loadModel(buf))
+    .then(() => { $('#loading').hidden = true; greet(); })
+    .catch((err) => { console.error(err); $('#loading').hidden = true; $('#fallback').hidden = false; greet(); });
+} else {
+  $('#loading').hidden = true;
+  $('#fallback').hidden = false;
+  greet();
+}
+if (/[?&]debug\b/.test(location.search)) window.__dbg = { Char, say, gesture, camera, Store, S, applyI18n, setPersona, answerStop, get drive() { return drive; } };
+</script>

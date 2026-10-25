@@ -1,0 +1,70 @@
+import { createRequire } from 'module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+import fs from 'fs';
+import path from 'path';
+const NM = path.resolve('node_modules');
+const scheme = process.argv[2] || 'light';
+const waitBreak = process.argv.includes('--break');
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+const ctx = await browser.newContext({ viewport: { width: 400, height: 860 }, deviceScaleFactor: 1, colorScheme: scheme });
+const page = await ctx.newPage();
+const logs = [];
+page.on('console', (m) => { if (['error', 'warning'].includes(m.type())) logs.push(m.type() + ': ' + m.text()); });
+page.on('pageerror', (e) => logs.push('pageerror: ' + e.message));
+await page.route('https://cdn.jsdelivr.net/npm/**', (route) => {
+  const u = new URL(route.request().url());
+  let p = u.pathname.replace('/npm/', '');
+  p = p.replace(/^three@[^/]+/, 'three').replace(/^@pixiv\/three-vrm@[^/]+/, '@pixiv/three-vrm');
+  const f = path.join(NM, p);
+  if (!fs.existsSync(f)) return route.fulfill({ status: 404, body: 'nf ' + p });
+  route.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(f) });
+});
+await page.route('https://fonts.googleapis.com/**', (r) => r.fulfill({ status: 200, contentType: 'text/css', body: '' }));
+await page.route('https://fonts.gstatic.com/**', (r) => r.abort());
+await page.goto('http://127.0.0.1:8765/_preview.html');
+await page.waitForFunction(() => document.querySelector('#loading').hidden, null, { timeout: 60000 });
+await page.waitForTimeout(2500);
+await page.screenshot({ path: `shots/${scheme}-1-home.png` });
+// tap character
+await page.mouse.click(200, 250);
+await page.waitForTimeout(900);
+await page.screenshot({ path: `shots/${scheme}-2-tap.png` });
+// check flow
+await page.click('#go-check');
+for (const k of ['belt', 'mirror', 'route']) { await page.click(`.check[data-k="${k}"]`); await page.waitForTimeout(150); }
+await page.waitForTimeout(600);
+await page.screenshot({ path: `shots/${scheme}-3-check.png` });
+await page.click('#check-back');
+// demo drive
+await page.click('#go-demo');
+await page.waitForTimeout(waitBreak ? 62000 : 3000);
+await page.screenshot({ path: `shots/${scheme}-4-drive.png` });
+await page.focus('#arrive-btn');
+await page.keyboard.press('Enter');
+await page.waitForTimeout(1200);
+await page.screenshot({ path: `shots/${scheme}-5-arrive.png` });
+await page.click('#save-drive');
+// a real (non-demo) drive without checks, with manual km
+await page.click('#go-check');
+await page.click('#depart-skip');
+await page.waitForTimeout(2000);
+await page.screenshot({ path: `shots/${scheme}-4b-realdrive.png` });
+await page.focus('#arrive-btn');
+await page.keyboard.press('Enter');
+await page.waitForTimeout(500);
+await page.fill('#km-input', '23.4');
+await page.screenshot({ path: `shots/${scheme}-5b-realarrive.png` });
+await page.click('#save-drive');
+await page.waitForTimeout(800);
+await page.screenshot({ path: `shots/${scheme}-5c-home-after.png` });
+await page.click('#open-settings');
+await page.waitForTimeout(400);
+await page.screenshot({ path: `shots/${scheme}-6-settings.png` });
+await page.click('#sheet-settings [data-close]');
+await page.click('#open-history');
+await page.waitForTimeout(300);
+await page.screenshot({ path: `shots/${scheme}-7-history.png` });
+const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
+console.log('horizontal overflow:', overflow);
+console.log(logs.join('\n') || 'no console errors');
+await browser.close();

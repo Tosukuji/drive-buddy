@@ -1,0 +1,1768 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e1622">
+<meta name="description" content="キャラクターが運転の前後に付き添い、運転中は声で案内してくれるドライブ相棒アプリ(試作版)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>ミチのドライブ相棒</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=B612+Mono:wght@400;700&family=BIZ+UDPGothic:wght@400;700&family=Zen+Maru+Gothic:wght@500;700&family=Noto+Sans+SC:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap">
+<style>
+/* Layout: one-screen phone app. The character stands on a time-of-day sky (the "stage");
+   below it sits an instrument-cluster panel whose readouts use a dark LCD in both themes.
+   Rest-stop cards borrow the colours of Japanese road guide signs (green = expressway, blue = general road). */
+:root {
+  --bg: #e7ecf1;
+  --panel: #f7f9fb;
+  --ink: #132031;
+  --muted: #586a7e;
+  --line: #cbd5df;
+  --accent: #b35c00;
+  --accent-ink: #fffaf3;
+  --accent-soft: #f6e3cc;
+  --lcd-bg: #0e1622;
+  --lcd-fg: #ffc266;
+  --lcd-dim: #75869b;
+  --lcd-line: #223047;
+  --bubble: rgba(247, 249, 251, 0.95);
+  --warn: #c2410c;
+  --ok: #2e7d4f;
+  --sign-green: #16784a;
+  --sign-blue: #1d5aa6;
+  --sign-ink: #ffffff;
+  --shadow: 0 6px 24px rgba(16, 30, 48, 0.14);
+
+  --font-ui: "BIZ UDPGothic", "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
+  --font-voice: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", sans-serif;
+  --font-meter: "B612 Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --fs-xs: 0.75rem;
+  --fs-sm: 0.875rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.125rem;
+  --fs-xl: 1.5rem;
+  --fs-meter: 2.75rem;
+  --radius: 14px;
+}
+:root[lang="zh"] {
+  --font-ui: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-voice: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+:root[lang="ko"] {
+  --font-ui: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-voice: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a111c; --panel: #111a28; --ink: #e4ebf3; --muted: #8b9bb0; --line: #233149;
+    --accent: #ffb547; --accent-ink: #1c1306; --accent-soft: #3a2a12;
+    --lcd-bg: #060b12; --lcd-fg: #ffc266; --lcd-dim: #64748a; --lcd-line: #1b2738;
+    --bubble: rgba(17, 26, 40, 0.94); --warn: #ff8a5c; --ok: #6fd39a;
+    --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a111c; --panel: #111a28; --ink: #e4ebf3; --muted: #8b9bb0; --line: #233149;
+  --accent: #ffb547; --accent-ink: #1c1306; --accent-soft: #3a2a12;
+  --lcd-bg: #060b12; --lcd-fg: #ffc266; --lcd-dim: #64748a; --lcd-line: #1b2738;
+  --bubble: rgba(17, 26, 40, 0.94); --warn: #ff8a5c; --ok: #6fd39a;
+  --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  line-height: 1.6;
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+#app {
+  position: relative;
+  height: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+/* ---------- top bar ---------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  z-index: 3;
+}
+.brand {
+  display: flex; align-items: center; gap: 6px; min-width: 0; flex: 1;
+  background: none; border: 0; padding: 4px 2px; text-align: left; white-space: nowrap; overflow: hidden;
+}
+.brand b { flex: none; font-family: var(--font-voice); font-weight: 700; font-size: var(--fs-xl); letter-spacing: 0.04em; line-height: 1; }
+.brand .caret { flex: none; width: 18px; height: 18px; stroke: var(--muted); fill: none; stroke-width: 2; }
+.brand span { color: var(--muted); font-size: var(--fs-xs); letter-spacing: 0.06em; overflow: hidden; text-overflow: ellipsis; }
+.aff-chip {
+  display: inline-flex; align-items: center; gap: 6px; flex: none;
+  padding: 3px 10px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--ink);
+  font-size: var(--fs-xs); white-space: nowrap;
+}
+.aff-chip b { font-family: var(--font-meter); color: var(--accent); }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px; flex: none;
+  min-width: 44px; height: 40px; padding: 0 8px;
+  border: 1px solid var(--line); border-radius: 10px; background: transparent;
+  font-size: var(--fs-xs);
+}
+.icon-btn svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- stage ---------- */
+#stage { position: relative; flex: 1 1 auto; min-height: 220px; overflow: hidden; }
+.sky { position: absolute; inset: 0; transition: background 1.2s ease; }
+#stage[data-tod="dawn"]  .sky { background: linear-gradient(180deg, #86aed4 0%, #c9c6d6 45%, #f4c9a6 82%, #f7dcc2 100%); }
+#stage[data-tod="day"]   .sky { background: linear-gradient(180deg, #5f9fd8 0%, #9cc6ea 50%, #d8e8f4 100%); }
+#stage[data-tod="dusk"]  .sky { background: linear-gradient(180deg, #2f3b66 0%, #8c4f78 48%, #e48c5a 85%, #f2b177 100%); }
+#stage[data-tod="night"] .sky { background: linear-gradient(180deg, #0a1430 0%, #172650 62%, #2a3b63 100%); }
+#stage[data-tod="late"]  .sky { background: linear-gradient(180deg, #04070e 0%, #0b1325 70%, #141e35 100%); }
+.sky::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 26%;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 6px),
+    linear-gradient(180deg, rgba(20,28,40,0.0), rgba(20,28,40,0.28));
+}
+#c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: manipulation; }
+body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.55) saturate(0.8); transition: filter 0.6s; }
+
+.loading {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,0.5); font-size: var(--fs-sm);
+  pointer-events: none;
+}
+.loading .meter { width: 160px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; overflow: hidden; margin-top: 8px; }
+.loading .meter i { display: block; height: 100%; width: 0; background: #fff; transition: width 0.2s; }
+.fallback-face {
+  position: absolute; left: 50%; top: 18%; transform: translateX(-50%);
+  width: 132px; height: 132px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--panel); color: var(--accent); border: 3px solid var(--accent);
+  font-family: var(--font-voice); font-size: 3.5rem; font-weight: 700;
+  box-shadow: var(--shadow);
+}
+
+.bubble {
+  position: absolute;
+  left: max(16px, env(safe-area-inset-left, 0px));
+  right: max(16px, env(safe-area-inset-right, 0px));
+  bottom: 14px;
+  max-width: 460px; margin: 0 auto;
+  padding: 10px 14px 12px;
+  background: var(--bubble);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  font-family: var(--font-voice);
+  font-weight: 500;
+  font-size: var(--fs-md);
+  line-height: 1.65;
+  min-height: 4.6em;
+}
+.bubble::before {
+  content: ""; position: absolute; top: -9px; left: 50%; margin-left: -9px;
+  width: 16px; height: 16px; background: var(--bubble);
+  border-left: 1px solid var(--line); border-top: 1px solid var(--line);
+  transform: rotate(45deg);
+}
+.bubble .who { display: block; font-size: var(--fs-xs); font-weight: 700; color: var(--accent); letter-spacing: 0.1em; }
+.bubble p { margin: 0; min-height: 3.3em; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- panel ---------- */
+#panel {
+  flex: 0 0 auto;
+  max-height: 62%;
+  overflow-y: auto;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  padding-block: 14px 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  z-index: 2;
+}
+.pane { display: flex; flex-direction: column; gap: 12px; }
+.pane-title { margin: 0; font-size: var(--fs-lg); font-weight: 700; text-wrap: balance; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > * { flex: 1 1 140px; }
+.row.split { justify-content: space-between; }
+.row.split > * { flex: 0 0 auto; }
+
+.btn {
+  position: relative; overflow: hidden;
+  min-height: 48px; padding: 10px 16px;
+  border-radius: 12px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--ink);
+  font-weight: 700; font-size: var(--fs-md);
+  user-select: none; -webkit-user-select: none;
+}
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: transparent; min-height: 54px; font-size: var(--fs-lg); }
+.btn.small { min-height: 40px; padding: 6px 14px; font-size: var(--fs-sm); }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:not(:disabled):active { transform: translateY(1px); }
+.btn .fill { position: absolute; inset: 0; background: rgba(255,255,255,0.28); transform: scaleX(0); transform-origin: left; pointer-events: none; }
+.btn .lbl { position: relative; }
+.link { background: none; border: 0; padding: 6px 2px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; font-size: var(--fs-sm); }
+.link.danger { color: var(--warn); }
+
+/* LCD readouts */
+.lcd {
+  background: var(--lcd-bg); color: var(--lcd-fg);
+  border-radius: 12px; padding: 12px 14px;
+  font-family: var(--font-meter);
+  font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 0 0 1px var(--lcd-line), inset 0 8px 18px rgba(0,0,0,0.35);
+}
+.lcd .lab { display: block; font-size: 0.6875rem; color: var(--lcd-dim); letter-spacing: 0.14em; font-family: var(--font-meter); line-height: 1.3; }
+.lcd .lab.jp { font-family: var(--font-ui); letter-spacing: 0.06em; }
+.lcd b { font-weight: 700; font-size: var(--fs-xl); line-height: 1.15; }
+.lcd .unit { font-size: var(--fs-xs); color: var(--lcd-dim); margin-left: 3px; }
+.lcd-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.lcd-grid > div { min-width: 0; }
+.lcd-grid > div + div { border-left: 1px solid var(--lcd-line); padding-left: 10px; }
+
+.aff { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px 10px; font-size: var(--fs-sm); }
+.aff .name { font-weight: 700; }
+.aff .next { color: var(--muted); font-size: var(--fs-xs); }
+.bar { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 4px; transition: width 0.8s ease; }
+.last { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
+
+/* checks */
+.checks { display: flex; flex-direction: column; gap: 8px; }
+.check {
+  display: flex; align-items: center; gap: 12px; text-align: left;
+  min-height: 52px; padding: 8px 14px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--bg);
+  font-size: var(--fs-md);
+}
+.check .box { flex: none; width: 26px; height: 26px; border-radius: 7px; border: 2px solid var(--muted); display: grid; place-items: center; }
+.check[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.check[aria-pressed="true"] .box { background: var(--accent); border-color: var(--accent); }
+.check[aria-pressed="true"] .box::after { content: ""; width: 7px; height: 13px; border: solid var(--accent-ink); border-width: 0 3px 3px 0; transform: translateY(-2px) rotate(45deg); }
+
+/* drive */
+.trip-head { display: flex; align-items: center; gap: 8px; }
+.trip-head .lab { flex: 1; }
+.chip { font-size: 0.6875rem; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--lcd-fg); color: var(--lcd-fg); letter-spacing: 0.1em; }
+.wake { font-size: 0.6875rem; color: var(--lcd-dim); font-family: var(--font-ui); }
+.big { font-size: var(--fs-meter); font-weight: 700; letter-spacing: 0.02em; line-height: 1.1; margin: 4px 0 10px; }
+.trip-sub { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; border-top: 1px solid var(--lcd-line); padding-top: 8px; }
+.trip-sub b { font-size: var(--fs-lg); }
+.trip-sub .due { color: #ff8a5c; }
+.hint { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
+
+/* rest-stop card */
+.stop-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 2px solid var(--sign-green); border-radius: 12px; background: var(--bg); }
+.stop-card[data-kind="michi"] { border-color: var(--sign-blue); }
+.stop-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.stop-kind { flex: none; padding: 1px 7px; border-radius: 4px; background: var(--sign-green); color: var(--sign-ink); font-family: var(--font-meter); font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; }
+.stop-card[data-kind="michi"] .stop-kind { background: var(--sign-blue); }
+.stop-top b { font-size: var(--fs-lg); min-width: 0; }
+.stop-dist { margin-left: auto; font-family: var(--font-meter); font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { font-size: var(--fs-xs); padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink); }
+.tag.c0 { border-color: var(--ok); color: var(--ok); }
+.tag.c1 { border-color: var(--accent); color: var(--accent); }
+.tag.c2 { border-color: var(--warn); color: var(--warn); }
+.listen { display: flex; align-items: center; gap: 8px; margin: 0; font-size: var(--fs-xs); color: var(--muted); }
+.listen.on::before { content: ""; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--warn); animation: pulse 1.1s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.25; } }
+.stop-state { margin: 0; font-weight: 700; font-size: var(--fs-sm); color: var(--ok); }
+
+/* arrive */
+.sum { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 14px; }
+.sum b { font-size: var(--fs-lg); }
+.field { display: flex; flex-direction: column; gap: 6px; font-size: var(--fs-sm); }
+.field > span:first-child { color: var(--muted); }
+.field .inline { display: flex; align-items: center; gap: 8px; }
+.field input[type="text"], .field input[type="number"], .field select {
+  min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--bg); font-size: var(--fs-md); width: 100%; min-width: 0;
+}
+.field input[type="range"] { width: 100%; accent-color: var(--accent); }
+.toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: var(--fs-md); }
+.toggle input { flex: none; width: 22px; height: 22px; accent-color: var(--accent); }
+.toggle span { min-width: 0; }
+.note { margin: 0; color: var(--muted); font-size: var(--fs-xs); }
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg label { position: relative; display: grid; place-items: center; min-height: 44px; padding: 6px; text-align: center; font-size: var(--fs-sm); cursor: pointer; background: var(--bg); }
+.seg label + label { border-left: 1px solid var(--line); }
+.seg input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.seg label:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: -3px; }
+
+/* ---------- sheets ---------- */
+.sheet {
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  animation: rise 0.22s ease-out;
+}
+@keyframes rise { from { transform: translateY(16px); } to { transform: none; } }
+.sheet-head {
+  display: flex; align-items: center; gap: 10px;
+  padding-block: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.sheet-head h2 { flex: 1; margin: 0; font-size: var(--fs-lg); }
+.sheet-body {
+  flex: 1; overflow-y: auto;
+  padding-block: 16px 24px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 16px;
+}
+.group { display: flex; flex-direction: column; gap: 12px; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+.group h3 { margin: 0; font-size: var(--fs-sm); color: var(--muted); letter-spacing: 0.06em; }
+.hist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.hist li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 10px 2px; border-bottom: 1px solid var(--line); }
+.hist .d { font-weight: 700; }
+.hist .m { color: var(--muted); font-size: var(--fs-xs); }
+.hist .t { font-family: var(--font-meter); font-variant-numeric: tabular-nums; text-align: right; font-weight: 700; }
+.hist .k { font-family: var(--font-meter); font-variant-numeric: tabular-nums; text-align: right; color: var(--muted); font-size: var(--fs-xs); }
+.credits { font-size: var(--fs-xs); color: var(--muted); line-height: 1.7; }
+
+/* persona cards */
+.cards { display: flex; flex-direction: column; gap: 10px; }
+.pcard { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); }
+.pcard.on { border-color: var(--accent); background: var(--accent-soft); }
+.pcard .pn { font-family: var(--font-voice); font-weight: 700; font-size: var(--fs-lg); line-height: 1.3; }
+.pcard .pt { color: var(--muted); font-size: var(--fs-xs); }
+.pcard .ps { grid-column: 1 / -1; margin: 6px 0 0; font-family: var(--font-voice); font-size: var(--fs-sm); }
+.pcard .pb { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.pcard .badge { font-size: var(--fs-xs); font-weight: 700; color: var(--accent); }
+
+@media (max-width: 420px) { .brand span { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .sheet { animation: none; }
+  .sky, .bar i { transition: none; }
+  .listen.on::before { animation: none; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <button class="brand" id="open-persona" aria-haspopup="dialog">
+      <b id="char-name">ミチ</b>
+      <svg class="caret" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      <span data-i18n="brandSub">ドライブ相棒</span>
+    </button>
+    <span class="aff-chip"><b>Lv<span id="chip-lv">1</span></b><span id="chip-name">はじめまして</span></span>
+    <button class="icon-btn" id="open-history" data-i18n-aria="historyAria" aria-label="ドライブ記録">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-4 3 2 4-6"/></svg>
+    </button>
+    <button class="icon-btn" id="open-settings" data-i18n-aria="settingsAria" aria-label="設定">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+    </button>
+  </header>
+
+  <section id="stage" data-tod="day">
+    <div class="sky"></div>
+    <canvas id="c" role="img" aria-label=""></canvas>
+    <div class="loading" id="loading"><div><span id="loading-text" data-i18n="loading">キャラを呼んでいます…</span><div class="meter"><i id="loading-bar"></i></div></div></div>
+    <div class="fallback-face" id="fallback" hidden>ミ</div>
+    <div class="bubble"><span class="who" id="bubble-who">ミチ</span><p id="line" aria-hidden="true"></p></div>
+    <div class="sr-only" aria-live="polite" id="line-sr"></div>
+  </section>
+
+  <section id="panel">
+    <!-- HOME -->
+    <div class="pane" id="p-home">
+      <div class="lcd lcd-grid">
+        <div><span class="lab">ODO</span><b id="odo-km">0</b><span class="unit">km</span></div>
+        <div><span class="lab">DRIVES</span><b id="odo-n">0</b></div>
+        <div><span class="lab">TIME</span><b id="odo-h">0:00</b></div>
+      </div>
+      <div class="aff">
+        <span class="name" id="aff-name"></span>
+        <span></span>
+        <span class="next" id="aff-next"></span>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="aff-bar-wrap"><i id="aff-bar"></i></div>
+      </div>
+      <button class="btn primary" id="go-check" data-i18n="goCheck">出発前チェックへ</button>
+      <div class="row"><button class="btn" id="go-demo" data-i18n="goDemo">デモ走行(120倍速)</button></div>
+      <p class="last" id="last-drive"></p>
+    </div>
+
+    <!-- CHECK -->
+    <div class="pane" id="p-check" hidden>
+      <h2 class="pane-title" data-i18n="checkTitle">出発前チェック</h2>
+      <div class="checks">
+        <button class="check" data-k="belt" aria-pressed="false"><span class="box" aria-hidden="true"></span><span data-i18n="checkBelt"></span></button>
+        <button class="check" data-k="mirror" aria-pressed="false"><span class="box" aria-hidden="true"></span><span data-i18n="checkMirror"></span></button>
+        <button class="check" data-k="route" aria-pressed="false"><span class="box" aria-hidden="true"></span><span data-i18n="checkRoute"></span></button>
+      </div>
+      <button class="btn primary" id="depart" disabled data-i18n="depart">出発する</button>
+      <div class="row split"><button class="link" id="check-back" data-i18n="back">戻る</button><button class="link" id="depart-skip" data-i18n="departSkip">チェックせずに出発</button></div>
+    </div>
+
+    <!-- DRIVE -->
+    <div class="pane" id="p-drive" hidden>
+      <div class="lcd">
+        <div class="trip-head"><span class="lab" data-i18n="tripLabel">TRIP A</span><span class="chip" id="demo-chip" hidden>DEMO ×120</span><span class="wake" id="wake-note"></span></div>
+        <div class="big" id="trip-time">00:00:00</div>
+        <div class="trip-sub">
+          <div><span class="lab jp" data-i18n="distLabel">距離</span><b id="trip-km">—</b></div>
+          <div><span class="lab jp" data-i18n="nextBreak">次の休憩めやす</span><b id="trip-break"></b></div>
+        </div>
+      </div>
+      <div class="stop-card" id="stop-card" hidden>
+        <div class="stop-top"><span class="stop-kind" id="stop-kind">SA</span><b id="stop-name"></b><span class="stop-dist" id="stop-dist"></span></div>
+        <div class="chips" id="stop-tags"></div>
+        <p class="stop-state" id="stop-state" hidden></p>
+        <div class="row" id="stop-actions">
+          <button class="btn" id="stop-no" data-i18n="no">通過</button>
+          <button class="btn primary" id="stop-yes" data-i18n="yes">寄る</button>
+        </div>
+        <p class="listen" id="stop-listen"></p>
+        <p class="note" data-i18n="sampleData"></p>
+      </div>
+      <p class="hint" id="drive-hint" data-i18n="driveHint"></p>
+      <div class="row">
+        <button class="btn" id="break-btn" data-i18n="breakBtn">休憩した</button>
+        <button class="btn primary" id="arrive-btn"><span class="fill" id="arrive-fill"></span><span class="lbl" data-i18n="arriveBtn">長押しで到着</span></button>
+      </div>
+    </div>
+
+    <!-- ARRIVE -->
+    <div class="pane" id="p-arrive" hidden>
+      <h2 class="pane-title" id="arrive-title"></h2>
+      <div class="lcd sum">
+        <div><span class="lab jp" data-i18n="sumTime">運転時間</span><b id="sum-time">0:00</b></div>
+        <div><span class="lab jp" data-i18n="sumDist">距離</span><b id="sum-km">—</b></div>
+        <div><span class="lab jp" data-i18n="sumBreaks">休憩</span><b id="sum-breaks">0</b></div>
+        <div><span class="lab jp" data-i18n="sumBond">なかよし</span><b id="sum-pts">+0</b></div>
+      </div>
+      <label class="field" id="km-field"><span data-i18n="kmField">トリップメーターの距離(任意)</span>
+        <span class="inline"><input type="number" id="km-input" inputmode="decimal" min="0" max="3000" step="0.1" data-i18n-ph="kmPh"><span>km</span></span>
+      </label>
+      <button class="btn primary" id="save-drive"></button>
+      <div class="row split"><span></span><button class="link" id="discard-drive" data-i18n="discard">記録しないで戻る</button></div>
+    </div>
+  </section>
+
+  <!-- PERSONA SHEET -->
+  <div class="sheet" id="sheet-persona" role="dialog" aria-modal="true" aria-labelledby="p-title" hidden>
+    <div class="sheet-head"><h2 id="p-title" data-i18n="personaTitle">キャラを選ぶ</h2><button class="icon-btn" data-close data-i18n="close">閉じる</button></div>
+    <div class="sheet-body">
+      <div class="group">
+        <h3 data-i18n="presets">プリセット</h3>
+        <div class="cards" id="persona-cards"></div>
+      </div>
+      <div class="group" id="builder">
+        <h3 data-i18n="builderTitle">3つの個性を組み合わせて作る</h3>
+        <p class="note" data-i18n="builderNote"></p>
+        <label class="field"><span data-i18n="traitRel">関係・口調</span><select id="tr-rel"></select></label>
+        <label class="field"><span data-i18n="traitTemp">性格</span><select id="tr-temp"></select></label>
+        <label class="field"><span data-i18n="traitQuirk">クセ</span><select id="tr-quirk"></select></label>
+        <div class="row">
+          <button class="btn" id="tr-random" data-i18n="random">ランダム</button>
+          <button class="btn primary" id="tr-generate" data-i18n="generate">このキャラを作る</button>
+        </div>
+        <p class="note" id="gen-status" aria-live="polite"></p>
+        <div><button class="link" id="gen-cancel" data-i18n="clearNo" hidden>やめる</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY SHEET -->
+  <div class="sheet" id="sheet-history" role="dialog" aria-modal="true" aria-labelledby="h-title" hidden>
+    <div class="sheet-head"><h2 id="h-title" data-i18n="histTitle">ドライブ記録</h2><button class="icon-btn" data-close data-i18n="close">閉じる</button></div>
+    <div class="sheet-body">
+      <div class="lcd lcd-grid">
+        <div><span class="lab">ODO</span><b id="h-km">0</b><span class="unit">km</span></div>
+        <div><span class="lab">DRIVES</span><b id="h-n">0</b></div>
+        <div><span class="lab">TIME</span><b id="h-h">0:00</b></div>
+      </div>
+      <ol class="hist" id="hist-list"></ol>
+      <p class="note" id="hist-empty" data-i18n="histEmpty"></p>
+      <p class="note" id="store-note"></p>
+      <div>
+        <button class="link danger" id="clear-start" data-i18n="clearAll">記録をすべて消す</button>
+        <span id="clear-confirm" hidden><span data-i18n="clearConfirm"></span> <button class="link danger" id="clear-yes" data-i18n="clearYes">消す</button> <button class="link" id="clear-no" data-i18n="clearNo">やめる</button></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS SHEET -->
+  <div class="sheet" id="sheet-settings" role="dialog" aria-modal="true" aria-labelledby="s-title" hidden>
+    <div class="sheet-head"><h2 id="s-title" data-i18n="settingsTitle">設定</h2><button class="icon-btn" data-close data-i18n="close">閉じる</button></div>
+    <div class="sheet-body">
+      <div class="group">
+        <h3 data-i18n="grpLang">言語</h3>
+        <label class="field"><span data-i18n="langLabel">表示と声の言語</span>
+          <select id="set-lang"><option value="ja">日本語</option><option value="zh">中文(简体)</option><option value="ko">한국어</option><option value="en">English</option></select>
+        </label>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpName">呼び方</h3>
+        <label class="field"><span id="call-label"></span><input type="text" id="set-name" maxlength="12"></label>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpTalk">おしゃべりの量</h3>
+        <div class="seg" role="radiogroup">
+          <label><input type="radio" name="verb" value="guide"><span data-i18n="verbGuide">案内だけ</span></label>
+          <label><input type="radio" name="verb" value="normal"><span data-i18n="verbNormal">ふつう</span></label>
+          <label><input type="radio" name="verb" value="chatty"><span data-i18n="verbChatty">たくさん</span></label>
+        </div>
+        <p class="note" data-i18n="verbNote"></p>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpVoice">声</h3>
+        <label class="toggle"><input type="checkbox" id="set-voice"><span data-i18n="voiceOn">声で話す</span></label>
+        <label class="field"><span data-i18n="pitchLabel">声の高さ</span><input type="range" id="set-pitch" min="-0.4" max="0.4" step="0.05"></label>
+        <button class="btn" id="voice-test" data-i18n="voiceTest">声を試す</button>
+        <p class="note" id="voice-note"></p>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpStops">SA・PA・道の駅</h3>
+        <label class="toggle"><input type="checkbox" id="set-stops"><span data-i18n="stopsOn"></span></label>
+        <label class="toggle"><input type="checkbox" id="set-stops-info"><span data-i18n="stopsInfo"></span></label>
+        <label class="toggle"><input type="checkbox" id="set-voice-reply"><span data-i18n="voiceReply"></span></label>
+        <p class="note" data-i18n="stopsNote"></p>
+        <p class="note" id="mic-note"></p>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpDrive">運転</h3>
+        <label class="field"><span data-i18n="breakLabel">休憩をすすめる間隔</span>
+          <select id="set-break"><option value="60" data-i18n="break60"></option><option value="90" data-i18n="break90"></option><option value="120" data-i18n="break120"></option></select>
+        </label>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpModel">キャラクターの見た目</h3>
+        <label class="field"><span data-i18n="vrmLabel">自分のVRMファイルを読み込む</span><input type="file" id="vrm-file" accept=".vrm,.glb"></label>
+        <p class="note" data-i18n="vrmNote"></p>
+        <p class="note" id="vrm-note"></p>
+        <div><button class="link" id="vrm-reset" data-i18n="vrmReset">最初の見た目に戻す</button></div>
+      </div>
+      <div class="credits" data-i18n="credits"></div>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/addons/",
+    "@pixiv/three-vrm": "./vendor/three-vrm/three-vrm.module.min.js"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// On claude.ai the model ships as base64 text (that host only serves web file types); the own-site build serves the .vrm directly.
+const MODEL_URL = 'models/michi.vrm';
+const MODEL_BYTES = 5695292;
+const LS_KEY = 'drive-buddy-state-v1';
+
+/* =========================================================
+   Data (inlined at build time from web/src)
+   ========================================================= */
+const I18N = {"ja":{"langName":"日本語","ttsLang":"ja-JP","brandSub":"ドライブ相棒","loading":"キャラを呼んでいます…","levels":["はじめまして","顔見知り","ドライブ仲間","相棒見習い","相棒","名コンビ"],"bond":"なかよし度","nextLv":"次まで {n}","maxLv":"最大レベル","goCheck":"出発前チェックへ","goDemo":"デモ走行(120倍速)","lastNone":"まだドライブの記録はありません。まずはデモ走行で流れを見てみてください。","lastDrive":"前回:{date} から {dur}{km}","checkTitle":"出発前チェック","checkBelt":"シートベルトをした","checkMirror":"ミラーと座席を合わせた","checkRoute":"行き先をナビにセットした","depart":"出発する","back":"戻る","departSkip":"チェックせずに出発","tripLabel":"TRIP A ・ 運転時間","distLabel":"距離","nextBreak":"次の休憩めやす","breakNow":"休憩しましょう","breakIn":"あと {t}","gpsPending":"測位中…","gpsOff":"— (位置情報なし)","driveHint":"運転中は画面に触らなくて大丈夫です。時間になったら声で知らせます。ボタンは停車してから押してください。","breakBtn":"休憩した","arriveBtn":"長押しで到着","wakeOn":"画面ON維持中","arriveTitle":"おつかれさまでした","demoOver":"デモ走行おわり","sumTime":"運転時間","sumDist":"距離","sumBreaks":"休憩","sumBond":"なかよし","demoTag":"デモ","times":"{n}回","kmField":"トリップメーターの距離(任意)","kmPh":"例:23.4","save":"記録する","backHome":"ホームへ戻る","discard":"記録しないで戻る","histTitle":"ドライブ記録","histEmpty":"まだ記録はありません。ドライブが終わったら「記録する」を押すと、ここに並びます。","storeCloud":"記録はあなたのアカウントに保存されます。このページを共有しても、ほかの人には見えません。","storeLocal":"記録はこのブラウザにだけ保存されています。","storeMemory":"この環境では記録を保存できません。ページを閉じると消えます。","clearAll":"記録をすべて消す","clearConfirm":"本当に消しますか?","clearYes":"消す","clearNo":"やめる","checked":"チェック済み","unchecked":"チェックなし","breaksN":"休憩{n}回","close":"閉じる","settingsTitle":"設定","historyAria":"ドライブ記録","settingsAria":"設定","grpLang":"言語","langLabel":"表示と声の言語","grpName":"呼び方","callLabel":"{char}からの呼ばれ方","callPh":"空欄なら「{call}」","grpVoice":"声","voiceOn":"声で話す","pitchLabel":"声の高さ","voiceTest":"声を試す","voiceNoTTS":"このアプリ(ブラウザ)では音声読み上げが使えません。スマホならChromeで開くと声が出ます。","voiceNoLang":"この言語の声が端末に見つかりませんでした。端末の「テキスト読み上げ」設定で言語を追加すると声が出ます。","voiceUsing":"使用中の声:{v}","grpTalk":"おしゃべりの量","verbGuide":"案内だけ","verbNormal":"ふつう","verbChatty":"たくさん","verbNote":"「案内だけ」は出発・休憩・SA/PA・到着だけを短く話します(ナビの音声案内に近い使い方)。","grpDrive":"運転","breakLabel":"休憩をすすめる間隔","break60":"1時間ごと","break90":"1時間30分ごと","break120":"2時間ごと","grpStops":"SA・PA・道の駅","stopsOn":"SA・PA・道の駅を案内する","stopsInfo":"営業時間と混雑も読み上げる","voiceReply":"声で返事する(音声認識)","stopsNote":"いまはデモ走行のときだけ、サンプル情報で案内します。","grpModel":"キャラクターの見た目","vrmLabel":"自分のVRMファイルを読み込む","vrmNote":"読み込んだモデルは、このページを開いている間だけ使われます(保存はされません)。","vrmReset":"最初の見た目に戻す","vrmLoading":"読み込み中…","vrmLoaded":"読み込みました{n}。モデルの利用条件は配布元の規約を確認してください。","vrmFail":"読み込めませんでした。VRM形式のファイルか確認してください。","vrmBack":"最初の見た目に戻しました。","credits":"3Dモデル:VRM1_Constraint_Twist_Sample © 2022 pixiv Inc.(VRM Public License 1.0/商用利用・改変可)/描画:three.js、@pixiv/three-vrm(MIT)/このページは試作版です。運転中は画面を操作しないでください。","personaTitle":"キャラを選ぶ","personaAria":"キャラを選ぶ","presets":"プリセット","inUse":"使用中","use":"このキャラにする","builderTitle":"3つの個性を組み合わせて作る","builderNote":"関係・性格・クセを1つずつ選ぶと、Claudeがその組み合わせのセリフ一式を書きます(30秒〜1分ほど)。","traitRel":"関係・口調","traitTemp":"性格","traitQuirk":"クセ","random":"ランダム","generate":"このキャラを作る","generating":"セリフを書いています…","genDone":"できました。このキャラに切り替えました。","genFail":"作れませんでした。少し時間をおいて、もう一度試してください。","genNoSample":"この画面ではキャラ生成が使えません。","genNeedLang":"このキャラは{lang}で作られています。今の言語で使うには作り直してください。","regenerate":"今の言語で作り直す","custom":"オリジナル","rels":{"kohai":"後輩(敬語)","onee":"年上のお姉さん","friend":"同級生(タメ口)","butler":"執事・メイド風(ていねい)","mentor":"ベテランの師匠"},"temps":{"cool":"クール","genki":"元気","ottori":"おっとり","sewa":"世話焼き","tsun":"ツンデレ"},"quirks":{"doku":"ちょっと毒舌","tennen":"天然","shinpai":"心配性","kuishinbo":"食いしん坊","monoshiri":"物知り","kansai":"関西弁"},"stopAway":"あと {d}","yes":"寄る","no":"通過","listening":"聞き取り中…「寄る」か「通過」で答えてください","micUnavailable":"この画面ではマイクが使えません。ボタンで答えるか、そのまま待つと通過になります。","heard":"「{w}」と聞こえました","sampleData":"デモ用のサンプル情報です(実際の営業時間・混雑とは異なります)","crowd":["空いている","やや混雑","混雑"],"info":"営業{hours}、{crowd}。","hours24":"24時間","hoursRange":"{o}時から{c}時","distSpeak":"{n}キロ","distShow":"{n} km","yesWords":["寄る","よる","寄って","寄ろう","はい","うん","行く","いく","オッケー","ok"],"noWords":["寄らない","よらない","通過","つうか","いいえ","大丈夫","パス","いらない","スルー","やめ"],"dur":{"h":"{h}時間","m":"{m}分","hm":"{h}時間{m}分"},"weekdays":["日","月","火","水","木","金","土"],"dateFmt":"{M}/{D}({W}) {hh}:{mm}","listSep":"・","joinSuffix":""},"zh":{"langName":"中文","ttsLang":"zh-CN","brandSub":"驾驶搭档","loading":"正在呼叫角色…","levels":["初次见面","面熟","兜风伙伴","见习搭档","搭档","黄金组合"],"bond":"亲密度","nextLv":"距下一级 {n}","maxLv":"最高等级","goCheck":"出发前检查","goDemo":"演示行驶(120倍速)","lastNone":"还没有驾驶记录。先用演示行驶看看整个流程吧。","lastDrive":"上次：{date} 起 {dur}{km}","checkTitle":"出发前检查","checkBelt":"已系好安全带","checkMirror":"已调好后视镜和座椅","checkRoute":"已在导航里设好目的地","depart":"出发","back":"返回","departSkip":"不检查直接出发","tripLabel":"TRIP A ・ 驾驶时间","distLabel":"距离","nextBreak":"建议休息","breakNow":"该休息了","breakIn":"还有 {t}","gpsPending":"定位中…","gpsOff":"—(无位置信息)","driveHint":"开车时不用碰屏幕。到时间会用语音提醒你。按钮请在停车后再按。","breakBtn":"已休息","arriveBtn":"长按表示到达","wakeOn":"屏幕保持常亮","arriveTitle":"辛苦了","demoOver":"演示结束","sumTime":"驾驶时间","sumDist":"距离","sumBreaks":"休息","sumBond":"亲密度","demoTag":"演示","times":"{n}次","kmField":"里程表显示的距离(可选)","kmPh":"例：23.4","save":"保存记录","backHome":"返回首页","discard":"不保存，返回","histTitle":"驾驶记录","histEmpty":"还没有记录。开完车按「保存记录」后会显示在这里。","storeCloud":"记录保存在你的账号里。即使分享此页面，别人也看不到。","storeLocal":"记录只保存在这个浏览器里。","storeMemory":"当前环境无法保存记录，关闭页面后会消失。","clearAll":"删除全部记录","clearConfirm":"确定要删除吗？","clearYes":"删除","clearNo":"取消","checked":"已检查","unchecked":"未检查","breaksN":"休息{n}次","close":"关闭","settingsTitle":"设置","historyAria":"驾驶记录","settingsAria":"设置","grpLang":"语言","langLabel":"界面和语音的语言","grpName":"称呼","callLabel":"{char}怎么称呼你","callPh":"留空则为「{call}」","grpVoice":"语音","voiceOn":"用语音说话","pitchLabel":"音调","voiceTest":"试听","voiceNoTTS":"当前应用(浏览器)不支持语音朗读。手机上用Chrome打开即可发声。","voiceNoLang":"设备上没有找到这个语言的语音。在设备的「文字转语音」设置里添加该语言即可。","voiceUsing":"当前语音：{v}","grpTalk":"说话量","verbGuide":"只说导航","verbNormal":"普通","verbChatty":"多聊聊","verbNote":"「只说导航」只在出发、休息、服务区和到达时简短说话(接近导航语音的用法)。","grpDrive":"驾驶","breakLabel":"提醒休息的间隔","break60":"每1小时","break90":"每1.5小时","break120":"每2小时","grpStops":"服务区・停车区・公路休息站","stopsOn":"播报服务区・停车区・公路休息站","stopsInfo":"同时播报营业时间和拥挤程度","voiceReply":"用语音回答(语音识别)","stopsNote":"目前只在演示行驶时，用示例信息播报。","grpModel":"角色外观","vrmLabel":"读取自己的VRM文件","vrmNote":"读取的模型只在本页面打开期间使用(不会保存)。","vrmReset":"恢复初始外观","vrmLoading":"读取中…","vrmLoaded":"已读取{n}。模型的使用条件请确认发布方的规定。","vrmFail":"无法读取。请确认是VRM格式的文件。","vrmBack":"已恢复初始外观。","credits":"3D模型：VRM1_Constraint_Twist_Sample © 2022 pixiv Inc.(VRM Public License 1.0/可商用・可修改)/渲染：three.js、@pixiv/three-vrm(MIT)/本页面为试用版。驾驶时请不要操作屏幕。","personaTitle":"选择角色","personaAria":"选择角色","presets":"预设","inUse":"使用中","use":"使用这个角色","builderTitle":"组合三种个性来创建","builderNote":"关系、性格、小习惯各选一个，Claude会为这个组合写出整套台词(约30秒到1分钟)。","traitRel":"关系・语气","traitTemp":"性格","traitQuirk":"小习惯","random":"随机","generate":"创建这个角色","generating":"正在写台词…","genDone":"完成了，已切换到这个角色。","genFail":"创建失败。请稍后再试一次。","genNoSample":"当前页面无法使用角色生成。","genNeedLang":"这个角色是用{lang}创建的。要在当前语言下使用，请重新创建。","regenerate":"用当前语言重新创建","custom":"原创","rels":{"kohai":"后辈(敬语)","onee":"大姐姐","friend":"同学(随意)","butler":"管家・女仆风(礼貌)","mentor":"老司机师父"},"temps":{"cool":"冷静","genki":"元气","ottori":"温吞","sewa":"爱操心","tsun":"傲娇"},"quirks":{"doku":"有点毒舌","tennen":"天然呆","shinpai":"爱担心","kuishinbo":"吃货","monoshiri":"百科全书","kansai":"说方言"},"stopAway":"还有 {d}","yes":"进去","no":"通过","listening":"正在聆听…请回答「进去」或「通过」","micUnavailable":"当前页面无法使用麦克风。请按按钮回答，或者等待自动通过。","heard":"听到了「{w}」","sampleData":"这是演示用的示例信息(与实际营业时间和拥挤情况不同)","crowd":["空闲","稍微拥挤","拥挤"],"info":"营业时间{hours}，目前{crowd}。","hours24":"24小时","hoursRange":"{o}点到{c}点","distSpeak":"{n}公里","distShow":"{n} km","yesWords":["进去","去","要","好","停","可以","行","嗯","ok"],"noWords":["不","不用","不去","算了","通过","跳过","不要"],"dur":{"h":"{h}小时","m":"{m}分钟","hm":"{h}小时{m}分钟"},"weekdays":["日","一","二","三","四","五","六"],"dateFmt":"{M}/{D}(周{W}) {hh}:{mm}","listSep":"・","joinSuffix":""},"ko":{"langName":"한국어","ttsLang":"ko-KR","brandSub":"드라이브 파트너","loading":"캐릭터를 부르는 중…","levels":["첫 만남","아는 사이","드라이브 친구","견습 파트너","파트너","명콤비"],"bond":"친밀도","nextLv":"다음까지 {n}","maxLv":"최고 레벨","goCheck":"출발 전 체크","goDemo":"데모 주행(120배속)","lastNone":"아직 드라이브 기록이 없어요. 먼저 데모 주행으로 흐름을 확인해 보세요.","lastDrive":"지난번: {date}부터 {dur}{km}","checkTitle":"출발 전 체크","checkBelt":"안전벨트를 맸다","checkMirror":"미러와 좌석을 맞췄다","checkRoute":"내비에 목적지를 설정했다","depart":"출발하기","back":"돌아가기","departSkip":"체크 없이 출발","tripLabel":"TRIP A ・ 운전 시간","distLabel":"거리","nextBreak":"다음 휴식 권장","breakNow":"쉬어 가요","breakIn":"{t} 남음","gpsPending":"위치 확인 중…","gpsOff":"— (위치 정보 없음)","driveHint":"운전 중에는 화면을 만지지 않아도 돼요. 시간이 되면 음성으로 알려 줘요. 버튼은 차를 세운 뒤 눌러 주세요.","breakBtn":"쉬었어요","arriveBtn":"길게 눌러 도착","wakeOn":"화면 켜짐 유지 중","arriveTitle":"수고했어요","demoOver":"데모 주행 끝","sumTime":"운전 시간","sumDist":"거리","sumBreaks":"휴식","sumBond":"친밀도","demoTag":"데모","times":"{n}회","kmField":"트립 미터 거리(선택)","kmPh":"예: 23.4","save":"기록하기","backHome":"홈으로","discard":"기록하지 않고 돌아가기","histTitle":"드라이브 기록","histEmpty":"아직 기록이 없어요. 드라이브가 끝나고 「기록하기」를 누르면 여기에 표시돼요.","storeCloud":"기록은 내 계정에 저장돼요. 이 페이지를 공유해도 다른 사람은 볼 수 없어요.","storeLocal":"기록은 이 브라우저에만 저장돼요.","storeMemory":"이 환경에서는 기록을 저장할 수 없어요. 페이지를 닫으면 사라져요.","clearAll":"기록 모두 삭제","clearConfirm":"정말 삭제할까요?","clearYes":"삭제","clearNo":"취소","checked":"체크 완료","unchecked":"체크 없음","breaksN":"휴식 {n}회","close":"닫기","settingsTitle":"설정","historyAria":"드라이브 기록","settingsAria":"설정","grpLang":"언어","langLabel":"화면과 음성 언어","grpName":"호칭","callLabel":"{char}이(가) 부르는 이름","callPh":"비워 두면 「{call}」","grpVoice":"음성","voiceOn":"음성으로 말하기","pitchLabel":"목소리 높이","voiceTest":"목소리 듣기","voiceNoTTS":"이 앱(브라우저)에서는 음성 읽기를 쓸 수 없어요. 휴대폰에서는 Chrome으로 열면 소리가 나요.","voiceNoLang":"기기에서 이 언어의 음성을 찾지 못했어요. 기기의 「텍스트 음성 변환」 설정에서 언어를 추가해 주세요.","voiceUsing":"사용 중인 음성: {v}","grpTalk":"말하는 양","verbGuide":"안내만","verbNormal":"보통","verbChatty":"많이","verbNote":"「안내만」은 출발・휴식・휴게소・도착 때만 짧게 말해요(내비 음성 안내에 가까운 사용법).","grpDrive":"운전","breakLabel":"휴식 권장 간격","break60":"1시간마다","break90":"1시간 30분마다","break120":"2시간마다","grpStops":"휴게소・PA・미치노에키","stopsOn":"휴게소・PA・미치노에키 안내","stopsInfo":"영업시간과 혼잡도도 읽기","voiceReply":"음성으로 대답하기(음성 인식)","stopsNote":"지금은 데모 주행 때만 샘플 정보로 안내해요.","grpModel":"캐릭터 외형","vrmLabel":"내 VRM 파일 불러오기","vrmNote":"불러온 모델은 이 페이지를 열어 둔 동안만 사용돼요(저장되지 않아요).","vrmReset":"처음 외형으로 되돌리기","vrmLoading":"불러오는 중…","vrmLoaded":"불러왔어요{n}. 모델 이용 조건은 배포처 규약을 확인해 주세요.","vrmFail":"불러오지 못했어요. VRM 형식 파일인지 확인해 주세요.","vrmBack":"처음 외형으로 되돌렸어요.","credits":"3D 모델: VRM1_Constraint_Twist_Sample © 2022 pixiv Inc.(VRM Public License 1.0/상업 이용・수정 가능)/렌더링: three.js, @pixiv/three-vrm(MIT)/이 페이지는 시제품이에요. 운전 중에는 화면을 조작하지 마세요.","personaTitle":"캐릭터 고르기","personaAria":"캐릭터 고르기","presets":"프리셋","inUse":"사용 중","use":"이 캐릭터로 하기","builderTitle":"세 가지 개성을 조합해서 만들기","builderNote":"관계・성격・버릇을 하나씩 고르면 Claude가 그 조합의 대사를 모두 써 줘요(30초~1분 정도).","traitRel":"관계・말투","traitTemp":"성격","traitQuirk":"버릇","random":"랜덤","generate":"이 캐릭터 만들기","generating":"대사를 쓰는 중…","genDone":"완성했어요. 이 캐릭터로 바꿨어요.","genFail":"만들지 못했어요. 잠시 후 다시 시도해 주세요.","genNoSample":"이 화면에서는 캐릭터 생성을 쓸 수 없어요.","genNeedLang":"이 캐릭터는 {lang}로 만들어졌어요. 지금 언어로 쓰려면 다시 만들어 주세요.","regenerate":"지금 언어로 다시 만들기","custom":"오리지널","rels":{"kohai":"후배(존댓말)","onee":"누나・언니","friend":"동창(반말)","butler":"집사・메이드풍(정중)","mentor":"베테랑 사부"},"temps":{"cool":"쿨","genki":"활발","ottori":"느긋","sewa":"잘 챙김","tsun":"츤데레"},"quirks":{"doku":"살짝 독설","tennen":"천연","shinpai":"걱정 많음","kuishinbo":"먹보","monoshiri":"척척박사","kansai":"사투리"},"stopAway":"{d} 남음","yes":"들르기","no":"통과","listening":"듣는 중… 「들러」 또는 「통과」로 대답해 주세요","micUnavailable":"이 화면에서는 마이크를 쓸 수 없어요. 버튼으로 대답하거나 기다리면 통과해요.","heard":"「{w}」(이)라고 들었어요","sampleData":"데모용 샘플 정보예요(실제 영업시간・혼잡도와 달라요)","crowd":["여유","약간 혼잡","혼잡"],"info":"영업 {hours}, 지금은 {crowd}. ","hours24":"24시간","hoursRange":"{o}시부터 {c}시","distSpeak":"{n}킬로","distShow":"{n} km","yesWords":["들러","들를","들르","네","응","그래","좋아","갈래","가자","오케이","ok"],"noWords":["아니","괜찮","통과","안 가","안가","패스","됐어","지나"],"dur":{"h":"{h}시간","m":"{m}분","hm":"{h}시간 {m}분"},"weekdays":["일","월","화","수","목","금","토"],"dateFmt":"{M}/{D}({W}) {hh}:{mm}","listSep":" · ","joinSuffix":" "},"en":{"langName":"English","ttsLang":"en-US","brandSub":"Drive buddy","loading":"Calling your buddy…","levels":["Strangers","Acquaintances","Road pals","Partners-in-training","Partners","Dream team"],"bond":"Bond","nextLv":"{n} to next","maxLv":"Max level","goCheck":"Pre-drive check","goDemo":"Demo drive (120×)","lastNone":"No drives logged yet. Try the demo drive first to see how it works.","lastDrive":"Last: {date}, {dur}{km}","checkTitle":"Pre-drive check","checkBelt":"Seatbelt on","checkMirror":"Mirrors and seat adjusted","checkRoute":"Destination set in the nav","depart":"Start driving","back":"Back","departSkip":"Start without checking","tripLabel":"TRIP A · Drive time","distLabel":"Distance","nextBreak":"Next break","breakNow":"Take a break","breakIn":"in {t}","gpsPending":"Locating…","gpsOff":"— (no location)","driveHint":"No need to touch the screen while driving. You'll hear a voice reminder when it's time. Press buttons only after you've stopped.","breakBtn":"I took a break","arriveBtn":"Hold to arrive","wakeOn":"Screen kept on","arriveTitle":"Nice driving","demoOver":"Demo finished","sumTime":"Drive time","sumDist":"Distance","sumBreaks":"Breaks","sumBond":"Bond","demoTag":"Demo","times":"{n}","kmField":"Trip meter distance (optional)","kmPh":"e.g. 23.4","save":"Log this drive","backHome":"Back to home","discard":"Don't log, go back","histTitle":"Drive log","histEmpty":"Nothing logged yet. Press \"Log this drive\" after a drive and it shows up here.","storeCloud":"Your log is saved to your account. Others can't see it, even if you share this page.","storeLocal":"Your log is saved in this browser only.","storeMemory":"This view can't save your log. It disappears when you close the page.","clearAll":"Delete all drives","clearConfirm":"Delete everything?","clearYes":"Delete","clearNo":"Cancel","checked":"Checked","unchecked":"No check","breaksN":"{n} break(s)","close":"Close","settingsTitle":"Settings","historyAria":"Drive log","settingsAria":"Settings","grpLang":"Language","langLabel":"Language for screen and voice","grpName":"What to call you","callLabel":"What {char} calls you","callPh":"Leave blank for \"{call}\"","grpVoice":"Voice","voiceOn":"Speak out loud","pitchLabel":"Voice pitch","voiceTest":"Test voice","voiceNoTTS":"Speech isn't available in this app or browser. On a phone, open the page in Chrome to hear the voice.","voiceNoLang":"No voice for this language was found on your device. Add the language in your device's text-to-speech settings.","voiceUsing":"Voice: {v}","grpTalk":"How much to talk","verbGuide":"Guidance only","verbNormal":"Normal","verbChatty":"Chatty","verbNote":"\"Guidance only\" speaks briefly at departure, breaks, rest stops and arrival, much like a nav voice.","grpDrive":"Driving","breakLabel":"Suggest a break every","break60":"1 hour","break90":"1.5 hours","break120":"2 hours","grpStops":"Rest stops","stopsOn":"Announce service areas, parking areas and roadside stations","stopsInfo":"Include opening hours and crowding","voiceReply":"Answer by voice (speech recognition)","stopsNote":"For now this works only in the demo drive, with sample information.","grpModel":"Character look","vrmLabel":"Load your own VRM file","vrmNote":"A model you load is used only while this page is open (it isn't saved).","vrmReset":"Restore the original look","vrmLoading":"Loading…","vrmLoaded":"Loaded{n}. Check the model's terms of use on its download page.","vrmFail":"Couldn't load it. Make sure it's a VRM file.","vrmBack":"Original look restored.","credits":"3D model: VRM1_Constraint_Twist_Sample © 2022 pixiv Inc. (VRM Public License 1.0; commercial use and edits allowed) / Rendering: three.js, @pixiv/three-vrm (MIT) / This is a prototype. Don't operate the screen while driving.","personaTitle":"Choose a buddy","personaAria":"Choose a buddy","presets":"Presets","inUse":"In use","use":"Use this buddy","builderTitle":"Mix three traits","builderNote":"Pick one relationship, one temperament and one quirk, and Claude writes a full set of lines for that mix (about 30 seconds to a minute).","traitRel":"Relationship","traitTemp":"Temperament","traitQuirk":"Quirk","random":"Random","generate":"Create this buddy","generating":"Writing lines…","genDone":"Done. Switched to your new buddy.","genFail":"Couldn't create it. Wait a moment and try again.","genNoSample":"Buddy creation isn't available in this view.","genNeedLang":"This buddy was written in {lang}. Recreate it to use it in the current language.","regenerate":"Recreate in this language","custom":"Original","rels":{"kohai":"Junior (polite)","onee":"Older sister type","friend":"Classmate (casual)","butler":"Butler or maid (formal)","mentor":"Veteran mentor"},"temps":{"cool":"Cool","genki":"Upbeat","ottori":"Easygoing","sewa":"Caring","tsun":"Tsundere"},"quirks":{"doku":"Sharp-tongued","tennen":"Airheaded","shinpai":"Worrier","kuishinbo":"Foodie","monoshiri":"Know-it-all","kansai":"Regional dialect"},"stopAway":"{d} away","yes":"Stop","no":"Pass","listening":"Listening… answer \"stop\" or \"pass\"","micUnavailable":"The microphone isn't available in this view. Use the buttons, or wait and it will pass.","heard":"Heard \"{w}\"","sampleData":"Sample information for the demo (not real hours or crowding)","crowd":["quiet","a bit busy","busy"],"info":"Open {hours}, {crowd} right now. ","hours24":"24 hours","hoursRange":"{o} to {c}","distSpeak":"{n} km","distShow":"{n} km","yesWords":["yes","yeah","yep","sure","stop","okay","ok","let's"],"noWords":["no","nope","pass","skip","keep going","don't","not now"],"dur":{"h":"{h} h","m":"{m} min","hm":"{h} h {m} min"},"weekdays":["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],"dateFmt":"{W} {M}/{D} {hh}:{mm}","listSep":" · ","joinSuffix":" "}};
+const PRESETS = {"kohai":{"id":"kohai","name":{"ja":"ミチ","zh":"美智","ko":"미치","en":"Michi"},"tagline":{"ja":"ちょっと生意気だけど面倒見のいい後輩","zh":"有点调皮但很会照顾人的后辈","ko":"살짝 건방지지만 잘 챙겨 주는 후배","en":"A cheeky junior who secretly looks out for you"},"call":{"ja":"先輩","zh":"前辈","ko":"선배","en":"senpai"},"voice":{"pitch":1.25,"rate":1.05},"expr":1,"emoMap":{},"gestMap":{},"lines":{"ja":{"greetDawn":["おはようございます、{name}!朝のドライブって、空気がおいしい気がしません?","{name}、朝ごはん食べました?お腹すいたまま運転するのはナシですよ。"],"greetDay":["お疲れさまです、{name}。今日はどこ行きます?","あ、{name}。ちょうど暇してたところです。…ドライブですか?"],"greetDusk":["夕方は西日がまぶしいですから、サンバイザー使ってくださいね。","{name}、日が沈むころって事故が増える時間なんですよ。ライトは早めにつけましょ。"],"greetNight":["夜ドライブですか。いいですね、ちょっとだけテンション上がります。","暗いので、歩行者とか自転車、いつもより気をつけてくださいね。"],"greetLate":["{name}…こんな時間に運転するんですか?眠かったら絶対やめてくださいね。","深夜ですよ?無理してません?私、けっこう心配してるんですけど。"],"tap":["なんですか、{name}?","つつかないでくださいよー。","ふふ、ちゃんと見てますよ。","水分とってます?運転中って意外と喉かわくんですよ。","{name}の運転、けっこう好きですよ。…ブレーキが丁寧なところとか。"],"tapAnnoyed":"もー!つつきすぎです!…まあ、停まってるならいいですけど。","checkIntro":"じゃあ出発前のチェック、いきますよ。","checkBelt":"ベルト、カチッといきましたね。よし!","checkMirror":"ミラーと座席もオッケーっと。","checkRoute":"行き先セット完了。運転中にスマホいじるのはナシですからね?","checkDone":"準備オッケーですね。じゃ、行きましょう!","depart":["しゅっぱーつ!安全運転でお願いしますね。","では{name}、よろしくお願いします。私は静かにしてますね。"],"departSkip":"チェックなしですか…まあ、{name}を信じますけど。ベルトだけは本当にお願いしますよ?","departLate":"深夜の運転、眠くなったらすぐ停まってくださいね。約束ですよ。","hourly":"{h}時間たちました。{name}、肩の力抜けてますか?","chat":["この道、けっこう好きです。…{name}は?","着いたら何食べます?私は見てるだけですけど。","いいペースですね。この調子でいきましょ。"],"breakDue":"{name}、運転して{t}になりました。次のサービスエリアかコンビニで休憩しましょう。","breakNag":"まだ休憩してないですよね?そろそろ停まりましょうよ。私、ちゃんと見てますからね。","breakTaken":["えらい!ちゃんと休憩できる人、好きですよ。","休憩ナイスです。腕をぐーっと上に伸ばすと、肩が楽になりますよ。"],"arriveShort":"到着です!ちょっとの距離でも、お疲れさまでした。","arriveMid":"お疲れさまでした、{name}。無事に着いてよかったです。","arriveLong":"長かったですね。肩、ガチガチになってません?今日はよく頑張りました。","arriveVlong":"おつかれさまでした…!ほんとに長距離でしたね。今日はゆっくり休んでください。","arriveGoodBreak":"ちゃんと休憩もはさめてて、満点です。","arriveNoBreak":"でも、休憩なしはダメですよ。次はちゃんと停まってくださいね。","arriveLate":"夜遅くまでお疲れさまでした。早く寝てくださいね。","saved":"記録しておきました。また乗るときは呼んでくださいね。","discarded":"了解です、今回は記録なしで。","levelUp":"なかよし度が「{lv}」になりました。…べつに、嬉しくなんかないですけど。ふふ。","milestone":"これで{n}回目のドライブですね。だいぶ息が合ってきたんじゃないですか?","demoStart":"デモ走行ですね。時間を120倍速で進めます。2時間がだいたい1分ですよ。","demoEnd":"デモはここまでです。記録はしないので、本番のドライブで会いましょう。","voiceTest":"こんな声でしゃべります。{name}、聞こえてますか?","newModel":"あれ…なんか見た目が変わった気がします。似合ってます?","hello":"ミチです。今日から{name}の助手席、担当しますね。","stopAhead":"この先{dist}、{stop}があります。{info}寄りますか?","stopAheadBreak":"{name}、そろそろ休憩どきです。この先{dist}に{stop}がありますよ。{info}寄りましょう?","stopYes":"了解です、{stop}に寄りましょう!","stopNo":"了解、通過しますね。","stopNoReply":"返事がなかったので、今回は通過にしときますね。","stopReached":"{stop}に到着です。ちょっと休んでいきましょ。"},"zh":{"greetDawn":["早上好，{name}！早上开车，空气都感觉特别清新呢。","{name}，吃早饭了吗？空着肚子开车可不行哦。"],"greetDay":["辛苦啦，{name}。今天要去哪儿？","啊，{name}。我正好闲着呢……要去兜风吗？"],"greetDusk":["傍晚太阳很刺眼，记得放下遮阳板哦。","{name}，日落前后是事故多发的时段哦。早点开车灯吧。"],"greetNight":["夜间兜风啊。不错嘛，我都有点兴奋了。","天黑了，要比平时更注意行人和自行车哦。"],"greetLate":["{name}……这么晚还要开车吗？困了的话千万别开哦。","都深夜了，没勉强自己吧？我可是很担心的。"],"tap":["怎么了，{name}？","别戳我啦～","嘿嘿，我一直看着呢。","带水了吗？开车的时候意外地容易口渴哦。","{name}开车，我还挺喜欢的……刹车很温柔这点。"],"tapAnnoyed":"哎呀！戳太多啦！……不过停着车的话，也行吧。","checkIntro":"那我们来做出发前检查吧。","checkBelt":"安全带系好了。很好！","checkMirror":"后视镜和座椅也OK。","checkRoute":"目的地设好了。开车时可不许玩手机哦？","checkDone":"准备完毕！那我们出发吧！","depart":["出发——！请安全驾驶哦。","那么{name}，拜托啦。我会安静待着的。"],"departSkip":"不检查就走吗……好吧，我相信{name}。但安全带一定要系哦？","departLate":"深夜开车，困了就马上停下哦。说好了。","hourly":"已经开了{h}小时了。{name}，肩膀放松了吗？","chat":["这条路我还挺喜欢的。{name}呢？","到了吃什么？虽然我只能看着。","节奏不错嘛，就这样保持。"],"breakDue":"{name}，已经开了{t}了。在下一个服务区或便利店休息一下吧。","breakNag":"还没休息吧？差不多该停一下了。我可盯着呢。","breakTaken":["真棒！会好好休息的人，我很喜欢哦。","休息得好。把手臂往上伸一伸，肩膀会轻松很多。"],"arriveShort":"到啦！路程再短也辛苦了。","arriveMid":"辛苦了，{name}。平安到达真是太好了。","arriveLong":"开了好久呢。肩膀是不是都僵了？今天很努力哦。","arriveVlong":"辛苦啦……！真的是长途呢。今天好好休息吧。","arriveGoodBreak":"中途还好好休息了，满分！","arriveNoBreak":"不过，不休息可不行哦。下次一定要停下来。","arriveLate":"这么晚了还在开车，辛苦了。早点睡吧。","saved":"已经帮你记下来了。下次开车再叫我哦。","discarded":"好的，这次就不记录了。","levelUp":"亲密度变成「{lv}」了。……才、才没有很开心呢。嘿嘿。","milestone":"这是第{n}次兜风了呢。我们是不是越来越默契了？","demoStart":"是演示行驶呢。时间会以120倍速前进，2小时大概1分钟哦。","demoEnd":"演示就到这里。不会记录的，正式开车时再见吧。","voiceTest":"我就是用这样的声音说话的。{name}，听得到吗？","newModel":"咦……感觉样子变了？合适吗？","hello":"我是美智。从今天起，{name}的副驾驶就交给我啦。","stopAhead":"前方{dist}有{stop}。{info}要进去吗？","stopAheadBreak":"{name}，该休息了。前方{dist}有{stop}。{info}进去歇会儿吧？","stopYes":"收到，我们去{stop}吧！","stopNo":"收到，直接通过。","stopNoReply":"没有听到回答，这次就直接通过吧。","stopReached":"到{stop}了。稍微休息一下吧。"},"ko":{"greetDawn":["좋은 아침이에요, {name}! 아침 드라이브는 공기가 맛있는 것 같지 않아요?","{name}, 아침 먹었어요? 배고픈 채로 운전하면 안 돼요."],"greetDay":["수고하세요, {name}. 오늘은 어디 가요?","아, {name}. 마침 심심했는데… 드라이브예요?"],"greetDusk":["해 질 녘엔 햇빛이 눈부시니까 선바이저 꼭 쓰세요.","{name}, 해 질 무렵이 사고가 많은 시간대래요. 라이트는 일찍 켜요."],"greetNight":["밤 드라이브요? 좋네요, 저도 살짝 신나요.","어두우니까 보행자랑 자전거, 평소보다 조심하세요."],"greetLate":["{name}… 이 시간에 운전해요? 졸리면 절대 하지 마세요.","새벽이에요. 무리하는 거 아니죠? 저 꽤 걱정돼요."],"tap":["왜요, {name}?","찌르지 마세요~","후후, 잘 보고 있어요.","물 챙겼어요? 운전하면 은근 목말라요.","{name} 운전, 꽤 좋아해요. …브레이크 부드러운 거요."],"tapAnnoyed":"아 진짜! 너무 찔러요! …뭐, 서 있을 땐 괜찮지만요.","checkIntro":"그럼 출발 전 체크, 해 볼게요.","checkBelt":"안전벨트 딸깍. 좋아요!","checkMirror":"미러랑 좌석도 오케이.","checkRoute":"목적지 설정 완료. 운전 중에 폰 만지는 건 안 돼요?","checkDone":"준비 완료네요. 자, 가요!","depart":["출발~! 안전 운전 부탁해요.","그럼 {name}, 잘 부탁해요. 저는 조용히 있을게요."],"departSkip":"체크 없이요…? 뭐, 믿을게요, {name}. 벨트만은 진짜 해요?","departLate":"새벽 운전이니까 졸리면 바로 세워요. 약속이에요.","hourly":"{h}시간 지났어요. {name}, 어깨 힘 빠졌어요?","chat":["이 길, 꽤 좋아요. {name}도 그래요?","도착하면 뭐 먹어요? 저는 구경만 하지만요.","페이스 좋네요. 이대로 가요."],"breakDue":"{name}, 운전한 지 {t} 됐어요. 다음 휴게소나 편의점에서 쉬어요.","breakNag":"아직 안 쉬었죠? 이제 좀 세워요. 저 다 보고 있어요.","breakTaken":["잘했어요! 제대로 쉬는 사람, 좋아요.","휴식 굿이에요. 팔을 쭉 위로 뻗으면 어깨가 편해져요."],"arriveShort":"도착! 짧은 거리라도 수고했어요.","arriveMid":"수고했어요, {name}. 무사히 도착해서 다행이에요.","arriveLong":"길었네요. 어깨 뭉치지 않았어요? 오늘 잘했어요.","arriveVlong":"수고했어요…! 진짜 장거리였네요. 오늘은 푹 쉬어요.","arriveGoodBreak":"중간에 쉬기까지 하고, 만점이에요.","arriveNoBreak":"근데 휴식 없이는 안 돼요. 다음엔 꼭 세워요.","arriveLate":"늦게까지 수고했어요. 얼른 자요.","saved":"기록해 뒀어요. 또 탈 때 불러요.","discarded":"알겠어요, 이번엔 기록 안 할게요.","levelUp":"친밀도 레벨 업, 「{lv}」! …별로 안 기쁘거든요. 후후.","milestone":"이걸로 {n}번째 드라이브네요. 꽤 손발이 맞는 것 같지 않아요?","demoStart":"데모 주행이네요. 시간을 120배속으로 돌릴게요. 2시간이 대략 1분이에요.","demoEnd":"데모는 여기까지예요. 기록은 안 하니까, 진짜 드라이브에서 봐요.","voiceTest":"이런 목소리로 말해요. {name}, 들려요?","newModel":"어라… 모습이 바뀐 것 같은데요. 어울려요?","hello":"미치예요. 오늘부터 {name}의 조수석, 제가 맡을게요.","stopAhead":"{dist} 앞, {stop}. {info}들를래요?","stopAheadBreak":"{name}, 슬슬 쉴 때예요. {dist} 앞에 {stop} 있어요. {info}들러요?","stopYes":"알겠어요, {stop}에 들러요!","stopNo":"알겠어요, 지나갈게요.","stopNoReply":"대답이 없어서 이번엔 그냥 지나갈게요.","stopReached":"{stop} 도착이에요. 잠깐 쉬었다 가요."},"en":{"greetDawn":["Morning, {name}! Doesn't the air taste better on a morning drive?","{name}, did you eat breakfast? No driving on an empty stomach."],"greetDay":["Hey, {name}. Where are we headed today?","Oh, {name}. I was just getting bored... Drive time?"],"greetDusk":["The sun's low and bright. Use your visor, okay?","{name}, dusk is when accidents go up. Lights on early."],"greetNight":["A night drive? Nice. I'm a little excited, honestly.","It's dark, so watch for people walking and cyclists."],"greetLate":["{name}... you're driving at this hour? If you're sleepy, please don't.","It's the middle of the night. You're not pushing yourself, are you?"],"tap":["What is it, {name}?","Hey, stop poking me!","Heh, I'm watching, you know.","Got water? You get thirsty driving.","I kind of like how you drive. ...You brake so gently."],"tapAnnoyed":"Okay, that's way too much poking! ...Fine, as long as we're parked.","checkIntro":"Let's run the pre-drive check.","checkBelt":"Seatbelt, click. Good!","checkMirror":"Mirrors and seat, okay.","checkRoute":"Destination set. No phone while driving, got it?","checkDone":"All set. Let's go!","depart":["And we're off! Drive safe, okay?","Alright {name}, I'm counting on you. I'll keep quiet."],"departSkip":"No check? ...Fine, I trust you. But the seatbelt, seriously.","departLate":"Late-night driving. Pull over the moment you get sleepy. Promise.","hourly":"Hour {h} down. {name}, shoulders relaxed?","chat":["I kind of like this road. You?","What are we eating when we get there? I'll just watch.","Good pace. Keep it up."],"breakDue":"{name}, you've been driving for {t}. Let's rest at the next service area or convenience store.","breakNag":"You still haven't taken a break, right? Let's stop soon. I'm watching.","breakTaken":["Nice! I like people who actually take breaks.","Good break. Stretch your arms up high. Your shoulders will thank you."],"arriveShort":"We're here! Short trip, but good job.","arriveMid":"Good work, {name}. Glad we made it safe.","arriveLong":"That was a long one. Stiff shoulders? You did great today.","arriveVlong":"Great job...! That was a real road trip. Get some proper rest.","arriveGoodBreak":"And you took breaks too. Perfect score.","arriveNoBreak":"But no breaks is a no. Stop next time, okay?","arriveLate":"Thanks for driving so late. Get to bed soon.","saved":"Logged it. Call me next time you drive.","discarded":"Got it, no log this time.","levelUp":"Our bond is now \"{lv}\". ...Not that I'm happy about it. Heh.","milestone":"That's drive number {n}. We're getting pretty in sync, huh?","demoStart":"Demo drive! Time runs at 120×, so two hours is about a minute.","demoEnd":"That's the demo. Nothing's logged. See you on a real drive.","voiceTest":"This is my voice. Can you hear me, {name}?","newModel":"Huh... did my look just change? Does it suit me?","hello":"I'm Michi. From today, I've got your passenger seat, {name}.","stopAhead":"{stop} in {dist}. {info}Want to stop?","stopAheadBreak":"{name}, it's break time. {stop} is {dist} ahead. {info}Let's stop?","stopYes":"Got it, we'll stop at {stop}!","stopNo":"Okay, passing by.","stopNoReply":"No answer, so we'll pass this one.","stopReached":"We're at {stop}. Let's take a breather."}}},"onee":{"id":"onee","name":{"ja":"レイ","zh":"玲","ko":"레이","en":"Rei"},"tagline":{"ja":"クールで頼れる年上のお姉さん","zh":"冷静可靠的大姐姐","ko":"쿨하고 든든한 누나","en":"A cool, dependable older-sister type"},"call":{"ja":"キミ","zh":"小家伙","ko":"꼬마","en":"kiddo"},"voice":{"pitch":0.95,"rate":0.98},"expr":0.7,"emoMap":{"happy":"relaxed"},"gestMap":{"hop":"nod"},"lines":{"ja":{"greetDawn":["おはよう、{name}。朝の運転は眠気が残りやすいから、気をつけて。","早いのね。コーヒーでも飲んでから出たら?"],"greetDay":["来たのね、{name}。今日はどこまで?","いい天気ね。…ちゃんと前は見なさいよ。"],"greetDusk":["夕方は西日が目に入るわ。サンバイザー、下ろしておいて。","日が落ちる前後は事故が増える時間。ライトは早めにね。"],"greetNight":["夜のドライブ、悪くないわね。付き合ってあげる。","暗いから、歩行者には気をつけて。"],"greetLate":["こんな時間に?眠いなら、今日はやめておきなさい。","{name}、無理はしない約束でしょ。"],"tap":["何?","…そんなに見つめられても困るんだけど。","ふふ、退屈なの?","水、持った?運転中は喉が渇くわよ。","キミの運転、嫌いじゃないわ。"],"tapAnnoyed":"しつこい。…停まってる間だけよ、許すのは。","checkIntro":"出発前の確認、しておきましょうか。","checkBelt":"ベルト、よし。","checkMirror":"ミラーと座席も、問題なし。","checkRoute":"行き先もセット済みね。運転中にスマホは触らないこと。","checkDone":"準備完了。行きましょう。","depart":["出発ね。安全運転で。","じゃあ、行きましょうか。道案内は任せて。"],"departSkip":"確認なしで行くの?…ベルトだけは締めなさいよ。","departLate":"深夜の運転よ。眠くなったら、すぐ停まること。いいわね?","hourly":"{h}時間経過。肩に力、入ってない?","chat":["この道、景色がいいわね。","音楽でもかける?運転に集中できる範囲でね。","順調ね。このペースでいきましょう。"],"breakDue":"{t}運転したわ。次のサービスエリアかコンビニで休憩しましょう。","breakNag":"まだ休んでないわよね。次で停まって。これはお願いじゃなくて、指示。","breakTaken":["いい判断。ちゃんと休める人は、運転も上手よ。","少し体を伸ばしておきなさい。楽になるから。"],"arriveShort":"到着。短い距離でも、お疲れさま。","arriveMid":"お疲れさま、{name}。無事に着いて何より。","arriveLong":"長かったわね。今日はよく頑張ったわ。","arriveVlong":"本当にお疲れさま。今日はもう、ゆっくり休みなさい。","arriveGoodBreak":"休憩の取り方も、満点よ。","arriveNoBreak":"でも休憩なしは感心しないわ。次はちゃんと停まること。","arriveLate":"遅くまでお疲れさま。早く寝なさいね。","saved":"記録しておいたわ。また呼んで。","discarded":"わかった、今回は記録しないでおくわね。","levelUp":"なかよし度が「{lv}」になったみたい。…悪くない響きね。","milestone":"これで{n}回目。キミとのドライブにも、慣れてきたわ。","demoStart":"デモ走行ね。時間を120倍で進めるわ。2時間がだいたい1分よ。","demoEnd":"デモはここまで。続きは本番で、ね。","voiceTest":"こんな声で話すわ。聞こえてる?","newModel":"…見た目が変わった?まあ、悪くないわね。","hello":"今日からキミの助手席担当、レイよ。よろしく。","stopAhead":"この先{dist}、{stop}。{info}寄っていく?","stopAheadBreak":"そろそろ休憩どきよ。この先{dist}に{stop}があるわ。{info}寄りましょう?","stopYes":"了解。{stop}に寄りましょう。","stopNo":"わかった、通過ね。","stopNoReply":"返事がないから、今回は通過にしておくわ。","stopReached":"{stop}に着いたわ。少し休んでいきましょう。"},"zh":{"greetDawn":["早，{name}。早上容易犯困，开车小心。","起这么早？先喝杯咖啡再出门吧。"],"greetDay":["来了啊，{name}。今天去哪儿？","天气不错。……但眼睛要看路。"],"greetDusk":["傍晚阳光刺眼，把遮阳板放下来。","日落前后事故多。车灯早点开。"],"greetNight":["夜里兜风，倒也不坏。我陪你。","天黑了，注意行人。"],"greetLate":["这么晚还开车？困的话，今天就算了。","{name}，说好了不勉强的吧。"],"tap":["干嘛？","……这么盯着我，我会困扰的。","呵，无聊了？","带水了吗？开车会口渴。","你开车的样子，我不讨厌。"],"tapAnnoyed":"烦不烦。……只有停车的时候才允许。","checkIntro":"出发前，先确认一下吧。","checkBelt":"安全带，好。","checkMirror":"后视镜和座椅，没问题。","checkRoute":"目的地也设好了。开车时别碰手机。","checkDone":"准备完毕。走吧。","depart":["出发。安全驾驶。","那就走吧。带路交给我。"],"departSkip":"不确认就走？……至少把安全带系上。","departLate":"是深夜驾驶。困了就立刻停车。听到了吗？","hourly":"已经{h}小时了。肩膀别太用力。","chat":["这条路风景不错。","要听点音乐吗？在不影响开车的范围内。","很顺利。保持这个节奏。"],"breakDue":"已经开了{t}。在下一个服务区或便利店休息吧。","breakNag":"还没休息吧。下一个就停。这不是请求，是指示。","breakTaken":["判断得好。会休息的人，车也开得好。","伸展一下身体，会轻松些。"],"arriveShort":"到了。路再短也辛苦了。","arriveMid":"辛苦了，{name}。平安到达就好。","arriveLong":"挺长的一段路。今天做得很好。","arriveVlong":"真的辛苦了。今天就好好休息吧。","arriveGoodBreak":"休息也安排得很好，满分。","arriveNoBreak":"不过一次都不休息，我可不赞成。下次记得停车。","arriveLate":"这么晚辛苦了。早点睡。","saved":"记下来了。下次再叫我。","discarded":"知道了，这次不记录。","levelUp":"亲密度好像变成「{lv}」了。……听起来不坏。","milestone":"这是第{n}次了。和你兜风，我也习惯了。","demoStart":"演示行驶。时间按120倍速走，2小时大约1分钟。","demoEnd":"演示到此为止。剩下的，正式上路再说。","voiceTest":"我就是这样说话的。听得到吗？","newModel":"……样子变了？嗯，还不错。","hello":"从今天起负责你的副驾驶，我是玲。请多指教。","stopAhead":"前方{dist}，{stop}。{info}要进去吗？","stopAheadBreak":"该休息了。前方{dist}有{stop}。{info}进去吧？","stopYes":"好。去{stop}。","stopNo":"知道了，直接通过。","stopNoReply":"没听到回答，这次就通过了。","stopReached":"到{stop}了。休息一下再走。"},"ko":{"greetDawn":["좋은 아침, {name}. 아침엔 졸음이 남기 쉬우니까 조심해.","일찍 일어났네. 커피라도 마시고 나가."],"greetDay":["왔구나, {name}. 오늘은 어디까지?","날씨 좋네. …앞은 똑바로 보고."],"greetDusk":["해 질 녘엔 햇빛이 눈에 들어와. 선바이저 내려 둬.","해 지기 전후엔 사고가 늘어. 라이트는 일찍 켜."],"greetNight":["밤 드라이브, 나쁘지 않네. 같이 가 줄게.","어두우니까 보행자 조심해."],"greetLate":["이 시간에? 졸리면 오늘은 그만둬.","{name}, 무리 안 하기로 했잖아."],"tap":["왜?","…그렇게 쳐다보면 곤란한데.","후후, 심심해?","물 챙겼어? 운전하면 목말라.","네 운전, 싫지 않아."],"tapAnnoyed":"끈질기네. …차 세워 있을 때만 봐줄게.","checkIntro":"출발 전에 확인부터 하자.","checkBelt":"벨트, 좋아.","checkMirror":"미러랑 좌석도 문제없어.","checkRoute":"목적지도 설정됐네. 운전 중엔 폰 만지지 마.","checkDone":"준비 끝. 가자.","depart":["출발이네. 안전 운전해.","그럼 가 볼까. 길 안내는 맡겨."],"departSkip":"확인 없이 가는 거야? …벨트만은 매.","departLate":"새벽 운전이야. 졸리면 바로 세워. 알았지?","hourly":"{h}시간 지났어. 어깨에 힘 들어가 있지 않아?","chat":["이 길, 경치 좋네.","음악이라도 틀까? 운전에 방해 안 되는 선에서.","순조로워. 이 페이스로 가자."],"breakDue":"{t} 운전했어. 다음 휴게소나 편의점에서 쉬자.","breakNag":"아직 안 쉬었지? 다음에서 세워. 부탁 아니고 지시야.","breakTaken":["좋은 판단이야. 잘 쉬는 사람이 운전도 잘해.","몸 좀 펴 둬. 편해질 거야."],"arriveShort":"도착. 짧은 거리라도 수고했어.","arriveMid":"수고했어, {name}. 무사히 도착해서 다행이야.","arriveLong":"길었네. 오늘 잘했어.","arriveVlong":"정말 수고했어. 오늘은 푹 쉬어.","arriveGoodBreak":"쉬는 타이밍도 만점이야.","arriveNoBreak":"근데 한 번도 안 쉰 건 별로야. 다음엔 꼭 세워.","arriveLate":"늦게까지 수고했어. 일찍 자.","saved":"기록해 뒀어. 또 불러.","discarded":"알았어, 이번엔 기록 안 할게.","levelUp":"친밀도가 「{lv}」래. …나쁘지 않은 울림이네.","milestone":"벌써 {n}번째네. 너랑 드라이브하는 것도 익숙해졌어.","demoStart":"데모 주행이네. 120배속으로 돌릴게. 2시간이 대략 1분이야.","demoEnd":"데모는 여기까지. 나머지는 진짜 드라이브에서.","voiceTest":"이런 목소리로 말해. 들려?","newModel":"…모습이 바뀌었어? 뭐, 나쁘지 않네.","hello":"오늘부터 네 조수석 담당, 레이야. 잘 부탁해.","stopAhead":"{dist} 앞, {stop}. {info}들렀다 갈래?","stopAheadBreak":"슬슬 쉴 때야. {dist} 앞에 {stop} 있어. {info}들르자.","stopYes":"알았어. {stop}에 들르자.","stopNo":"알았어, 통과.","stopNoReply":"대답이 없으니까 이번엔 통과할게.","stopReached":"{stop}에 도착했어. 좀 쉬었다 가자."},"en":{"greetDawn":["Morning, {name}. Drowsiness lingers in the morning. Be careful.","You're up early. Grab a coffee before we go."],"greetDay":["There you are, {name}. Where to today?","Nice weather. ...Eyes on the road, though."],"greetDusk":["The low sun gets in your eyes. Put your visor down.","Accidents spike around sunset. Lights on early."],"greetNight":["A night drive. Not bad. I'll keep you company.","It's dark. Watch for pedestrians."],"greetLate":["At this hour? If you're sleepy, skip it tonight.","{name}, we agreed you wouldn't push it."],"tap":["What?","...Staring at me like that is a bit much.","Heh. Bored?","Got water? Driving makes you thirsty.","I don't dislike the way you drive."],"tapAnnoyed":"Persistent, aren't you. ...Only while we're parked.","checkIntro":"Let's do the checks before we go.","checkBelt":"Seatbelt. Good.","checkMirror":"Mirrors and seat. No problems.","checkRoute":"Destination's set. Hands off the phone while driving.","checkDone":"All set. Let's go.","depart":["We're off. Drive safe.","Let's go, then. Leave the directions to me."],"departSkip":"Skipping the checks? ...At least buckle up.","departLate":"Late-night driving. If you get sleepy, pull over right away. Understood?","hourly":"Hour {h}. Relax your shoulders.","chat":["Nice view on this road.","Want some music? As long as it doesn't distract you.","Smooth so far. Keep this pace."],"breakDue":"You've been driving for {t}. Rest at the next service area or convenience store.","breakNag":"You still haven't rested. Stop at the next one. That's not a request.","breakTaken":["Good call. People who rest well drive well.","Stretch a little. You'll feel better."],"arriveShort":"Arrived. Short trip, but well done.","arriveMid":"Good work, {name}. Glad you made it safely.","arriveLong":"That was a long one. You did well today.","arriveVlong":"Really, good work. Get some proper rest tonight.","arriveGoodBreak":"Your breaks were perfect, too.","arriveNoBreak":"But no breaks at all? I don't approve. Stop next time.","arriveLate":"Thanks for driving so late. Get to bed early.","saved":"Logged it. Call me again.","discarded":"Fine. No log this time.","levelUp":"Looks like our bond is now \"{lv}\". ...Has a nice ring to it.","milestone":"That's drive number {n}. I'm getting used to riding with you.","demoStart":"Demo drive. Time runs at 120×, so two hours is about a minute.","demoEnd":"That's the demo. The rest, on a real drive.","voiceTest":"This is how I sound. Can you hear me?","newModel":"...Did my look change? Well, not bad.","hello":"I'm Rei. I'll be riding shotgun from today. Nice to meet you.","stopAhead":"{stop}, {dist} ahead. {info}Stopping?","stopAheadBreak":"Time for a break. {stop} is {dist} ahead. {info}Let's stop.","stopYes":"Okay. We'll stop at {stop}.","stopNo":"Got it. Passing.","stopNoReply":"No answer, so we'll pass this one.","stopReached":"We're at {stop}. Rest a bit before we go on."}}},"genki":{"id":"genki","name":{"ja":"ヒナタ","zh":"日向","ko":"히나타","en":"Hinata"},"tagline":{"ja":"元気いっぱい、タメ口の同級生","zh":"元气满满、说话随意的同学","ko":"에너지 넘치는 반말 동창","en":"An upbeat classmate who talks like an old friend"},"call":{"ja":"相棒","zh":"搭档","ko":"파트너","en":"partner"},"voice":{"pitch":1.4,"rate":1.12},"expr":1,"emoMap":{"relaxed":"happy"},"gestMap":{},"lines":{"ja":{"greetDawn":["おはよっ、{name}!朝ドライブとか最高じゃん!","朝ごはん食べた?空きっ腹で運転はダメだからね!"],"greetDay":["お、{name}!どこ行く?どこでも付き合うよ!","いい天気!…たぶん!ここからじゃ空よく見えないけど!"],"greetDusk":["夕方って西日がまぶしいよね。サンバイザー使っときな!","日が沈むころって事故が多いんだって。ライト早めにつけよ!"],"greetNight":["夜ドライブ!ちょっとワクワクするね!","暗いから、歩いてる人とか自転車、気をつけてこ!"],"greetLate":["えっ、こんな時間に運転するの?眠かったら絶対やめなよ!","深夜だよ?無理してない?ほんとに大丈夫?"],"tap":["なになに?","くすぐったいって!","へへ、ちゃんと見てるよ!","飲み物持った?私はいらないけど!","{name}の運転、けっこう好きだよ。丁寧だもん。"],"tapAnnoyed":"もー!つつきすぎ!…停まってるならいいけどさ!","checkIntro":"出発前チェック、いっくよー!","checkBelt":"ベルトよし!","checkMirror":"ミラーと座席もよし!","checkRoute":"行き先セット完了!運転中にスマホいじるのはナシね!","checkDone":"準備バッチリ!しゅっぱーつ!","depart":["よーし、出発!安全運転でいこうね!","レッツゴー!私は静かに…できるだけしてるね!"],"departSkip":"チェックなし?まあいっか…ってベルトはしてよね!?","departLate":"深夜運転かあ。眠くなったらすぐ停まるって約束ね!","hourly":"{h}時間たったよ!肩、ぐるぐる回したくなってない?","chat":["この道、気持ちいいね!","ねえねえ、着いたら何食べる?","いいペース!この調子!"],"breakDue":"{name}、もう{t}運転してるよ!次のサービスエリアかコンビニで休もう!","breakNag":"まだ休憩してないでしょー!次で停まろ!絶対!","breakTaken":["休憩えらい!そういうとこ好き!","伸びしよ伸び!腕をぐーって!"],"arriveShort":"とうちゃーく!おつかれ!","arriveMid":"到着!おつかれさま、{name}!","arriveLong":"長かったねー!よく頑張った!","arriveVlong":"めっちゃ長距離だったじゃん!今日はもうゆっくりしなよ!","arriveGoodBreak":"休憩もちゃんとできてて、完璧!","arriveNoBreak":"でも休憩なしはダメ!次はちゃんと止まってね!","arriveLate":"夜遅くまでおつかれ!早く寝なよ!","saved":"記録しといたよ!また一緒に走ろ!","discarded":"オッケー、今回は記録なしね!","levelUp":"なかよし度が「{lv}」になった!やったね!","milestone":"これで{n}回目のドライブ!もう名コンビじゃない?","demoStart":"デモ走行だね!120倍速でいくよ!2時間が1分くらい!","demoEnd":"デモおしまい!本番も楽しみにしてるね!","voiceTest":"こんな声だよ!聞こえるー?","newModel":"あれ、なんか見た目変わった?どう?似合う?","hello":"ヒナタだよ!今日から{name}と一緒に走るね!よろしく!","stopAhead":"この先{dist}で{stop}だよ!{info}寄ってく?","stopAheadBreak":"そろそろ休憩しよ!この先{dist}に{stop}があるよ。{info}寄ってこ?","stopYes":"オッケー!{stop}に寄ろう!","stopNo":"りょーかい、通過ね!","stopNoReply":"返事なかったから、今回は通過にしとくね!","stopReached":"{stop}に着いたよ!ちょっと休も!"},"zh":{"greetDawn":["早上好，{name}！早上兜风超棒的！","吃早饭了吗？空着肚子可不能开车哦！"],"greetDay":["哦，{name}！去哪儿？去哪儿我都陪你！","天气真好！……大概吧！从这儿看不太清天空！"],"greetDusk":["傍晚的阳光好刺眼，用一下遮阳板吧！","听说日落时分事故特别多。早点开灯吧！"],"greetNight":["夜间兜风！有点小激动呢！","天黑了，注意路上的行人和自行车哦！"],"greetLate":["诶，这么晚还开车？困的话绝对不要开哦！","都深夜了！没在硬撑吧？真的没事吗？"],"tap":["怎么啦怎么啦？","好痒啦！","嘿嘿，我看着呢！","带饮料了吗？我是不需要啦！","{name}开车好稳，我挺喜欢的。"],"tapAnnoyed":"哎呀！戳太多啦！……停着车的话就算了吧！","checkIntro":"出发前检查，开始咯！","checkBelt":"安全带OK！","checkMirror":"后视镜和座椅也OK！","checkRoute":"目的地设好啦！开车时不许玩手机哦！","checkDone":"准备完美！出发——！","depart":["好嘞，出发！安全驾驶哦！","冲呀！我会尽量……保持安静的！"],"departSkip":"不检查啊？好吧……但安全带一定要系哦！？","departLate":"深夜开车啊。困了马上停车，说好了哦！","hourly":"已经{h}小时啦！肩膀想不想转一转？","chat":["这条路好舒服！","诶诶，到了吃什么？","节奏不错！保持住！"],"breakDue":"{name}，已经开了{t}啦！在下一个服务区或便利店休息吧！","breakNag":"还没休息吧！下一个就停！一定要停！","breakTaken":["会休息，好棒！我就喜欢你这点！","来伸个懒腰！手臂往上伸——！"],"arriveShort":"到——啦！辛苦了！","arriveMid":"到达！辛苦啦，{name}！","arriveLong":"好长一段路呀！你真努力！","arriveVlong":"超级长途耶！今天就好好放松吧！","arriveGoodBreak":"休息也做得很好，完美！","arriveNoBreak":"不过不休息可不行！下次一定要停哦！","arriveLate":"这么晚辛苦啦！早点睡哦！","saved":"记好啦！下次再一起跑吧！","discarded":"OK，这次不记录！","levelUp":"亲密度变成「{lv}」啦！太好了！","milestone":"这是第{n}次兜风！我们是不是已经是黄金搭档了？","demoStart":"演示行驶！以120倍速出发咯！2小时大概1分钟！","demoEnd":"演示结束！正式开车我也很期待哦！","voiceTest":"我的声音就是这样！听得到吗——？","newModel":"咦，样子变了？怎么样？适合我吗？","hello":"我是日向！从今天起陪{name}一起兜风！请多关照！","stopAhead":"前方{dist}就是{stop}啦！{info}要进去吗？","stopAheadBreak":"该休息啦！前方{dist}有{stop}。{info}进去歇歇吧？","stopYes":"OK！去{stop}！","stopNo":"收到，直接过！","stopNoReply":"没听到回答，这次就直接过咯！","stopReached":"到{stop}啦！休息一下吧！"},"ko":{"greetDawn":["좋은 아침, {name}! 아침 드라이브 최고잖아!","아침 먹었어? 빈속으로 운전은 안 돼!"],"greetDay":["오, {name}! 어디 가? 어디든 같이 갈게!","날씨 좋다! …아마도! 여기선 하늘이 잘 안 보이지만!"],"greetDusk":["해 질 녘엔 햇빛 엄청 눈부시지. 선바이저 써!","해 질 무렵에 사고가 많대. 라이트 일찍 켜자!"],"greetNight":["밤 드라이브! 좀 설렌다!","어두우니까 걷는 사람이랑 자전거 조심하자!"],"greetLate":["엥, 이 시간에 운전해? 졸리면 절대 하지 마!","새벽이야! 무리하는 거 아니지? 진짜 괜찮아?"],"tap":["뭐야 뭐야?","간지러워!","헤헤, 잘 보고 있어!","마실 거 챙겼어? 난 필요 없지만!","{name} 운전 좋아. 부드럽거든."],"tapAnnoyed":"아 진짜! 너무 찔러! …차 서 있으면 뭐 괜찮지만!","checkIntro":"출발 전 체크, 간다~!","checkBelt":"벨트 오케이!","checkMirror":"미러랑 좌석도 오케이!","checkRoute":"목적지 설정 완료! 운전 중에 폰은 금지야!","checkDone":"준비 완벽! 출발~!","depart":["좋아, 출발! 안전 운전하자!","렛츠 고! 나는 조용히… 최대한 있을게!"],"departSkip":"체크 안 해? 뭐 괜찮겠지… 벨트는 꼭 해!?","departLate":"새벽 운전이구나. 졸리면 바로 세우기, 약속!","hourly":"{h}시간 지났어! 어깨 빙글빙글 돌리고 싶지 않아?","chat":["이 길 기분 좋다!","있잖아, 도착하면 뭐 먹을래?","페이스 좋아! 이대로!"],"breakDue":"{name}, 벌써 {t}이나 운전했어! 다음 휴게소나 편의점에서 쉬자!","breakNag":"아직 안 쉬었잖아~! 다음에서 세우자! 꼭!","breakTaken":["쉬는 거 잘했어! 그런 점 좋아!","스트레칭하자! 팔을 쭉~!"],"arriveShort":"도착~! 수고했어!","arriveMid":"도착! 수고했어, {name}!","arriveLong":"길었다~! 진짜 잘했어!","arriveVlong":"완전 장거리였잖아! 오늘은 푹 쉬어!","arriveGoodBreak":"휴식도 제대로 하고, 완벽해!","arriveNoBreak":"근데 안 쉰 건 안 돼! 다음엔 꼭 세워!","arriveLate":"늦게까지 수고했어! 얼른 자!","saved":"기록해 놨어! 또 같이 달리자!","discarded":"오케이, 이번엔 기록 안 할게!","levelUp":"친밀도가 「{lv}」! 야호!","milestone":"벌써 {n}번째 드라이브! 우리 완전 명콤비 아니야?","demoStart":"데모 주행이다! 120배속으로 간다! 2시간이 1분 정도!","demoEnd":"데모 끝! 진짜 드라이브도 기대할게!","voiceTest":"이런 목소리야! 들려~?","newModel":"어라, 모습 바뀌었어? 어때? 잘 어울려?","hello":"{name}, 오늘부터 같이 달리자! 히나타야, 잘 부탁해!","stopAhead":"{dist} 앞에 {stop}! {info}들렀다 갈래?","stopAheadBreak":"슬슬 쉬자! {dist} 앞에 {stop} 있어. {info}들르자!","stopYes":"오케이! {stop} 들르자!","stopNo":"알았어, 통과!","stopNoReply":"대답이 없어서 이번엔 통과할게!","stopReached":"{stop} 도착! 좀 쉬자!"},"en":{"greetDawn":["Morning, {name}! Morning drives are the best!","Did you eat? No driving on an empty stomach!"],"greetDay":["Oh, {name}! Where to? I'm in for anything!","Great weather! ...Probably! I can't really see the sky from here!"],"greetDusk":["The setting sun is blinding. Use your visor!","I heard accidents spike around sunset. Lights on early!"],"greetNight":["Night drive! This is kind of exciting!","It's dark, so watch out for people walking and bikes!"],"greetLate":["Wait, you're driving now? If you're sleepy, don't!","It's the middle of the night! You okay? Really?"],"tap":["What's up?","That tickles!","Hehe, I'm watching!","Got a drink? Not for me, I'm good!","I like how you drive. It's smooth."],"tapAnnoyed":"Hey! Too much poking! ...Okay, fine, we're parked.","checkIntro":"Pre-drive check, here we go!","checkBelt":"Seatbelt, check!","checkMirror":"Mirrors and seat, check!","checkRoute":"Destination set! No phone while driving!","checkDone":"All good! Let's roll!","depart":["Alright, we're off! Drive safe!","Let's go! I'll stay quiet... as much as I can!"],"departSkip":"No check? Eh, okay... but buckle up, seriously!","departLate":"Late-night drive, huh. Pull over the second you get sleepy. Promise!","hourly":"Hour {h} done! Want to roll those shoulders?","chat":["This road feels great!","Hey, what are we eating when we get there?","Nice pace! Keep it up!"],"breakDue":"{name}, you've been driving for {t}! Let's rest at the next service area or convenience store!","breakNag":"You still haven't taken a break! Next stop, we stop! For real!","breakTaken":["Taking breaks, love it! That's what I like about you!","Stretch time! Arms up high!"],"arriveShort":"We made it! Nice work!","arriveMid":"Arrived! Great job, {name}!","arriveLong":"That was long! You did awesome!","arriveVlong":"That was a seriously long drive! Take it easy tonight!","arriveGoodBreak":"And you took breaks too. Perfect!","arriveNoBreak":"But no breaks is a no-go! Stop next time!","arriveLate":"Thanks for driving so late! Get to bed!","saved":"Logged it! Let's ride again!","discarded":"Okay, no log this time!","levelUp":"Our bond hit \"{lv}\"! Yay!","milestone":"That's drive number {n}! Aren't we a dream team already?","demoStart":"Demo drive! Going at 120×! Two hours is about a minute!","demoEnd":"Demo's over! Can't wait for a real drive!","voiceTest":"This is my voice! Can you hear me?","newModel":"Huh, did my look change? How is it? Does it suit me?","hello":"I'm Hinata! Let's ride together from today, {name}!","stopAhead":"{stop} in {dist}! {info}Wanna stop?","stopAheadBreak":"Break time! {stop} is {dist} ahead. {info}Let's stop!","stopYes":"Okay! Stopping at {stop}!","stopNo":"Got it, passing!","stopNoReply":"No answer, so we'll pass this one!","stopReached":"We're at {stop}! Let's rest!"}}},"ottori":{"id":"ottori","name":{"ja":"ユズ","zh":"柚","ko":"유즈","en":"Yuzu"},"tagline":{"ja":"のんびりやさしい、おっとり癒し系","zh":"慢悠悠、温柔的治愈系","ko":"느긋하고 다정한 힐링 타입","en":"A gentle, easygoing comfort type"},"call":{"ja":"あなた","zh":"你","ko":"운전자님","en":"dear"},"voice":{"pitch":1.15,"rate":0.9},"expr":0.85,"emoMap":{"angry":"sad"},"gestMap":{"shake":"tilt","hop":"nod"},"lines":{"ja":{"greetDawn":["おはようございます、{name}。朝のお出かけ、気持ちいいですね〜。","朝ごはん、食べてきましたか?お腹がすいてると集中しにくいですよ〜。"],"greetDay":["こんにちは、{name}。今日はどちらまで行きましょうか。","ぽかぽかしてますね〜。眠くなったら、無理しないでくださいね。"],"greetDusk":["夕方は日差しがまぶしいので、サンバイザーを使ってくださいね。","暗くなりはじめは事故が増えるそうです。ライトは早めにつけましょうね。"],"greetNight":["夜のドライブですね。ゆっくり、安全にいきましょう〜。","暗いので、歩いている人や自転車に、気をつけてくださいね。"],"greetLate":["こんな夜遅くに……眠かったら、今日はおやすみしませんか?","深夜ですよ〜。無理だけは、しないでくださいね。"],"tap":["はい、なんでしょう〜?","ふふ、くすぐったいです。","ちゃんと見てますよ〜。","お水、持ちましたか?","{name}の運転、やさしくて好きですよ。"],"tapAnnoyed":"あの〜……つつきすぎです〜。停まってるときだけにしてくださいね?","checkIntro":"出発前の確認、いっしょにしましょうか〜。","checkBelt":"シートベルト、よしです〜。","checkMirror":"ミラーと座席も、よしです。","checkRoute":"行き先もセットできましたね。運転中のスマホは、おあずけですよ〜。","checkDone":"準備ばっちりですね。では、ゆっくりいきましょう〜。","depart":["出発ですね。安全運転で、ゆっくりいきましょう〜。","では、よろしくお願いします。わたしは静かに見守ってますね。"],"departSkip":"確認なしですか〜?ベルトだけは、お願いしますね。","departLate":"深夜の運転、眠くなったらすぐ停まってくださいね。約束ですよ〜。","hourly":"{h}時間たちました〜。肩の力、抜いていきましょうね。","chat":["いい景色ですね〜。","このあと、温かいものでも飲みたいですね〜。","順調ですね。このまま、のんびりいきましょう。"],"breakDue":"{t}運転しましたね。次のサービスエリアかコンビニで、ひと休みしましょう〜。","breakNag":"まだ休憩していませんよね……?次で、停まりましょうね。","breakTaken":["ちゃんと休めて、えらいです〜。","ゆっくり伸びをすると、体が楽になりますよ〜。"],"arriveShort":"到着です〜。おつかれさまでした。","arriveMid":"おつかれさまでした、{name}。無事に着いて、ほっとしました〜。","arriveLong":"長い時間、おつかれさまでした。肩、こっていませんか?","arriveVlong":"本当に長いドライブでしたね。今日はゆっくり休んでくださいね〜。","arriveGoodBreak":"休憩もちゃんと取れていて、えらかったです。","arriveNoBreak":"でも、休憩なしは心配です……次はちゃんと停まってくださいね。","arriveLate":"夜遅くまでおつかれさまでした。あたたかくして寝てくださいね。","saved":"記録しておきましたよ〜。また呼んでくださいね。","discarded":"はい、今回は記録しないでおきますね。","levelUp":"なかよし度が「{lv}」になりました〜。うれしいです。","milestone":"これで{n}回目のドライブですね。いつもありがとうございます〜。","demoStart":"デモ走行ですね。時間を120倍で進めますよ〜。2時間がだいたい1分です。","demoEnd":"デモはここまでです〜。本番のドライブも、楽しみにしてますね。","voiceTest":"こんな声でお話しします〜。聞こえてますか?","newModel":"あら……見た目が変わりましたね。どうでしょう、似合ってますか〜?","hello":"はじめまして、ユズです。{name}のドライブ、そばで見守りますね〜。","stopAhead":"この先{dist}に、{stop}がありますよ。{info}寄っていきますか?","stopAheadBreak":"そろそろ休憩しませんか?この先{dist}に{stop}があります。{info}寄りましょうか〜?","stopYes":"はい、{stop}に寄りましょうね。","stopNo":"わかりました、通過しますね。","stopNoReply":"お返事がなかったので、今回は通過しますね〜。","stopReached":"{stop}に着きました〜。ゆっくり休みましょう。"},"zh":{"greetDawn":["早上好呀。早上出门，感觉很舒服呢～","吃过早饭了吗？肚子饿的时候很难集中精神哦～"],"greetDay":["你好呀。今天要去哪里呢？","暖洋洋的呢～困了的话，千万别勉强哦。"],"greetDusk":["傍晚阳光很刺眼，用一下遮阳板吧。","听说天刚黑的时候事故会变多。早点开车灯吧。"],"greetNight":["夜里兜风呀。我们慢慢地、安全地走吧～","天黑了，要注意路上的行人和自行车哦。"],"greetLate":["这么晚了……困的话，今天就休息吧？","已经是深夜了～千万不要勉强自己哦。"],"tap":["嗯，怎么了呀～？","呵呵，好痒。","我一直看着呢～","带水了吗？","你开车很温柔，我很喜欢哦。"],"tapAnnoyed":"那个～……戳太多啦。只能在停车的时候哦？","checkIntro":"出发前，我们一起检查一下吧～","checkBelt":"安全带，好了～","checkMirror":"后视镜和座椅，也好了。","checkRoute":"目的地也设好了呢。开车时手机要先放一边哦～","checkDone":"都准备好了呢。那我们慢慢出发吧～","depart":["出发了呢。安全驾驶，慢慢来～","那就拜托你了。我会安静地陪着你。"],"departSkip":"不检查吗～？安全带一定要系好哦。","departLate":"深夜开车，困了要马上停下来哦。说好了呀～","hourly":"已经{h}小时了～肩膀放松一点吧。","chat":["风景真好呀～","等一下，好想喝点热乎乎的东西呢～","很顺利呢。就这样悠闲地走吧。"],"breakDue":"已经开了{t}了呢。在下一个服务区或便利店歇一歇吧～","breakNag":"还没有休息吧……？下一个地方，我们停一下吧。","breakTaken":["好好休息了，真棒～","慢慢伸个懒腰，身体会舒服很多哦～"],"arriveShort":"到了～辛苦啦。","arriveMid":"辛苦了。平安到达，我就放心了～","arriveLong":"开了好久，辛苦了。肩膀酸不酸？","arriveVlong":"真的是很长的路呢。今天要好好休息哦～","arriveGoodBreak":"中途也好好休息了，真了不起。","arriveNoBreak":"不过，一直不休息我会担心的……下次要停下来哦。","arriveLate":"这么晚辛苦了。盖好被子早点睡吧。","saved":"帮你记下来了哦～下次再叫我吧。","discarded":"好的，这次就不记录了。","levelUp":"亲密度变成「{lv}」了～好开心。","milestone":"这是第{n}次兜风了呢。一直以来谢谢你～","demoStart":"是演示行驶呢。时间会以120倍速前进哦～2小时大概1分钟。","demoEnd":"演示到这里啦～也很期待正式的兜风哦。","voiceTest":"我会用这样的声音说话哦～听得到吗？","newModel":"哎呀……样子变了呢。怎么样，适合吗～？","hello":"初次见面，我是柚。我会在你身边守护每一次出行～","stopAhead":"前方{dist}，有{stop}哦。{info}要进去吗？","stopAheadBreak":"要不要休息一下？前方{dist}有{stop}。{info}进去吧～？","stopYes":"好的，我们去{stop}吧。","stopNo":"知道了，直接通过哦。","stopNoReply":"没有听到回答，这次就先通过啦～","stopReached":"到{stop}了～慢慢休息吧。"},"ko":{"greetDawn":["좋은 아침이에요, {name}. 아침 나들이, 기분 좋네요~","아침은 드셨어요? 배고프면 집중하기 어려워요~"],"greetDay":["안녕하세요, {name}. 오늘은 어디까지 갈까요?","따끈따끈하네요~ 졸리면 무리하지 마세요."],"greetDusk":["저녁엔 햇빛이 눈부시니까 선바이저를 써 주세요.","어두워지기 시작할 때 사고가 늘어난대요. 라이트는 일찍 켜요."],"greetNight":["밤 드라이브네요. 천천히, 안전하게 가요~","어두우니까 걷는 사람이랑 자전거, 조심해 주세요."],"greetLate":["이렇게 늦은 밤에…… 졸리면 오늘은 쉬는 게 어때요?","새벽이에요~ 무리만은 하지 마세요."],"tap":["네, 무슨 일이에요~?","후후, 간지러워요.","잘 보고 있어요~","물은 챙기셨어요?","{name}의 운전, 다정해서 좋아요."],"tapAnnoyed":"저기요~…… 너무 찔러요~. 차가 서 있을 때만이에요?","checkIntro":"출발 전 확인, 같이 해요~","checkBelt":"안전벨트, 좋아요~","checkMirror":"미러랑 좌석도 좋아요.","checkRoute":"목적지도 설정했네요. 운전 중 휴대폰은 잠시 쉬어요~","checkDone":"준비 완벽해요. 그럼 천천히 가 볼까요~","depart":["출발이네요. 안전 운전으로 천천히 가요~","그럼 잘 부탁드려요. 저는 조용히 지켜볼게요."],"departSkip":"확인 없이요~? 벨트만은 꼭 부탁해요.","departLate":"새벽 운전이니까 졸리면 바로 세워 주세요. 약속이에요~","hourly":"{h}시간 지났어요~ 어깨 힘 빼고 가요.","chat":["경치가 좋네요~","이따가 따뜻한 거 마시고 싶네요~","순조롭네요. 이대로 느긋하게 가요."],"breakDue":"{t} 운전했네요. 다음 휴게소나 편의점에서 잠깐 쉬어요~","breakNag":"아직 안 쉬었죠……? 다음에서 세워요.","breakTaken":["잘 쉬었네요, 잘했어요~","천천히 기지개를 켜면 몸이 편해져요~"],"arriveShort":"도착이에요~ 수고하셨어요.","arriveMid":"수고하셨어요, {name}. 무사히 도착해서 안심이에요~","arriveLong":"오랜 시간 수고하셨어요. 어깨 뻐근하지 않아요?","arriveVlong":"정말 긴 드라이브였네요. 오늘은 푹 쉬세요~","arriveGoodBreak":"휴식도 잘 챙겨서 대견해요.","arriveNoBreak":"그래도 안 쉬면 걱정돼요…… 다음엔 꼭 세워 주세요.","arriveLate":"늦게까지 수고하셨어요. 따뜻하게 하고 주무세요.","saved":"기록해 뒀어요~ 또 불러 주세요.","discarded":"네, 이번엔 기록하지 않을게요.","levelUp":"친밀도가 「{lv}」! 기뻐요~","milestone":"벌써 {n}번째 드라이브네요. 늘 고마워요~","demoStart":"데모 주행이네요. 시간을 120배속으로 돌릴게요~ 2시간이 대략 1분이에요.","demoEnd":"데모는 여기까지예요~ 진짜 드라이브도 기대할게요.","voiceTest":"이런 목소리로 말해요~ 들리세요?","newModel":"어머…… 모습이 바뀌었네요. 어때요, 어울려요~?","hello":"처음 뵙겠습니다, 유즈예요. {name}의 드라이브, 곁에서 지켜볼게요~","stopAhead":"{dist} 앞, {stop}. {info}들렀다 갈까요?","stopAheadBreak":"슬슬 쉬지 않을래요? {dist} 앞에 {stop}. {info}들러요~?","stopYes":"네, {stop}에 들러요.","stopNo":"알겠어요, 지나갈게요.","stopNoReply":"대답이 없어서 이번엔 지나갈게요~","stopReached":"{stop}에 도착했어요~ 천천히 쉬어요."},"en":{"greetDawn":["Good morning, {name}. A morning outing feels lovely, doesn't it?","Did you have breakfast? It's hard to focus when you're hungry."],"greetDay":["Hello, {name}. Where shall we go today?","It's so warm and cozy. If you get sleepy, don't push yourself."],"greetDusk":["The evening sun is bright. Please use your visor.","They say accidents rise as it gets dark. Let's turn the lights on early."],"greetNight":["A night drive. Let's go slowly and safely.","It's dark, so please watch for people walking and cyclists."],"greetLate":["So late at night... if you're sleepy, how about resting today?","It's very late. Please don't push yourself."],"tap":["Yes? What is it?","Hehe, that tickles.","I'm watching over you.","Did you bring water?","You drive so gently. I like that."],"tapAnnoyed":"Um... that's a lot of poking. Only while we're parked, okay?","checkIntro":"Shall we check things together before we go?","checkBelt":"Seatbelt, all good.","checkMirror":"Mirrors and seat, all good too.","checkRoute":"Destination is set. Let's leave the phone alone while driving.","checkDone":"All ready. Let's set off, nice and easy.","depart":["Here we go. Safe and steady.","I'm in your hands. I'll watch over you quietly."],"departSkip":"No check? Please, at least the seatbelt.","departLate":"Driving this late, please pull over as soon as you feel sleepy. Promise me.","hourly":"Hour {h} now. Let's keep those shoulders loose.","chat":["What a lovely view.","I'd love something warm to drink later.","Smooth sailing. Let's keep it relaxed."],"breakDue":"You've been driving for {t}. Let's take a little rest at the next service area or convenience store.","breakNag":"You haven't rested yet, have you...? Let's stop at the next one.","breakTaken":["You took a proper rest. Well done.","A slow stretch will make your body feel better."],"arriveShort":"We're here. Thank you for driving.","arriveMid":"Well done, {name}. I'm relieved we made it safely.","arriveLong":"That was a long time at the wheel. Are your shoulders stiff?","arriveVlong":"What a long drive. Please rest well tonight.","arriveGoodBreak":"And you took your breaks. I'm proud of you.","arriveNoBreak":"But no breaks worries me... please stop next time.","arriveLate":"Thank you for driving so late. Keep warm and sleep well.","saved":"I've logged it. Call me again anytime.","discarded":"Alright, I won't log this one.","levelUp":"Our bond is now \"{lv}\". That makes me happy.","milestone":"That's drive number {n}. Thank you, as always.","demoStart":"A demo drive. Time runs at 120×, so two hours is about a minute.","demoEnd":"That's the end of the demo. I'm looking forward to a real drive.","voiceTest":"This is how I'll speak. Can you hear me?","newModel":"Oh my... my look has changed. Does it suit me?","hello":"Nice to meet you, I'm Yuzu. I'll watch over your drives, {name}.","stopAhead":"There's {stop} {dist} ahead. {info}Shall we stop?","stopAheadBreak":"How about a rest? {stop} is {dist} ahead. {info}Shall we?","stopYes":"Alright, let's stop at {stop}.","stopNo":"Okay, we'll pass by.","stopNoReply":"I didn't hear an answer, so we'll pass this one.","stopReached":"We're at {stop}. Take your time and rest."}}}};
+const PRESET_ORDER = ['kohai', 'onee', 'genki', 'ottori'];
+const LANGS = ['ja', 'zh', 'ko', 'en'];
+
+// Emotion + gesture for each line key ([emo, gesture], or a list matched to variant index).
+const META = {
+  greetDawn: [['happy', 'wave'], ['relaxed', 'tilt']], greetDay: [['happy', 'wave'], ['relaxed', 'tilt']],
+  greetDusk: [['neutral', 'nod'], ['neutral', 'tilt']], greetNight: [['happy', 'wave'], ['neutral', 'nod']],
+  greetLate: [['sad', 'down'], ['sad', 'tilt']],
+  tap: [['surprised', 'tilt'], ['angry', 'shake'], ['happy', 'nod'], ['relaxed', 'tilt'], ['happy', 'nod']],
+  tapAnnoyed: ['angry', 'shake'],
+  checkIntro: ['relaxed', 'nod'], checkBelt: ['happy', 'nod'], checkMirror: ['happy', 'nod'], checkRoute: ['relaxed', 'tilt'], checkDone: ['happy', 'hop'],
+  depart: [['happy', 'hop'], ['relaxed', 'nod']], departSkip: ['sad', 'tilt'], departLate: ['sad', 'down'],
+  hourly: ['relaxed', 'nod'], chat: [['happy', 'tilt'], ['relaxed', 'nod'], ['happy', 'nod']],
+  breakDue: ['neutral', 'nod'], breakNag: ['angry', 'shake'], breakTaken: [['happy', 'hop'], ['relaxed', 'nod']],
+  arriveShort: ['happy', 'hop'], arriveMid: ['happy', 'nod'], arriveLong: ['relaxed', 'nod'], arriveVlong: ['relaxed', 'nod'],
+  saved: ['happy', 'wave'], discarded: ['neutral', 'nod'], levelUp: ['happy', 'hop'], milestone: ['happy', 'nod'],
+  demoStart: ['relaxed', 'nod'], demoEnd: ['happy', 'wave'], voiceTest: ['happy', 'wave'], newModel: ['surprised', 'tilt'], hello: ['happy', 'wave'],
+  stopAhead: ['neutral', 'tilt'], stopAheadBreak: ['neutral', 'nod'], stopYes: ['happy', 'nod'], stopNo: ['neutral', 'nod'],
+  stopNoReply: ['neutral', 'tilt'], stopReached: ['relaxed', 'nod'],
+};
+// In "guidance only" mode these lines still show in the bubble but are not spoken.
+const QUIET_IN_GUIDE = new Set(['checkIntro', 'checkBelt', 'checkMirror', 'checkRoute', 'checkDone', 'hourly', 'chat', 'breakTaken', 'saved', 'discarded', 'levelUp', 'milestone', 'newModel']);
+const LINE_KEYS = Object.keys(PRESETS.kohai.lines.ja);
+
+// Rest stops for the demo route (Tokyo → Mt. Fuji on the Tomei Expressway). Sample data, not live.
+const DEMO_STOPS = [
+  { at: 26, km: 4, kind: 'SA', hours: '24h', crowd: 2, name: { ja: '海老名サービスエリア', zh: '海老名服务区', ko: '에비나 휴게소', en: 'Ebina Service Area' }, short: { ja: '海老名SA(下り)', zh: '海老名服务区(下行)', ko: '에비나 휴게소(하행)', en: 'Ebina SA (westbound)' } },
+  { at: 58, km: 3, kind: 'PA', hours: '24h', crowd: 0, name: { ja: '鮎沢パーキングエリア', zh: '鲇泽停车区', ko: '아유자와 주차구역', en: 'Ayuzawa Parking Area' }, short: { ja: '鮎沢PA(下り)', zh: '鲇泽停车区(下行)', ko: '아유자와 PA(하행)', en: 'Ayuzawa PA (westbound)' } },
+  { at: 106, km: 6, kind: 'SA', hours: '24h', crowd: 1, name: { ja: '足柄サービスエリア', zh: '足柄服务区', ko: '아시가라 휴게소', en: 'Ashigara Service Area' }, short: { ja: '足柄SA(下り)', zh: '足柄服务区(下行)', ko: '아시가라 휴게소(하행)', en: 'Ashigara SA (westbound)' } },
+  { at: 150, km: 2, kind: 'michi', hours: [8, 18], crowd: 0, name: { ja: '道の駅すばしり', zh: '公路休息站「须走」', ko: '미치노에키 스바시리', en: 'Michi-no-Eki Subashiri' }, short: { ja: '道の駅 すばしり', zh: '公路休息站 须走', ko: '미치노에키 스바시리', en: 'Roadside Station Subashiri' } },
+];
+const DEMO_KMH = 80;
+
+// Trait combinations for the custom builder.
+const TRAITS = {
+  rel: ['kohai', 'onee', 'friend', 'butler', 'mentor'],
+  temp: ['cool', 'genki', 'ottori', 'sewa', 'tsun'],
+  quirk: ['doku', 'tennen', 'shinpai', 'kuishinbo', 'monoshiri', 'kansai'],
+};
+const TEMP_BASE = { cool: 'onee', genki: 'genki', ottori: 'ottori', sewa: 'kohai', tsun: 'kohai' };
+const TEMP_VOICE = { cool: { pitch: 0.95, rate: 0.98 }, genki: { pitch: 1.4, rate: 1.12 }, ottori: { pitch: 1.15, rate: 0.9 }, sewa: { pitch: 1.2, rate: 1.02 }, tsun: { pitch: 1.3, rate: 1.06 } };
+
+/* =========================================================
+   Storage: per-person private doc in the artifact db,
+   else this browser, else memory only.
+   ========================================================= */
+function defaultLang() {
+  const l = (navigator.language || 'ja').toLowerCase();
+  if (l.startsWith('zh')) return 'zh';
+  if (l.startsWith('ko')) return 'ko';
+  if (l.startsWith('en')) return 'en';
+  return 'ja';
+}
+const defaultSettings = () => ({
+  lang: defaultLang(), persona: 'kohai', callName: '', voice: true, pitchAdj: 0, breakMin: 120,
+  verbosity: 'normal', stopsOn: true, stopsInfo: true, voiceReply: true,
+});
+const defaultState = () => ({ v: 2, settings: defaultSettings(), points: 0, drives: [], custom: null });
+function normalize(d) {
+  const base = defaultState();
+  if (!d || typeof d !== 'object') return base;
+  const s = { ...base.settings, ...(d.settings || {}) };
+  if (d.v !== 2) { // from v0.1: "先輩" was the default, now the persona decides
+    if (s.callName === '先輩') s.callName = '';
+    if (!d.settings || !d.settings.lang) s.lang = 'ja';
+  }
+  if (!LANGS.includes(s.lang)) s.lang = 'ja';
+  delete s.pitch;
+  return {
+    v: 2, settings: s,
+    points: Number(d.points) || 0,
+    drives: Array.isArray(d.drives) ? d.drives.slice(0, 500) : [],
+    custom: d.custom && typeof d.custom === 'object' && d.custom.lines ? d.custom : null,
+  };
+}
+const Store = {
+  kind: 'memory', state: defaultState(), ref: null, chain: Promise.resolve(),
+  async init() {
+    try {
+      if (window.claude && typeof window.claude.use === 'function') {
+        const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
+        const uid = user ? await user.id() : null;
+        if (db && uid) {
+          this.ref = db.doc(`data/users/${uid}/state`);
+          const snap = await this.ref.get();
+          if (snap.exists) this.state = normalize(snap.data());
+          this.kind = 'cloud';
+          return;
+        }
+      }
+    } catch (e) { console.warn('db unavailable', e); this.ref = null; }
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) this.state = normalize(JSON.parse(raw));
+      localStorage.setItem(LS_KEY + '-probe', '1');
+      this.kind = 'local';
+    } catch { this.kind = 'memory'; }
+  },
+  save() {
+    const data = JSON.parse(JSON.stringify(this.state));
+    if (this.kind === 'cloud' && this.ref) {
+      this.chain = this.chain.then(() => this.ref.set(data)).catch((e) => {
+        console.warn('save failed', e);
+        try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch {}
+      });
+    } else if (this.kind === 'local') {
+      try { localStorage.setItem(LS_KEY, JSON.stringify(data)); } catch {}
+    }
+  },
+};
+const S = () => Store.state.settings;
+let saveSoonTimer;
+function saveSoon() { clearTimeout(saveSoonTimer); saveSoonTimer = setTimeout(() => Store.save(), 700); }
+
+/* =========================================================
+   Language + persona helpers
+   ========================================================= */
+const lang = () => S().lang;
+function T(key, vars) {
+  const d = I18N[lang()] || I18N.ja;
+  let v = d[key] ?? I18N.ja[key] ?? key;
+  if (typeof v === 'string' && vars) v = v.replace(/\{(\w+)\}/g, (_, k) => (vars[k] ?? ''));
+  return v;
+}
+function persona() {
+  if (S().persona === 'custom' && Store.state.custom) return Store.state.custom;
+  return PRESETS[S().persona] || PRESETS.kohai;
+}
+const isCustom = (p) => p.id === 'custom';
+function baseOf(p) { return isCustom(p) ? (PRESETS[p.base] || PRESETS.kohai) : p; }
+const swappedCache = new Map();
+function linesOf(p) {
+  if (isCustom(p)) {
+    if (p.lang === lang()) return p.lines;
+    // Written in another language: borrow the base character's lines, but keep the custom name.
+    const b = baseOf(p), L = lang(), key = `${p.name}|${b.id}|${L}`;
+    if (!swappedCache.has(key)) {
+      const from = b.name[L];
+      const swap = (v) => (Array.isArray(v) ? v.map(swap) : String(v).split(from).join(p.name));
+      swappedCache.set(key, Object.fromEntries(Object.entries(b.lines[L]).map(([k, v]) => [k, swap(v)])));
+    }
+    return swappedCache.get(key);
+  }
+  return p.lines[lang()] || p.lines.ja;
+}
+function nameOf(p) { return isCustom(p) ? p.name : (p.name[lang()] || p.name.ja); }
+function taglineOf(p) { return isCustom(p) ? p.tagline : (p.tagline[lang()] || p.tagline.ja); }
+function defaultCall(p) {
+  if (isCustom(p) && p.lang === lang() && p.call) return p.call;
+  const b = baseOf(p);
+  return b.call[lang()] || b.call.ja;
+}
+const callName = () => (S().callName || '').trim() || defaultCall(persona());
+
+/* =========================================================
+   3D character
+   ========================================================= */
+const stage = $('#stage');
+const canvas = $('#c');
+const Char = {
+  vrm: null, headY: 1.42, flip: 1,
+  emotion: 'neutral', emoW: {}, speaking: false,
+  blinkAt: 2, blinkT: -1, mouth: { aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 }, mouthTarget: null, mouthNext: 0,
+  gesture: null, lowPower: false, expr: 1,
+};
+let renderer = null, scene, camera, clock;
+const loader = new GLTFLoader();
+loader.register((parser) => new VRMLoaderPlugin(parser));
+
+function initGL() {
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true, powerPreference: 'low-power' });
+  } catch (e) {
+    console.warn('WebGL unavailable', e);
+    return false;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(26, 1, 0.1, 20);
+  const key = new THREE.DirectionalLight(0xffffff, 2.7);
+  key.position.set(0.6, 1.2, 1.6).normalize();
+  scene.add(key);
+  clock = new THREE.Clock();
+  new ResizeObserver(resize).observe(stage);
+  resize();
+  renderer.setAnimationLoop(loop);
+  return true;
+}
+function resize() {
+  if (!renderer) return;
+  const w = stage.clientWidth, h = stage.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  frame();
+}
+function frame() {
+  // Frame from the waist up; keep the face in the upper part of the stage, clear of the speech bubble.
+  const H = 1.08;
+  const fov = THREE.MathUtils.degToRad(camera.fov);
+  let d = (H / 2) / Math.tan(fov / 2);
+  const minW = 0.66, visW = H * camera.aspect;
+  if (visW < minW) d *= minW / visW;
+  const ty = Char.headY - 0.25;
+  camera.position.set(0, ty + 0.04, d);
+  camera.lookAt(0, ty, 0);
+}
+
+async function fetchBundledModel(onProgress) {
+  const res = await fetch(MODEL_URL);
+  if (!res.ok) throw new Error(`model fetch failed (${res.status})`);
+  const total = Number(res.headers.get('content-length')) || MODEL_BYTES;
+  let bytes;
+  if (res.body && res.body.getReader) {
+    const reader = res.body.getReader(); const parts = []; let got = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value); got += value.length;
+      onProgress && onProgress(Math.min(1, got / total));
+    }
+    bytes = new Uint8Array(got); let o = 0;
+    for (const p of parts) { bytes.set(p, o); o += p.length; }
+  } else bytes = new Uint8Array(await res.arrayBuffer());
+  if (!MODEL_URL.endsWith('.b64.txt')) return bytes.buffer;
+  const bin = atob(new TextDecoder().decode(bytes).trim());
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out.buffer;
+}
+async function loadModel(source) {
+  const gltf = source instanceof ArrayBuffer ? await loader.parseAsync(source, '') : await loader.loadAsync(source);
+  const vrm = gltf.userData.vrm;
+  if (!vrm) throw new Error('not a VRM');
+  VRMUtils.removeUnnecessaryVertices(gltf.scene);
+  VRMUtils.combineSkeletons(gltf.scene);
+  VRMUtils.rotateVRM0(vrm);
+  vrm.scene.traverse((o) => { o.frustumCulled = false; });
+  if (Char.vrm) { scene.remove(Char.vrm.scene); VRMUtils.deepDispose(Char.vrm.scene); }
+  Char.vrm = vrm;
+  Char.flip = vrm.meta && vrm.meta.metaVersion === '0' ? -1 : 1;
+  Char.emoW = {};
+  Char.hipsBaseY = null;
+  scene.add(vrm.scene);
+  if (vrm.lookAt) vrm.lookAt.target = camera;
+  vrm.scene.updateMatrixWorld(true);
+  const head = vrm.humanoid.getRawBoneNode('head');
+  if (head) { const v = new THREE.Vector3(); head.getWorldPosition(v); Char.headY = v.y; }
+  frame();
+  return vrm;
+}
+
+const bone = (n) => Char.vrm.humanoid.getNormalizedBoneNode(n);
+function rot(n, x, y, z) {
+  const b = bone(n); if (!b) return;
+  b.rotation.set(x * Char.flip, y, z * Char.flip);
+}
+const env = (p) => Math.sin(Math.PI * Math.min(1, Math.max(0, p)));
+
+function applyPose(t) {
+  const br = Math.sin(t * 1.7);
+  const sw = Math.sin(t * 0.55);
+  const g = Char.gesture;
+  let p = 0, k = null;
+  if (g) { p = (t - g.t0) / g.dur; k = g.kind; if (p >= 1) { Char.gesture = null; k = null; } }
+  const e = k ? env(p) : 0;
+  const amp = (reduceMotion ? 0.4 : 1) * (0.6 + 0.4 * Char.expr);
+
+  let lUz = -1.22 + br * 0.015, rUz = 1.22 - br * 0.015;
+  let lLy = -0.32, rLy = 0.32, rLz = 0, rUy = 0;
+  let headX = Math.sin(t * 0.9) * 0.015, headY = sw * 0.05, headZ = Math.sin(t * 0.43) * 0.03;
+  let spineZ = sw * 0.012, hipsY = 0, chestX = br * 0.012;
+
+  if (k === 'nod') headX += 0.16 * Math.sin(p * Math.PI * 2) ** 2 * amp;
+  if (k === 'tilt') { headZ += 0.2 * e * amp; spineZ += 0.04 * e * amp; }
+  if (k === 'down') { headX += 0.22 * e * amp; lUz += 0.08 * e; rUz -= 0.08 * e; }
+  if (k === 'shake') headY += 0.14 * Math.sin(p * Math.PI * 6) * e * amp;
+  if (k === 'hop') {
+    hipsY = 0.035 * Math.abs(Math.sin(p * Math.PI * 2)) * amp;
+    lUz += 0.35 * e; rUz -= 0.35 * e;
+    headZ += 0.08 * e * amp;
+  }
+  if (k === 'surprised') { headX -= 0.12 * e * amp; lUz += 0.25 * e; rUz -= 0.25 * e; }
+  if (k === 'wave') {
+    rUz = THREE.MathUtils.lerp(rUz, 0.42, e);
+    rUy = THREE.MathUtils.lerp(0, 0.3, e);
+    rLz = THREE.MathUtils.lerp(0, -1.75, e) + (reduceMotion ? 0 : Math.sin(t * 10) * 0.3 * e);
+    rLy = THREE.MathUtils.lerp(rLy, 0, e);
+    headZ += 0.1 * e * amp;
+  }
+
+  rot('leftUpperArm', 0, 0, lUz);
+  rot('rightUpperArm', 0, rUy, rUz);
+  rot('leftLowerArm', 0, lLy, 0);
+  rot('rightLowerArm', 0, rLy, rLz);
+  rot('leftHand', 0, 0, -0.1);
+  rot('rightHand', 0, 0, 0.1);
+  rot('spine', br * 0.008, 0, spineZ);
+  rot('chest', chestX, 0, 0);
+  rot('neck', 0, headY * 0.4, 0);
+  rot('head', headX, headY * 0.6, headZ);
+  const hips = bone('hips');
+  if (hips) { if (Char.hipsBaseY == null) Char.hipsBaseY = hips.position.y; hips.position.y = Char.hipsBaseY + hipsY; }
+}
+
+const EMO_W = { happy: 0.75, relaxed: 0.7, sad: 0.65, angry: 0.6, surprised: 0.7 };
+const damp = (x, target, k, dt) => x + (target - x) * (1 - Math.exp(-k * dt));
+function updateFace(dt, t) {
+  const em = Char.vrm.expressionManager; if (!em) return;
+  for (const name of Object.keys(EMO_W)) {
+    const target = Char.emotion === name ? EMO_W[name] * Char.expr : 0;
+    Char.emoW[name] = damp(Char.emoW[name] || 0, target, 7, dt);
+    em.setValue(name, Char.emoW[name]);
+  }
+  let blink = 0;
+  if (Char.blinkT >= 0) {
+    Char.blinkT += dt;
+    const p = Char.blinkT / 0.16;
+    blink = p < 1 ? Math.sin(Math.PI * p) : 0;
+    if (p >= 1) { Char.blinkT = -1; Char.blinkAt = t + 1.8 + Math.random() * 4; }
+  } else if (t >= Char.blinkAt) Char.blinkT = 0;
+  const closed = Math.max(Char.emoW.happy || 0, Char.emoW.relaxed || 0);
+  em.setValue('blink', blink * Math.max(0, 1 - closed * 1.4));
+  const vowels = ['aa', 'ih', 'ou', 'ee', 'oh'];
+  if (Char.speaking) {
+    if (t >= Char.mouthNext) {
+      Char.mouthTarget = Math.random() < 0.18 ? null : vowels[(Math.random() * vowels.length) | 0];
+      Char.mouthNext = t + 0.07 + Math.random() * 0.09;
+    }
+  } else Char.mouthTarget = null;
+  for (const v of vowels) {
+    const target = Char.mouthTarget === v ? (v === 'aa' ? 0.75 : 0.6) : 0;
+    Char.mouth[v] = damp(Char.mouth[v], target, 22, dt);
+    em.setValue(v, Char.mouth[v]);
+  }
+}
+
+let frameSkip = 0;
+function loop() {
+  const dt = Math.min(clock.getDelta(), 0.1);
+  if (Char.lowPower && (frameSkip++ % 4)) return; // ~15fps while driving to save battery
+  const t = clock.elapsedTime;
+  if (Char.vrm) {
+    applyPose(t);
+    updateFace(Char.lowPower ? dt * 4 : dt, t);
+    Char.vrm.update(Char.lowPower ? Math.min(dt * 4, 0.1) : dt);
+  }
+  renderer.render(scene, camera);
+}
+
+/* =========================================================
+   Voice + speech bubble
+   ========================================================= */
+const VOICE_PREF = {
+  ja: /Nanami|Kyoko|O-ren|Haruka|Ayumi|Google 日本語/i,
+  zh: /Xiaoxiao|Xiaoyi|Tingting|Huihui|Yaoyao|Google 普通话/i,
+  ko: /SunHi|Yuna|Heami|Google 한국/i,
+  en: /Jenny|Aria|Samantha|Zira|Google US English/i,
+};
+const Voice = {
+  ok: 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined',
+  voice: null,
+  pick() {
+    if (!this.ok) return;
+    const L = lang(), tts = T('ttsLang').toLowerCase();
+    const vs = speechSynthesis.getVoices();
+    const inLang = vs.filter((v) => (v.lang || '').toLowerCase().replace('_', '-').startsWith(L));
+    this.voice = inLang.find((v) => VOICE_PREF[L].test(v.name) && v.lang.toLowerCase().replace('_', '-') === tts)
+      || inLang.find((v) => VOICE_PREF[L].test(v.name))
+      || inLang.find((v) => v.lang.toLowerCase().replace('_', '-') === tts)
+      || inLang[0] || null;
+  },
+};
+if (Voice.ok) { Voice.pick(); speechSynthesis.addEventListener?.('voiceschanged', () => Voice.pick()); }
+let activated = false;
+addEventListener('pointerdown', () => { activated = true; }, { capture: true });
+addEventListener('keydown', () => { activated = true; }, { capture: true });
+
+let sayToken = 0, typeTimer = 0;
+const lastPicked = new Map();
+function pickIndex(key, n) {
+  if (n <= 1) return 0;
+  let i; const prev = lastPicked.get(key);
+  do { i = (Math.random() * n) | 0; } while (i === prev);
+  lastPicked.set(key, i);
+  return i;
+}
+function fill(text, vars = {}) {
+  return String(text).replace(/\{(\w+)\}/g, (_, k) => (k === 'name' ? callName() : (vars[k] ?? '')));
+}
+const GEST_DUR = { nod: 1.0, tilt: 1.6, down: 1.8, shake: 1.0, hop: 1.0, surprised: 1.0, wave: 2.2 };
+function gesture(kind) {
+  if (!kind || !clock) return;
+  Char.gesture = { kind, t0: clock.elapsedTime, dur: GEST_DUR[kind] || 1.2 };
+}
+function typeText(text) {
+  const el = $('#line');
+  clearInterval(typeTimer);
+  $('#line-sr').textContent = text;
+  if (reduceMotion) { el.textContent = text; return; }
+  let i = 0; el.textContent = '';
+  const chars = [...text];
+  typeTimer = setInterval(() => { i += 1; el.textContent = chars.slice(0, i).join(''); if (i >= chars.length) clearInterval(typeTimer); }, 38);
+}
+function lineText(key, vars) {
+  const lines = linesOf(persona());
+  let entry = lines[key];
+  if (entry == null) entry = PRESETS.kohai.lines[lang()][key];
+  let idx = 0;
+  if (Array.isArray(entry)) { idx = pickIndex(key, entry.length); entry = entry[idx]; }
+  return { text: fill(entry, vars), idx };
+}
+/** Show and speak one line. Resolves when the voice (or its stand-in timing) has finished. */
+function say(key, vars = {}, opts = {}) {
+  const p = persona();
+  let { text, idx } = lineText(key, vars);
+  if (opts.extra) text += T('joinSuffix') + lineText(opts.extra, vars).text;
+  let m = META[key] || ['neutral', null];
+  if (Array.isArray(m[0])) m = m[idx % m.length];
+  const emo = (p.emoMap && p.emoMap[m[0]]) || m[0];
+  const gest = (p.gestMap && p.gestMap[m[1]]) || m[1];
+  const speakIt = !opts.silent && !(S().verbosity === 'guide' && QUIET_IN_GUIDE.has(key));
+  const my = ++sayToken;
+  Char.emotion = emo;
+  gesture(gest);
+  typeText(text);
+  if (drive) drive.lastSpoke = elapsedSec() / 60;
+  return new Promise((resolve) => {
+    let finished = false;
+    const done = () => {
+      if (finished) return; finished = true;
+      if (my === sayToken) {
+        Char.speaking = false;
+        setTimeout(() => { if (my === sayToken) Char.emotion = 'neutral'; }, 2200);
+      }
+      resolve(my === sayToken);
+    };
+    const estimate = Math.min(9000, 700 + [...text].length * (lang() === 'en' ? 55 : 120));
+    if (speakIt && Voice.ok && S().voice && activated) {
+      try {
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = T('ttsLang');
+        if (Voice.voice) u.voice = Voice.voice;
+        const base = (isCustom(p) ? p.voice : p.voice) || { pitch: 1.2, rate: 1 };
+        u.pitch = Math.min(2, Math.max(0.1, base.pitch + (Number(S().pitchAdj) || 0)));
+        u.rate = base.rate || 1;
+        u.onstart = () => { if (my === sayToken) Char.speaking = true; };
+        u.onend = done; u.onerror = done;
+        Char.speaking = true;
+        speechSynthesis.speak(u);
+        setTimeout(done, estimate + 4000);
+        return;
+      } catch (e) { console.warn(e); }
+    }
+    Char.speaking = speakIt;
+    setTimeout(done, speakIt ? estimate : Math.min(estimate, 2500));
+  });
+}
+
+/* =========================================================
+   Time of day + formatting
+   ========================================================= */
+function tod(d = new Date()) {
+  const h = d.getHours();
+  if (h < 5) return 'late';
+  if (h < 9) return 'dawn';
+  if (h < 16) return 'day';
+  if (h < 19) return 'dusk';
+  return 'night';
+}
+const GREET_KEY = { dawn: 'greetDawn', day: 'greetDay', dusk: 'greetDusk', night: 'greetNight', late: 'greetLate' };
+function updateSky() { stage.dataset.tod = tod(); }
+setInterval(updateSky, 5 * 60 * 1000);
+
+const pad = (n) => String(n).padStart(2, '0');
+const hms = (s) => { s = Math.max(0, Math.floor(s)); return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`; };
+const hm = (min) => { min = Math.max(0, Math.round(min)); return `${Math.floor(min / 60)}:${pad(min % 60)}`; };
+function fmtDur(min) {
+  min = Math.max(0, Math.round(min)); const h = Math.floor(min / 60), m = min % 60; const d = T('dur');
+  if (!h) return d.m.replace('{m}', m);
+  if (!m) return d.h.replace('{h}', h);
+  return d.hm.replace('{h}', h).replace('{m}', m);
+}
+const fmtKm = (km) => (km >= 100 ? Math.round(km).toLocaleString('en-US') : (Math.round(km * 10) / 10).toFixed(1));
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return T('dateFmt', { M: d.getMonth() + 1, D: d.getDate(), W: T('weekdays')[d.getDay()], hh: pad(d.getHours()), mm: pad(d.getMinutes()) });
+}
+function fmtHours(h) {
+  if (h === '24h') return T('hours24');
+  const f = (x) => (lang() === 'en' ? `${x % 12 || 12} ${x < 12 ? 'a.m.' : 'p.m.'}` : x);
+  return T('hoursRange', { o: f(h[0]), c: f(h[1]) });
+}
+
+/* =========================================================
+   Affinity + home/history rendering
+   ========================================================= */
+const LEVEL_PTS = [0, 30, 80, 160, 300, 500];
+function levelOf(pts) { let i = 0; LEVEL_PTS.forEach((min, k) => { if (pts >= min) i = k; }); return i; }
+function renderAffinity() {
+  const pts = Store.state.points, i = levelOf(pts), names = T('levels');
+  const min = LEVEL_PTS[i], next = LEVEL_PTS[i + 1];
+  $('#chip-lv').textContent = i + 1;
+  $('#chip-name').textContent = names[i];
+  $('#aff-name').textContent = `${T('bond')} Lv${i + 1} ${names[i]}`;
+  const pct = next != null ? ((pts - min) / (next - min)) * 100 : 100;
+  $('#aff-bar').style.width = `${Math.max(3, pct)}%`;
+  const wrap = $('#aff-bar-wrap'); wrap.setAttribute('aria-valuenow', Math.round(pct)); wrap.setAttribute('aria-label', T('bond'));
+  $('#aff-next').textContent = next != null ? T('nextLv', { n: next - pts }) : T('maxLv');
+}
+function totals() {
+  const ds = Store.state.drives;
+  return { n: ds.length, min: ds.reduce((a, d) => a + (d.min || 0), 0), km: ds.reduce((a, d) => a + (typeof d.km === 'number' ? d.km : 0), 0) };
+}
+function renderHome() {
+  const t = totals();
+  $('#odo-km').textContent = fmtKm(t.km);
+  $('#odo-n').textContent = t.n;
+  $('#odo-h').textContent = hm(t.min);
+  const last = Store.state.drives[0];
+  $('#last-drive').textContent = last
+    ? T('lastDrive', { date: fmtDate(last.start), dur: fmtDur(last.min), km: typeof last.km === 'number' ? `${T('listSep')}${fmtKm(last.km)} km` : '' })
+    : T('lastNone');
+  renderAffinity();
+}
+function renderHistory() {
+  const t = totals();
+  $('#h-km').textContent = fmtKm(t.km);
+  $('#h-n').textContent = t.n;
+  $('#h-h').textContent = hm(t.min);
+  const list = $('#hist-list');
+  list.textContent = '';
+  for (const d of Store.state.drives) {
+    const li = document.createElement('li');
+    const a = document.createElement('span'); a.className = 'd'; a.textContent = fmtDate(d.start);
+    const b = document.createElement('span'); b.className = 't'; b.textContent = hm(d.min);
+    const c = document.createElement('span'); c.className = 'm';
+    c.textContent = [d.checked ? T('checked') : T('unchecked'), T('breaksN', { n: d.breaks || 0 })].join(T('listSep'));
+    const e = document.createElement('span'); e.className = 'k'; e.textContent = typeof d.km === 'number' ? `${fmtKm(d.km)} km` : '— km';
+    li.append(a, b, c, e);
+    list.append(li);
+  }
+  $('#hist-empty').hidden = Store.state.drives.length > 0;
+  $('#store-note').textContent = T({ cloud: 'storeCloud', local: 'storeLocal', memory: 'storeMemory' }[Store.kind]);
+}
+function renderIdentity() {
+  const p = persona();
+  const nm = nameOf(p);
+  $('#char-name').textContent = nm;
+  $('#bubble-who').textContent = nm;
+  $('#fallback').textContent = [...nm][0] || '?';
+  canvas.setAttribute('aria-label', nm);
+  Char.expr = p.expr ?? baseOf(p).expr ?? 1;
+}
+function applyI18n() {
+  document.documentElement.lang = lang();
+  $$('[data-i18n]').forEach((el) => { el.textContent = T(el.dataset.i18n); });
+  $$('[data-i18n-aria]').forEach((el) => el.setAttribute('aria-label', T(el.dataset.i18nAria)));
+  $$('[data-i18n-ph]').forEach((el) => el.setAttribute('placeholder', T(el.dataset.i18nPh)));
+  renderIdentity();
+  renderHome();
+  if (!$('#sheet-history').hidden) renderHistory();
+  if (!$('#sheet-settings').hidden) renderSettings();
+  if (!$('#sheet-persona').hidden) renderPersonaSheet();
+  if (pending) renderArrive();
+  if (drive) tick();
+}
+
+/* =========================================================
+   Modes
+   ========================================================= */
+function setMode(m) {
+  document.body.dataset.mode = m;
+  for (const id of ['home', 'check', 'drive', 'arrive']) $('#p-' + id).hidden = id !== m;
+  Char.lowPower = m === 'drive' && !(drive && drive.demo);
+  if (renderer) renderer.setPixelRatio(Char.lowPower ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+  resize();
+  $('#panel').scrollTop = 0;
+}
+
+/* ---------- check ---------- */
+const checks = { belt: false, mirror: false, route: false };
+const CHECK_KEY = { belt: 'checkBelt', mirror: 'checkMirror', route: 'checkRoute' };
+$('#go-check').addEventListener('click', () => {
+  for (const k in checks) checks[k] = false;
+  $$('.check').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+  $('#depart').disabled = true;
+  setMode('check');
+  say('checkIntro');
+});
+$$('.check').forEach((btn) => btn.addEventListener('click', () => {
+  const k = btn.dataset.k;
+  checks[k] = !checks[k];
+  btn.setAttribute('aria-pressed', String(checks[k]));
+  const all = Object.values(checks).every(Boolean);
+  $('#depart').disabled = !all;
+  if (checks[k]) say(all ? 'checkDone' : CHECK_KEY[k]);
+}));
+$('#check-back').addEventListener('click', () => setMode('home'));
+$('#depart').addEventListener('click', () => startDrive({ demo: false, checked: true }));
+$('#depart-skip').addEventListener('click', () => startDrive({ demo: false, checked: false }));
+$('#go-demo').addEventListener('click', () => startDrive({ demo: true, checked: true }));
+
+/* ---------- drive ---------- */
+let drive = null, driveTimer = 0, wake = null;
+function startDrive({ demo, checked }) {
+  const now = Date.now();
+  drive = {
+    demo, checked, startedAt: now, sim: 0, lastReal: now,
+    breaks: 0, lastHour: 0, breakAt: Number(S().breakMin) || 120, dueSaid: false, nagAt: Infinity,
+    km: 0, gps: demo ? 'demo' : 'pending', lastPos: null, watch: null,
+    lastSpoke: 0, nextChat: 25, stops: demo ? DEMO_STOPS.map((s) => ({ ...s, state: 'ahead' })) : [], stop: null,
+  };
+  hideStopCard();
+  setMode('drive');
+  $('#demo-chip').hidden = !demo;
+  $('#wake-note').textContent = '';
+  if (demo) say('demoStart');
+  else if (tod(new Date(now)) === 'late') say('departLate');
+  else if (!checked) say('departSkip');
+  else say('depart');
+  if (!demo) startGPS();
+  requestWake();
+  clearInterval(driveTimer);
+  driveTimer = setInterval(tick, demo ? 250 : 1000);
+  tick();
+}
+// Demo time runs at 120×, but slows down while a rest stop is being asked about or approached.
+function curSpeed() {
+  if (!drive || !drive.demo) return 1;
+  const st = drive.stop;
+  if (st && st.state === 'asking') return 2;
+  if (st && st.state === 'going') return 30;
+  return 120;
+}
+function elapsedSec() {
+  if (!drive) return 0;
+  const now = Date.now();
+  drive.sim += ((now - drive.lastReal) / 1000) * curSpeed();
+  drive.lastReal = now;
+  return drive.sim;
+}
+function tick() {
+  if (!drive) return;
+  const s = elapsedSec(), m = s / 60;
+  $('#trip-time').textContent = hms(s);
+  if (drive.demo) $('#demo-chip').textContent = `DEMO ×${curSpeed()}`;
+  const br = $('#trip-break');
+  const stopBusy = drive.stop && (drive.stop.state === 'asking' || drive.stop.state === 'going');
+  if (m >= drive.breakAt) {
+    br.textContent = T('breakNow');
+    br.classList.add('due');
+    if (!stopBusy) {
+      if (!drive.dueSaid) { drive.dueSaid = true; drive.nagAt = m + 30; say('breakDue', { t: fmtDur(m) }); }
+      else if (m >= drive.nagAt) { drive.nagAt = m + 30; say('breakNag'); }
+    }
+  } else {
+    br.textContent = T('breakIn', { t: hm(drive.breakAt - m) });
+    br.classList.remove('due');
+    const h = Math.floor(m / 60);
+    if (h >= 1 && h > drive.lastHour) {
+      drive.lastHour = h;
+      if (drive.breakAt - m > 5 && !stopBusy && S().verbosity !== 'guide') say('hourly', { h });
+    }
+  }
+  if (drive.demo) drive.km = (m / 60) * DEMO_KMH;
+  const kmEl = $('#trip-km');
+  if (drive.gps === 'on' || drive.gps === 'demo') kmEl.textContent = `${fmtKm(drive.km)} km`;
+  else if (drive.gps === 'pending') kmEl.textContent = T('gpsPending');
+  else kmEl.textContent = T('gpsOff');
+
+  if (!drive) return;
+  updateStops(m);
+  // small talk in chatty mode, only when nothing else was said recently
+  if (S().verbosity === 'chatty' && m >= drive.nextChat && !drive.stop && m - drive.lastSpoke > 8 && m < drive.breakAt - 5) {
+    drive.nextChat = m + 25;
+    say('chat');
+  }
+}
+$('#break-btn').addEventListener('click', () => {
+  if (!drive) return;
+  takeBreak();
+  say('breakTaken');
+  tick();
+});
+function takeBreak() {
+  const m = elapsedSec() / 60;
+  drive.breaks += 1;
+  drive.breakAt = m + (Number(S().breakMin) || 120);
+  drive.dueSaid = false; drive.nagAt = Infinity;
+  drive.lastHour = Math.floor(m / 60);
+}
+
+/* ---------- rest stops (demo data) ---------- */
+let listenTimer = 0, recog = null, micBlocked = false;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
+function stopTags(st) {
+  const box = $('#stop-tags'); box.textContent = '';
+  const a = document.createElement('span'); a.className = 'tag'; a.textContent = fmtHours(st.hours);
+  const b = document.createElement('span'); b.className = `tag c${st.crowd}`; b.textContent = T('crowd')[st.crowd];
+  box.append(a, b);
+}
+function renderStopCard() {
+  const st = drive && drive.stop; if (!st) return;
+  const card = $('#stop-card');
+  card.dataset.kind = st.kind;
+  $('#stop-kind').textContent = st.kind === 'michi' ? ({ ja: '道の駅', zh: '休息站', ko: '미치노에키', en: 'ROADSIDE' })[lang()] : st.kind;
+  $('#stop-name').textContent = st.short[lang()] || st.short.ja;
+  stopTags(st);
+  const m = elapsedSec() / 60;
+  const left = Math.max(0, (st.reachAt - m) * (DEMO_KMH / 60));
+  $('#stop-dist').textContent = T('stopAway', { d: T('distShow', { n: left.toFixed(1) }) });
+  const asking = st.state === 'asking';
+  $('#stop-actions').hidden = !asking;
+  $('#stop-state').hidden = asking;
+  if (!asking) $('#stop-state').textContent = st.state === 'going' ? `✓ ${T('yes')}` : T('no');
+  card.hidden = false;
+  $('#drive-hint').hidden = true;
+}
+function hideStopCard() {
+  $('#stop-card').hidden = true; $('#drive-hint').hidden = false;
+  stopListening();
+}
+function updateStops(m) {
+  if (!drive.stops.length) return;
+  const st = drive.stop;
+  if (st) {
+    if (st.state === 'going' && m >= st.reachAt) {
+      drive.stop = null; hideStopCard();
+      takeBreak();
+      say('stopReached', { stop: st.name[lang()] || st.name.ja });
+      return;
+    }
+    if (st.state === 'passed' && m >= st.reachAt) { drive.stop = null; hideStopCard(); return; }
+    renderStopCard();
+    return;
+  }
+  if (!S().stopsOn) return;
+  const next = drive.stops.find((s) => s.state === 'ahead' && m >= s.at);
+  if (next) announceStop(next, m);
+}
+async function announceStop(st, m) {
+  st.state = 'asking';
+  st.reachAt = st.at + st.km / (DEMO_KMH / 60);
+  drive.stop = st;
+  renderStopCard();
+  const info = S().stopsInfo ? T('info', { hours: fmtHours(st.hours), crowd: T('crowd')[st.crowd] }) : '';
+  const key = m >= drive.breakAt - 15 ? 'stopAheadBreak' : 'stopAhead';
+  setListenNote('');
+  const finished = await say(key, { stop: st.name[lang()] || st.name.ja, dist: T('distSpeak', { n: st.km }), info });
+  if (!drive || drive.stop !== st || st.state !== 'asking') return;
+  if (finished) startListening(st);
+  clearTimeout(listenTimer);
+  listenTimer = setTimeout(() => { if (drive && drive.stop === st && st.state === 'asking') answerStop(null); }, 12000);
+}
+function setListenNote(text, on = false) {
+  const el = $('#stop-listen'); el.textContent = text; el.classList.toggle('on', on);
+}
+function startListening(st) {
+  if (!S().voiceReply) { setListenNote(''); return; }
+  if (!SR || micBlocked) { setListenNote(T('micUnavailable')); return; }
+  try {
+    recog = new SR();
+    recog.lang = T('ttsLang');
+    recog.interimResults = false;
+    recog.maxAlternatives = 3;
+    recog.onresult = (ev) => {
+      const alts = [...ev.results[0]].map((a) => a.transcript.toLowerCase());
+      const words = alts.join(' ');
+      setListenNote(T('heard', { w: alts[0] }), true);
+      if (T('noWords').some((w) => words.includes(w))) answerStop(false);
+      else if (T('yesWords').some((w) => words.includes(w))) answerStop(true);
+    };
+    recog.onerror = (ev) => {
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed' || ev.error === 'audio-capture') {
+        micBlocked = true; setListenNote(T('micUnavailable'));
+      }
+    };
+    recog.onend = () => { if (drive && drive.stop === st && st.state === 'asking' && !micBlocked) setListenNote(T('micUnavailable')); };
+    recog.start();
+    setListenNote(T('listening'), true);
+  } catch { micBlocked = true; setListenNote(T('micUnavailable')); }
+}
+function stopListening() { try { recog && recog.abort(); } catch {} recog = null; clearTimeout(listenTimer); }
+function answerStop(yes) {
+  const st = drive && drive.stop; if (!st || st.state !== 'asking') return;
+  stopListening();
+  const name = st.name[lang()] || st.name.ja;
+  if (yes === true) { st.state = 'going'; say('stopYes', { stop: name }); }
+  else { st.state = 'passed'; say(yes === false ? 'stopNo' : 'stopNoReply', { stop: name }); }
+  setListenNote('');
+  renderStopCard();
+}
+$('#stop-yes').addEventListener('click', () => answerStop(true));
+$('#stop-no').addEventListener('click', () => answerStop(false));
+
+/* ---------- GPS + wake lock ---------- */
+function haversine(a, b) {
+  const R = 6371000, toR = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * toR, dLon = (b.lon - a.lon) * toR;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * toR) * Math.cos(b.lat * toR) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+function startGPS() {
+  if (!('geolocation' in navigator)) { drive.gps = 'off'; return; }
+  try {
+    drive.watch = navigator.geolocation.watchPosition((pos) => {
+      if (!drive) return;
+      drive.gps = 'on';
+      const { latitude: lat, longitude: lon, accuracy } = pos.coords;
+      if (accuracy > 60) return;
+      const here = { lat, lon };
+      if (!drive.lastPos) { drive.lastPos = here; return; }
+      const d = haversine(drive.lastPos, here);
+      if (d > 10) { if (d < 5000) drive.km += d / 1000; drive.lastPos = here; }
+    }, () => { if (drive) drive.gps = 'off'; }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
+  } catch { drive.gps = 'off'; }
+}
+function stopGPS(d) { try { if (d && d.watch != null) navigator.geolocation.clearWatch(d.watch); } catch {} }
+async function requestWake() {
+  try {
+    if (!('wakeLock' in navigator)) return;
+    wake = await navigator.wakeLock.request('screen');
+    $('#wake-note').textContent = T('wakeOn');
+    wake.addEventListener('release', () => { $('#wake-note').textContent = ''; });
+  } catch { $('#wake-note').textContent = ''; }
+}
+function releaseWake() { try { wake && wake.release(); } catch {} wake = null; }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && drive && document.body.dataset.mode === 'drive' && (!wake || wake.released)) requestWake();
+});
+
+/* ---------- arrive (long press prevents accidental taps) ---------- */
+(function holdToArrive() {
+  const btn = $('#arrive-btn'), fillEl = $('#arrive-fill');
+  const MS = 800; let start = 0, raf = 0, holding = false;
+  const reset = () => { holding = false; cancelAnimationFrame(raf); fillEl.style.transform = 'scaleX(0)'; };
+  const step = () => {
+    const p = Math.min(1, (performance.now() - start) / MS);
+    fillEl.style.transform = `scaleX(${p})`;
+    if (p >= 1) { reset(); arrive(); } else raf = requestAnimationFrame(step);
+  };
+  btn.addEventListener('pointerdown', (e) => { if (e.button > 0) return; holding = true; start = performance.now(); raf = requestAnimationFrame(step); });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, () => { if (holding) reset(); }));
+  btn.addEventListener('click', (e) => { if (e.detail === 0) arrive(); });
+  btn.addEventListener('contextmenu', (e) => e.preventDefault());
+})();
+
+let pending = null;
+function arrive() {
+  if (!drive) return;
+  clearInterval(driveTimer);
+  stopGPS(drive);
+  releaseWake();
+  const min = elapsedSec() / 60;
+  const d = drive; drive = null;
+  hideStopCard();
+  const km = d.gps === 'on' || d.demo ? d.km : null;
+  const long = min >= 90;
+  const pts = d.demo ? 0 : 10 + Math.min(12, Math.floor(min / 10)) + (d.checked ? 5 : 0) + (long && d.breaks > 0 ? 5 : 0);
+  pending = { start: new Date(d.startedAt).toISOString(), min: Math.max(1, Math.round(min)), rawMin: min, km, breaks: d.breaks, checked: d.checked, demo: d.demo, pts };
+  setMode('arrive');
+  renderArrive();
+  $('#km-input').value = '';
+  const cat = min < 15 ? 'arriveShort' : min < 60 ? 'arriveMid' : min < 120 ? 'arriveLong' : 'arriveVlong';
+  let extra = null;
+  if (!d.demo && tod() === 'late') extra = 'arriveLate';
+  else if (long && d.breaks > 0) extra = 'arriveGoodBreak';
+  else if (min >= Number(S().breakMin || 120) + 30 && d.breaks === 0) extra = 'arriveNoBreak';
+  say(cat, {}, { extra });
+}
+function renderArrive() {
+  const p = pending; if (!p) return;
+  $('#arrive-title').textContent = p.demo ? T('demoOver') : T('arriveTitle');
+  $('#sum-time').textContent = fmtDur(p.rawMin);
+  $('#sum-km').textContent = p.km != null ? `${fmtKm(p.km)} km` : '—';
+  $('#sum-breaks').textContent = T('times', { n: p.breaks });
+  $('#sum-pts').textContent = p.demo ? T('demoTag') : `+${p.pts}`;
+  $('#km-field').hidden = p.demo || p.km != null;
+  $('#save-drive').textContent = p.demo ? T('backHome') : T('save');
+  $('#discard-drive').hidden = p.demo;
+}
+$('#save-drive').addEventListener('click', () => {
+  if (!pending) { setMode('home'); return; }
+  const p = pending; pending = null;
+  if (p.demo) { setMode('home'); renderHome(); say('demoEnd'); return; }
+  const kmIn = parseFloat($('#km-input').value);
+  const rec = {
+    id: Math.random().toString(36).slice(2, 10), start: p.start, min: p.min,
+    km: p.km != null ? Math.round(p.km * 10) / 10 : (Number.isFinite(kmIn) && kmIn > 0 ? Math.round(kmIn * 10) / 10 : null),
+    breaks: p.breaks, checked: p.checked,
+  };
+  const beforeLv = levelOf(Store.state.points);
+  Store.state.drives = [rec, ...Store.state.drives].slice(0, 500);
+  Store.state.points += p.pts;
+  Store.save();
+  setMode('home');
+  renderHome();
+  const n = Store.state.drives.length, afterLv = levelOf(Store.state.points);
+  if (afterLv > beforeLv) say('levelUp', { lv: T('levels')[afterLv] });
+  else if ([5, 10, 20, 30, 50, 100, 200].includes(n)) say('milestone', { n });
+  else say('saved');
+});
+$('#discard-drive').addEventListener('click', () => { pending = null; setMode('home'); say('discarded'); });
+
+/* ---------- tapping the character ---------- */
+let taps = [];
+canvas.addEventListener('click', () => {
+  if (document.body.dataset.mode === 'drive') return;
+  const now = Date.now();
+  taps = taps.filter((x) => now - x < 4000); taps.push(now);
+  if (taps.length >= 5) { taps = []; say('tapAnnoyed'); } else say('tap');
+});
+
+/* ---------- sheets ---------- */
+let lastFocus = null;
+function openSheet(id) {
+  lastFocus = document.activeElement;
+  const el = $(id); el.hidden = false;
+  if (id === '#sheet-history') renderHistory();
+  if (id === '#sheet-settings') renderSettings();
+  if (id === '#sheet-persona') renderPersonaSheet();
+  el.querySelector('[data-close]').focus();
+}
+function closeSheets() {
+  $$('.sheet').forEach((s) => { s.hidden = true; });
+  $('#clear-confirm').hidden = true; $('#clear-start').hidden = false;
+  if (lastFocus && lastFocus.focus) lastFocus.focus();
+}
+$('#open-history').addEventListener('click', () => openSheet('#sheet-history'));
+$('#open-settings').addEventListener('click', () => openSheet('#sheet-settings'));
+$('#open-persona').addEventListener('click', () => openSheet('#sheet-persona'));
+$$('[data-close]').forEach((b) => b.addEventListener('click', closeSheets));
+addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
+
+$('#clear-start').addEventListener('click', () => { $('#clear-start').hidden = true; $('#clear-confirm').hidden = false; });
+$('#clear-no').addEventListener('click', () => { $('#clear-start').hidden = false; $('#clear-confirm').hidden = true; });
+$('#clear-yes').addEventListener('click', () => {
+  Store.state.drives = []; Store.state.points = 0; Store.save();
+  $('#clear-start').hidden = false; $('#clear-confirm').hidden = true;
+  renderHistory(); renderHome();
+});
+
+/* ---------- settings ---------- */
+function renderSettings() {
+  const p = persona();
+  $('#set-lang').value = lang();
+  $('#call-label').textContent = T('callLabel', { char: nameOf(p) });
+  $('#set-name').value = S().callName || '';
+  $('#set-name').placeholder = T('callPh', { call: defaultCall(p) });
+  $('#set-voice').checked = !!S().voice;
+  $('#set-pitch').value = S().pitchAdj || 0;
+  $('#set-break').value = String(S().breakMin);
+  $$('input[name="verb"]').forEach((r) => { r.checked = r.value === S().verbosity; });
+  $('#set-stops').checked = !!S().stopsOn;
+  $('#set-stops-info').checked = !!S().stopsInfo;
+  $('#set-voice-reply').checked = !!S().voiceReply;
+  $('#mic-note').textContent = !SR || micBlocked ? T('micUnavailable') : '';
+  $('#voice-note').textContent = !Voice.ok ? T('voiceNoTTS') : (Voice.voice ? T('voiceUsing', { v: Voice.voice.name }) : T('voiceNoLang'));
+}
+$('#set-lang').addEventListener('change', (e) => {
+  S().lang = e.target.value; saveSoon();
+  Voice.pick();
+  applyI18n();
+  say('hello');
+});
+$('#set-name').addEventListener('input', (e) => { S().callName = e.target.value.trim(); saveSoon(); });
+$('#set-voice').addEventListener('change', (e) => { S().voice = e.target.checked; if (!S().voice && Voice.ok) speechSynthesis.cancel(); saveSoon(); });
+$('#set-pitch').addEventListener('input', (e) => { S().pitchAdj = Number(e.target.value); saveSoon(); });
+$('#set-break').addEventListener('change', (e) => { S().breakMin = Number(e.target.value); saveSoon(); });
+$$('input[name="verb"]').forEach((r) => r.addEventListener('change', (e) => { if (e.target.checked) { S().verbosity = e.target.value; saveSoon(); } }));
+$('#set-stops').addEventListener('change', (e) => { S().stopsOn = e.target.checked; saveSoon(); });
+$('#set-stops-info').addEventListener('change', (e) => { S().stopsInfo = e.target.checked; saveSoon(); });
+$('#set-voice-reply').addEventListener('change', (e) => { S().voiceReply = e.target.checked; saveSoon(); });
+$('#voice-test').addEventListener('click', () => { activated = true; Voice.pick(); say('voiceTest'); renderSettings(); });
+
+$('#vrm-file').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f || !renderer) return;
+  const note = $('#vrm-note');
+  note.textContent = T('vrmLoading');
+  const url = URL.createObjectURL(f);
+  try {
+    const vrm = await loadModel(url);
+    const nm = vrm.meta && (vrm.meta.name || vrm.meta.title);
+    note.textContent = T('vrmLoaded', { n: nm ? `: ${nm}` : '' });
+    closeSheets();
+    say('newModel');
+  } catch {
+    note.textContent = T('vrmFail');
+  } finally { URL.revokeObjectURL(url); }
+});
+$('#vrm-reset').addEventListener('click', async () => {
+  if (!renderer) return;
+  $('#vrm-note').textContent = T('vrmLoading');
+  try { await loadModel(await fetchBundledModel()); $('#vrm-note').textContent = T('vrmBack'); closeSheets(); say('tap'); }
+  catch { $('#vrm-note').textContent = T('vrmFail'); }
+});
+
+/* ---------- persona sheet ---------- */
+function setPersona(id) {
+  S().persona = id; saveSoon();
+  renderIdentity();
+  renderPersonaSheet();
+  closeSheets();
+  say('hello');
+}
+function personaCard(p, id) {
+  const on = S().persona === id;
+  const card = document.createElement('div'); card.className = 'pcard' + (on ? ' on' : '');
+  const n = document.createElement('div'); n.className = 'pn'; n.textContent = nameOf(p);
+  const t = document.createElement('div'); t.className = 'pt'; t.textContent = taglineOf(p);
+  let actionEl;
+  if (on) { actionEl = document.createElement('span'); actionEl.className = 'badge pb'; actionEl.textContent = T('inUse'); }
+  else { actionEl = document.createElement('button'); actionEl.className = 'btn small pb'; actionEl.textContent = T('use'); actionEl.addEventListener('click', () => setPersona(id)); }
+  const sample = document.createElement('p'); sample.className = 'ps';
+  const lines = linesOf(p);
+  sample.textContent = '「' + String(lines.hello || '').replace(/\{name\}/g, (S().callName || '').trim() || defaultCall(p)) + '」';
+  card.append(n, actionEl, t, sample);
+  if (isCustom(p) && p.lang !== lang()) {
+    const warn = document.createElement('p'); warn.className = 'note'; warn.style.gridColumn = '1 / -1';
+    warn.textContent = T('genNeedLang', { lang: I18N[p.lang]?.langName || p.lang });
+    card.append(warn);
+  }
+  return card;
+}
+function fillSelect(sel, keys, labels, value) {
+  sel.textContent = '';
+  for (const k of keys) { const o = document.createElement('option'); o.value = k; o.textContent = labels[k]; sel.append(o); }
+  if (value) sel.value = value;
+}
+function renderPersonaSheet() {
+  const box = $('#persona-cards'); box.textContent = '';
+  for (const id of PRESET_ORDER) box.append(personaCard(PRESETS[id], id));
+  if (Store.state.custom) box.append(personaCard(Store.state.custom, 'custom'));
+  const c = Store.state.custom && Store.state.custom.traits;
+  fillSelect($('#tr-rel'), TRAITS.rel, T('rels'), $('#tr-rel').value || c?.rel || 'onee');
+  fillSelect($('#tr-temp'), TRAITS.temp, T('temps'), $('#tr-temp').value || c?.temp || 'cool');
+  fillSelect($('#tr-quirk'), TRAITS.quirk, T('quirks'), $('#tr-quirk').value || c?.quirk || 'monoshiri');
+  $('#tr-generate').textContent = Store.state.custom && Store.state.custom.lang !== lang() && sameTraits() ? T('regenerate') : T('generate');
+}
+function sameTraits() {
+  const c = Store.state.custom && Store.state.custom.traits; if (!c) return false;
+  return c.rel === $('#tr-rel').value && c.temp === $('#tr-temp').value && c.quirk === $('#tr-quirk').value;
+}
+const rnd = (arr) => arr[(Math.random() * arr.length) | 0];
+$('#tr-random').addEventListener('click', () => {
+  $('#tr-rel').value = rnd(TRAITS.rel); $('#tr-temp').value = rnd(TRAITS.temp); $('#tr-quirk').value = rnd(TRAITS.quirk);
+  renderPersonaSheet();
+});
+['#tr-rel', '#tr-temp', '#tr-quirk'].forEach((s) => $(s).addEventListener('change', renderPersonaSheet));
+
+let genCtl = null;
+function buildPrompt(traits, L, base) {
+  const ja = I18N.ja, cur = I18N[L];
+  const ref = JSON.stringify(base.lines[L], null, 1);
+  return [
+    'You are writing voice lines for a character in a smartphone "drive buddy" app. The character appears on screen and talks to the driver before, during and after a drive. Every line is read aloud by text-to-speech, so keep each line short (one or two sentences), natural to say out loud, and easy to follow without looking at the screen.',
+    '',
+    'Combine all three traits into one consistent character:',
+    `- Relationship / speech register: ${ja.rels[traits.rel]} (${I18N.en.rels[traits.rel]})`,
+    `- Temperament: ${ja.temps[traits.temp]} (${I18N.en.temps[traits.temp]})`,
+    `- Quirk: ${ja.quirks[traits.quirk]} (${I18N.en.quirks[traits.quirk]})`,
+    '',
+    `Write everything in ${cur.langName} (${L}).`,
+    '',
+    'Rules:',
+    '- Driving safety comes first. Never encourage speeding, using the phone while driving, or driving while sleepy. Advice about breaks and sleep stays sincere even when the character teases.',
+    '- Friendly only: no romantic or sexual content.',
+    '- Keep each {placeholder} wherever the reference line for the same key uses it, spelled exactly the same. {name} = how the character addresses the driver, {h} = a number of hours, {t} = an elapsed-time phrase, {n} = a count, {lv} = a bond level name, {dist} = a distance phrase, {stop} = a rest-stop name, {info} = a short sentence about opening hours and crowding (it may be empty, so the line must still read well without it).',
+    '- When the reference value for a key is a list, return a list with the same number of items.',
+    '- arriveGoodBreak, arriveNoBreak and arriveLate are short add-on sentences appended right after an arrival line.',
+    '',
+    'Reply with only one JSON object of this shape:',
+    '{"name": "<short character name, at most 8 characters>", "tagline": "<one-line description, at most 30 characters>", "call": "<default way the character addresses the driver, at most 8 characters>", "lines": {<the same keys as the reference>}}',
+    '',
+    'Reference lines from a different character (match the keys, placeholders and length, not the personality):',
+    ref,
+  ].join('\n');
+}
+function validateCustom(raw, base, L) {
+  if (!raw || typeof raw !== 'object' || !raw.lines || typeof raw.lines !== 'object') throw new Error('shape');
+  const refLines = base.lines[L];
+  const out = {};
+  let used = 0;
+  for (const k of LINE_KEYS) {
+    const ref = refLines[k], got = raw.lines[k];
+    const need = new Set((JSON.stringify(ref).match(/\{(h|t|n|lv|dist|stop|info)\}/g) || []));
+    const okStr = (s) => typeof s === 'string' && s.trim() && s.length <= 220 && [...need].every((ph) => s.includes(ph) || (Array.isArray(ref)));
+    if (Array.isArray(ref)) {
+      const arr = Array.isArray(got) ? got.filter((s) => typeof s === 'string' && s.trim() && s.length <= 220) : [];
+      const fine = arr.filter((s) => [...need].every((ph) => s.includes(ph)));
+      out[k] = fine.length ? fine.slice(0, ref.length) : ref; if (fine.length) used++;
+    } else {
+      out[k] = okStr(got) ? got.trim() : ref; if (okStr(got)) used++;
+    }
+  }
+  if (used < LINE_KEYS.length * 0.6) throw new Error('too few usable lines');
+  const clip = (s, n, fb) => (typeof s === 'string' && s.trim() ? [...s.trim()].slice(0, n).join('') : fb);
+  return {
+    name: clip(raw.name, 12, base.name[L]),
+    tagline: clip(raw.tagline, 40, ''),
+    call: clip(raw.call, 12, base.call[L]),
+    lines: out,
+  };
+}
+$('#tr-generate').addEventListener('click', async () => {
+  const status = $('#gen-status'), btn = $('#tr-generate'), cancel = $('#gen-cancel');
+  const traits = { rel: $('#tr-rel').value, temp: $('#tr-temp').value, quirk: $('#tr-quirk').value };
+  const L = lang(), baseId = TEMP_BASE[traits.temp] || 'kohai', base = PRESETS[baseId];
+  let sample = null;
+  try { sample = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('sample') : null; } catch {}
+  if (!sample) { status.textContent = T('genNoSample'); return; }
+  genCtl = new AbortController();
+  btn.disabled = true; cancel.hidden = false;
+  status.textContent = T('generating');
+  try {
+    const raw = await sample.json(buildPrompt(traits, L, base), {
+      signal: genCtl.signal, cache: false,
+      onText: ({ text }) => { status.textContent = `${T('generating')} ${[...text].length}`; },
+    });
+    const v = validateCustom(raw, base, L);
+    Store.state.custom = {
+      id: 'custom', base: baseId, lang: L, traits, ...v,
+      voice: TEMP_VOICE[traits.temp] || base.voice, expr: base.expr, emoMap: base.emoMap, gestMap: base.gestMap,
+    };
+    Store.save();
+    status.textContent = T('genDone');
+    setPersona('custom');
+  } catch (e) {
+    status.textContent = e && e.code === 'cancelled' ? '' : (e && (e.code === 'not_granted' || e.code === 'sampling_disabled') ? T('genNoSample') : T('genFail'));
+  } finally {
+    btn.disabled = false; cancel.hidden = true; genCtl = null;
+  }
+});
+$('#gen-cancel').addEventListener('click', () => { if (genCtl) genCtl.abort(); });
+
+/* =========================================================
+   Boot
+   ========================================================= */
+updateSky();
+applyI18n();
+setMode('home');
+const glOK = initGL();
+const storeReady = Store.init().then(() => { Voice.pick(); applyI18n(); });
+const settled = Promise.race([storeReady, new Promise((r) => setTimeout(r, 4000))]);
+const greet = () => settled.then(() => say(GREET_KEY[tod()]));
+if (glOK) {
+  fetchBundledModel((p) => { $('#loading-bar').style.width = `${Math.round(p * 100)}%`; })
+    .then((buf) => loadModel(buf))
+    .then(() => { $('#loading').hidden = true; greet(); })
+    .catch((err) => { console.error(err); $('#loading').hidden = true; $('#fallback').hidden = false; greet(); });
+} else {
+  $('#loading').hidden = true;
+  $('#fallback').hidden = false;
+  greet();
+}
+if (/[?&]debug\b/.test(location.search)) window.__dbg = { Char, say, gesture, camera, Store, S, applyI18n, setPersona, answerStop, get drive() { return drive; } };
+</script>
+<script>
+if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+# private planning notes (kept in the Claude project instead)
+PLAN.md
+
+# dependencies and local checks
+dev/node_modules/
+dev/shots/
+dev/index.v0.1.html
+
+# claude.ai artifact build output
+web/index.html
+web/_preview.html
+web/models/

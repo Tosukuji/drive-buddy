@@ -1,0 +1,20 @@
+import { createRequire } from 'module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+import fs from 'fs'; import path from 'path';
+const NM = path.resolve('node_modules');
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const page = await (await browser.newContext({ viewport: { width: 400, height: 860 }, locale: 'ja-JP' })).newPage();
+const logs = []; page.on('pageerror', (e) => logs.push(e.message));
+await page.route('https://cdn.jsdelivr.net/npm/**', (route) => {
+  const p = new URL(route.request().url()).pathname.replace('/npm/', '').replace(/^three@[^/]+/, 'three').replace(/^@pixiv\/three-vrm@[^/]+/, '@pixiv/three-vrm');
+  route.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(NM, p)) });
+});
+await page.route('https://fonts.**', (r) => r.abort());
+await page.goto('http://127.0.0.1:8765/_preview.html');
+await page.waitForFunction(() => document.querySelector('#loading').hidden, null, { timeout: 60000 });
+await page.waitForTimeout(1200);
+await page.screenshot({ path: 'shots/v2b-home.png', clip: { x: 0, y: 520, width: 400, height: 340 } });
+await page.click('#go-demo'); await page.waitForTimeout(2000);
+await page.screenshot({ path: 'shots/v2b-drive.png', clip: { x: 0, y: 520, width: 400, height: 340 } });
+console.log(logs.join('\n') || 'no page errors');
+await browser.close();
