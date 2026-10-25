@@ -39,6 +39,7 @@
   --fs-xl: 1.5rem;
   --fs-meter: 2.75rem;
   --radius: 14px;
+  --ico-bg-s: 70%; --ico-bg-l: 90%; --ico-fg-l: 36%;
 }
 :root[lang="zh"] {
   --font-ui: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
@@ -55,6 +56,7 @@
     --lcd-bg: #060b12; --lcd-fg: #ffc266; --lcd-dim: #64748a; --lcd-line: #1b2738;
     --bubble: rgba(17, 26, 40, 0.94); --warn: #ff8a5c; --ok: #6fd39a;
     --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    --ico-bg-s: 32%; --ico-bg-l: 22%; --ico-fg-l: 74%;
     color-scheme: dark;
   }
 }
@@ -64,6 +66,7 @@
   --lcd-bg: #060b12; --lcd-fg: #ffc266; --lcd-dim: #64748a; --lcd-line: #1b2738;
   --bubble: rgba(17, 26, 40, 0.94); --warn: #ff8a5c; --ok: #6fd39a;
   --shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    --ico-bg-s: 32%; --ico-bg-l: 22%; --ico-fg-l: 74%;
   color-scheme: dark;
 }
 
@@ -332,6 +335,7 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: flex; flex-direction: column; gap: 16px;
 }
+.sheet-body > * { flex-shrink: 0; }
 .group { display: flex; flex-direction: column; gap: 12px; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
 .group h3 { margin: 0; font-size: var(--fs-sm); color: var(--muted); letter-spacing: 0.06em; }
 .hist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
@@ -369,6 +373,114 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
   .sky, .bar i { transition: none; }
   .listen.on::before { animation: none; }
 }
+
+/* ---------- v0.3 additions ---------- */
+#c { touch-action: none; }
+.rain { position: absolute; inset: 0; pointer-events: none; }
+.rain canvas { width: 100%; height: 100%; display: block; }
+.zoom-ctl { position: absolute; top: 10px; right: max(10px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 8px; }
+.zoom-ctl button { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--bubble); color: var(--ink); font-size: 1.25rem; line-height: 1; display: grid; place-items: center; }
+body[data-mode="drive"] .zoom-ctl { display: none; }
+.rain-chip { position: absolute; top: 12px; left: max(12px, env(safe-area-inset-left, 0px)); padding: 2px 10px; border-radius: 999px; background: var(--bubble); color: var(--ink); font-size: var(--fs-xs); font-weight: 700; border: 1px solid var(--line); }
+.toast { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); padding: 6px 14px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: var(--fs-sm); box-shadow: var(--shadow); white-space: nowrap; animation: toast 2.6s ease forwards; z-index: 4; }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, -6px); } 10% { opacity: 1; transform: translate(-50%, 0); } 80% { opacity: 1; } 100% { opacity: 0; } }
+.bubble { opacity: var(--bubble-op, 1); transition: opacity 0.8s ease; cursor: default; }
+.bubble.faded { opacity: calc(var(--bubble-op, 1) * 0.16); }
+
+/* driving: bigger targets and text (car UI guidance: 76dp targets, glanceable text) */
+body[data-mode="drive"] #p-drive .btn { min-height: 76px; font-size: 1.2rem; }
+body[data-mode="drive"] .big { font-size: 3.25rem; }
+body[data-mode="drive"][data-drive-char="show"] #c, body[data-mode="drive"][data-drive-char="show"] .sky { filter: none; }
+body[data-mode="drive"][data-drive-char="hide"] #c { visibility: hidden; }
+
+.home-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.home-actions .btn { min-height: 44px; font-size: var(--fs-sm); }
+
+/* rest */
+.rest-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 2px solid var(--ok); border-radius: 12px; background: var(--bg); }
+.rest-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.rest-top > span:first-child { font-weight: 700; }
+.rest-top b { font-family: var(--font-meter); font-size: var(--fs-xl); font-variant-numeric: tabular-nums; }
+.rest-top .note { margin-left: auto; }
+.progress { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--ok); border-radius: 4px; transition: width 0.4s linear; }
+.got { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+
+/* item icons */
+.ico { --h: 40; flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; overflow: hidden;
+  background: hsl(var(--h) var(--ico-bg-s) var(--ico-bg-l)); color: hsl(var(--h) 62% var(--ico-fg-l)); }
+.ico svg { width: 62%; height: 62%; fill: currentColor; }
+.ico img { width: 100%; height: 100%; object-fit: cover; }
+.ico.locked { background: var(--line); color: var(--muted); }
+.ico.big { width: 64px; height: 64px; border-radius: 16px; }
+
+.item-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.item-row .nm { flex: 1; min-width: 0; }
+.item-row .nm b { display: block; overflow-wrap: anywhere; }
+.item-row .nm span { font-size: var(--fs-xs); color: var(--muted); }
+.rar { display: inline-block; font-size: 0.6875rem; padding: 0 6px; border-radius: 4px; border: 1px solid var(--line); margin-left: 6px; font-weight: 700; vertical-align: 1px; }
+.rar.r2 { border-color: var(--ok); color: var(--ok); }
+.rar.r3 { border-color: var(--accent); color: var(--accent); }
+
+.tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.tabs button { min-height: 44px; border: 0; background: var(--bg); font-size: var(--fs-sm); padding: 6px; }
+.tabs button + button { border-left: 1px solid var(--line); }
+.tabs button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.coll-head { margin: 0; font-weight: 700; }
+.coll-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
+.coll-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; font-size: var(--fs-xs); padding: 10px 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); min-width: 0; }
+.coll-cell .ico { width: 56px; height: 56px; }
+.coll-cell b { overflow-wrap: anywhere; }
+.coll-cell .link { font-size: var(--fs-xs); padding: 2px; }
+.coll-group h4 { margin: 8px 0 4px; font-size: var(--fs-sm); color: var(--muted); }
+.line-item { display: flex; gap: 10px; align-items: flex-start; width: 100%; padding: 8px 2px; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); font-family: var(--font-voice); font-size: var(--fs-sm); }
+.line-item .play { flex: none; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); font-size: 0.7rem; }
+.line-item.locked { color: var(--muted); cursor: default; }
+.line-item.locked .play { background: var(--line); color: var(--muted); }
+.pref-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+.pref { padding: 6px 4px; border-radius: 8px; border: 1px solid var(--line); font-size: var(--fs-xs); text-align: center; color: var(--muted); }
+.pref.on { background: var(--accent-soft); border-color: var(--accent); color: var(--ink); font-weight: 700; }
+
+/* looks */
+.look-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+.look-cell { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: var(--fs-xs); text-align: center; min-width: 0; }
+.look-cell.on { border-color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+.look-cell img, .look-cell .sw { width: 72px; height: 72px; border-radius: 10px; object-fit: cover; background: var(--line); }
+.look-cell .sw { display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; }
+.look-cell .sw i { display: block; }
+.look-cell span { overflow-wrap: anywhere; }
+.mine-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-sm); }
+.mine-row .nm { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.leave { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: var(--fs-xs); color: var(--muted); }
+.leave a { font-weight: 700; color: var(--accent); }
+details.tips summary { cursor: pointer; font-size: var(--fs-sm); color: var(--ink); }
+details.tips p { margin: 8px 0 0; font-size: var(--fs-xs); color: var(--muted); line-height: 1.7; }
+.zoom-ctl #photo-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.photo-img { width: 100%; max-width: 420px; align-self: center; border-radius: 12px; box-shadow: var(--shadow); background: var(--line); aspect-ratio: 4 / 5; object-fit: cover; }
+.week { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
+.week b { color: var(--ink); }
+.lcd.sum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.medal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.medal { display: flex; gap: 8px; align-items: flex-start; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: var(--fs-xs); color: var(--muted); }
+.medal i { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 700; background: var(--line); color: var(--muted); }
+.medal b { display: block; color: var(--ink); font-size: var(--fs-sm); }
+.medal.on { border-color: var(--accent); background: var(--accent-soft); }
+.medal.on i { background: var(--accent); color: var(--accent-ink); }
+#pip-btn { align-self: flex-start; }
+.mot-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: var(--fs-sm); }
+.mot-row .nm { overflow-wrap: anywhere; font-weight: 700; }
+.mot-row select { grid-column: 1 / -1; }
+.inline-confirm { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: var(--fs-sm); }
+.welcome-cards .pcard { cursor: pointer; }
+/* screens slide in softly instead of jumping */
+.pane:not([hidden]) { animation: paneIn 0.2s ease-out; }
+@keyframes paneIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.tap-voice { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; font-size: var(--fs-xs); color: var(--muted); }
+.tap-voice[hidden] { display: none; }
+.tap-voice svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; }
+#data-tools { display: flex; flex-direction: column; gap: 10px; }
+label.btn { display: flex; justify-content: center; align-items: center; cursor: pointer; }
+@media (prefers-reduced-motion: reduce) { .toast, .pane:not([hidden]) { animation: none; } .bubble { transition: none; } }
 </style>
 
 <div id="app">
@@ -390,11 +502,19 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
   <section id="stage" data-tod="day">
     <div class="sky"></div>
     <canvas id="c" role="img" aria-label=""></canvas>
+    <div class="rain" id="rain" hidden><canvas id="rain-c"></canvas></div>
+    <span class="rain-chip" id="rain-chip" hidden data-i18n="rainChip">雨</span>
+    <div class="zoom-ctl">
+      <button id="zoom-in" data-i18n-aria="zoomIn" aria-label="拡大">+</button>
+      <button id="zoom-out" data-i18n-aria="zoomOut" aria-label="縮小">−</button>
+      <button id="photo-btn" data-i18n-aria="photoTitle" aria-label="記念写真"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+    </div>
     <div class="loading" id="loading"><div><span id="loading-text" data-i18n="loading">キャラを呼んでいます…</span><div class="meter"><i id="loading-bar"></i></div></div></div>
     <div class="fallback-face" id="fallback" hidden>ミ</div>
     <div class="model-retry" id="model-retry" hidden><p data-i18n="modelFail"></p><button class="btn small" id="model-retry-btn" data-i18n="modelRetry"></button></div>
-    <div class="bubble"><span class="who" id="bubble-who">ミチ</span><p id="line" aria-hidden="true"></p></div>
+    <div class="bubble" id="bubble"><span class="who" id="bubble-who">ミチ</span><p id="line" aria-hidden="true"></p><span class="tap-voice" id="tap-voice" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg><span data-i18n="tapForVoice"></span></span></div>
     <div class="sr-only" aria-live="polite" id="line-sr"></div>
+    <div id="toast-slot"></div>
   </section>
 
   <section id="panel">
@@ -412,6 +532,10 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
         <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="aff-bar-wrap"><i id="aff-bar"></i></div>
       </div>
       <button class="btn primary" id="go-check" data-i18n="goCheck">出発前チェックへ</button>
+      <div class="home-actions">
+        <button class="btn" id="open-gifts"></button>
+        <button class="btn" id="open-coll" data-i18n="openColl">図鑑</button>
+      </div>
       <div class="row"><button class="btn" id="go-demo" data-i18n="goDemo">デモ走行(120倍速)</button></div>
       <p class="last" id="last-drive"></p>
     </div>
@@ -448,11 +572,19 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
           <button class="btn primary" id="stop-yes" data-i18n="yes">寄る</button>
         </div>
         <p class="listen" id="stop-listen"></p>
-        <p class="note" data-i18n="sampleData"></p>
+        <p class="note" id="stop-note"></p>
+      </div>
+      <div class="rest-card" id="rest-card" hidden>
+        <div class="rest-top"><span data-i18n="resting">休憩中</span><b id="rest-time">0:00</b><span class="note" id="rest-goal"></span></div>
+        <div class="progress"><i id="rest-bar"></i></div>
+        <div class="got" id="rest-got" hidden></div>
+        <p class="note" data-i18n="restHint"></p>
+        <button class="btn primary" id="rest-end" data-i18n="restEnd">休憩おわり・出発</button>
       </div>
       <p class="hint" id="drive-hint" data-i18n="driveHint"></p>
-      <div class="row">
-        <button class="btn" id="break-btn" data-i18n="breakBtn">休憩した</button>
+      <button class="link" id="pip-btn" data-i18n="pipBtn" hidden></button>
+      <div class="row" id="drive-actions">
+        <button class="btn" id="break-btn" data-i18n="restBtn">休憩する</button>
         <button class="btn primary" id="arrive-btn"><span class="fill" id="arrive-fill"></span><span class="lbl" data-i18n="arriveBtn">長押しで到着</span></button>
       </div>
     </div>
@@ -465,15 +597,27 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
         <div><span class="lab jp" data-i18n="sumDist">距離</span><b id="sum-km">—</b></div>
         <div><span class="lab jp" data-i18n="sumBreaks">休憩</span><b id="sum-breaks">0</b></div>
         <div><span class="lab jp" data-i18n="sumBond">なかよし</span><b id="sum-pts">+0</b></div>
+        <div id="sum-harsh-box" hidden><span class="lab jp" data-i18n="sumHarsh">急な操作</span><b id="sum-harsh">0</b></div>
       </div>
       <p class="places" id="sum-places" hidden></p>
       <label class="field" id="km-field"><span data-i18n="kmField">トリップメーターの距離(任意)</span>
         <span class="inline"><input type="number" id="km-input" inputmode="decimal" min="0" max="3000" step="0.1" data-i18n-ph="kmPh"><span>km</span></span>
       </label>
       <button class="btn primary" id="save-drive"></button>
-      <div class="row split"><span></span><button class="link" id="discard-drive" data-i18n="discard">記録しないで戻る</button></div>
+      <div class="row split"><button class="link" id="share-summary" data-i18n="shareSummary">記録を共有</button><button class="link" id="discard-drive" data-i18n="discard">記録しないで戻る</button></div>
     </div>
   </section>
+
+  <!-- WELCOME -->
+  <div class="sheet" id="sheet-welcome" role="dialog" aria-modal="true" aria-labelledby="w-title" hidden>
+    <div class="sheet-head"><h2 id="w-title" data-i18n="welcomeTitle">ようこそ</h2><button class="icon-btn" data-close data-i18n="close">閉じる</button></div>
+    <div class="sheet-body">
+      <p class="note" data-i18n="welcomeText"></p>
+      <div class="cards welcome-cards" id="welcome-cards"></div>
+      <label class="field"><span data-i18n="welcomeName"></span><input type="text" id="welcome-name" maxlength="12"></label>
+      <button class="btn primary" id="welcome-start" data-i18n="welcomeStart">はじめる</button>
+    </div>
+  </div>
 
   <!-- PERSONA SHEET -->
   <div class="sheet" id="sheet-persona" role="dialog" aria-modal="true" aria-labelledby="p-title" hidden>
@@ -494,8 +638,87 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
           <button class="btn primary" id="tr-generate" data-i18n="generate">このキャラを作る</button>
         </div>
         <p class="note" id="gen-status" aria-live="polite"></p>
-        <div><button class="link" id="gen-cancel" data-i18n="clearNo" hidden>やめる</button></div>
+        <div><button class="link" id="gen-cancel" data-i18n="cancel" hidden>やめる</button></div>
       </div>
+    </div>
+  </div>
+
+  <!-- LOOK SHEET -->
+  <div class="sheet" id="sheet-look" role="dialog" aria-modal="true" aria-labelledby="l-title" hidden>
+    <div class="sheet-head"><h2 id="l-title"></h2><button class="icon-btn" data-close data-i18n="close">閉じる</button></div>
+    <div class="sheet-body">
+      <div class="group">
+        <h3 data-i18n="lookBuiltin">アプリに入っている見た目</h3>
+        <div class="look-grid" id="look-builtin"></div>
+      </div>
+      <div class="group">
+        <h3 data-i18n="lookMine">読み込んだVRM</h3>
+        <div id="look-mine"></div>
+        <label class="btn" for="vrm-file" data-i18n="lookPick" style="text-align:center">VRMファイルを選ぶ</label>
+        <input type="file" id="vrm-file" accept=".vrm,.glb" hidden>
+        <p class="note" data-i18n="lookPickNote"></p>
+        <p class="note" id="vrm-note" aria-live="polite"></p>
+      </div>
+      <div class="group">
+        <h3 data-i18n="lookOnline">無料の3Dアバター</h3>
+        <p class="note" data-i18n="lookOnlineNote"></p>
+        <button class="btn" id="gallery-load" data-i18n="lookOnlineLoad">一覧を表示する</button>
+        <p class="note" id="gallery-note" aria-live="polite"></p>
+        <div class="look-grid" id="gallery"></div>
+      </div>
+      <div class="group">
+        <h3 data-i18n="motTitle">モーション(VRMA)</h3>
+        <p class="note" data-i18n="motNote"></p>
+        <button class="link" data-leave="https://booth.pm/ja/items/5512385" data-site="booth.pm" data-i18n="motBooth"></button>
+        <div id="mot-list"></div>
+        <label class="btn" for="vrma-file" data-i18n="motPick">モーションファイルを選ぶ</label>
+        <input type="file" id="vrma-file" accept=".vrma,.glb" multiple hidden>
+        <p class="note" id="mot-note" aria-live="polite"></p>
+        <p class="note" data-i18n="motCredit"></p>
+      </div>
+      <div class="group">
+        <h3 data-i18n="lookMake">VRMを作る・探す</h3>
+        <button class="link" data-leave="https://vroid.com/studio" data-site="vroid.com" data-i18n="lookStudio">VRoid Studio</button>
+        <p class="note" data-i18n="lookStudioSteps"></p>
+        <button class="link" data-leave="https://hub.vroid.com/" data-site="hub.vroid.com" data-i18n="lookHub">VRoid Hub</button>
+        <p class="note" data-i18n="lookHubNote"></p>
+        <div class="leave" id="leave-confirm" hidden><span id="leave-text"></span><a id="leave-go" target="_blank" rel="noopener" data-i18n="lookOpen">開く</a><button class="link" id="leave-no" data-i18n="cancel">やめる</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GIFTS SHEET -->
+  <div class="sheet" id="sheet-gifts" role="dialog" aria-modal="true" aria-labelledby="g-title" hidden>
+    <div class="sheet-head"><h2 id="g-title" data-i18n="giftTitle">おみやげ</h2><button class="icon-btn" data-close data-i18n="close">閉じる</button></div>
+    <div class="sheet-body">
+      <p class="note" data-i18n="giftNote"></p>
+      <div id="gift-list"></div>
+      <p class="note" id="gift-empty" data-i18n="giftEmpty"></p>
+    </div>
+  </div>
+
+  <!-- COLLECTION SHEET -->
+  <div class="sheet" id="sheet-coll" role="dialog" aria-modal="true" aria-labelledby="c-title" hidden>
+    <div class="sheet-head"><h2 id="c-title" data-i18n="openColl">図鑑</h2><button class="icon-btn" data-close data-i18n="close">閉じる</button></div>
+    <div class="sheet-body">
+      <div class="tabs" role="tablist">
+        <button role="tab" data-tab="lines" data-i18n="linesTab">セリフ</button>
+        <button role="tab" data-tab="items" data-i18n="itemsTab">おみやげ</button>
+        <button role="tab" data-tab="prefs" data-i18n="prefsTab">都道府県</button>
+        <button role="tab" data-tab="medals" data-i18n="medalsTab">実績</button>
+      </div>
+      <div id="coll-body"></div>
+      <input type="file" id="photo-file" accept="image/*" hidden>
+    </div>
+  </div>
+
+  <!-- PHOTO SHEET -->
+  <div class="sheet" id="sheet-photo" role="dialog" aria-modal="true" aria-labelledby="ph-title" hidden>
+    <div class="sheet-head"><h2 id="ph-title" data-i18n="photoTitle">記念写真</h2><button class="icon-btn" data-close data-i18n="close">閉じる</button></div>
+    <div class="sheet-body">
+      <img id="photo-img" alt="" class="photo-img">
+      <div class="row"><button class="btn" id="photo-save" data-i18n="photoSave">画像を保存</button><button class="btn primary" id="photo-share" data-i18n="photoShare">共有する</button></div>
+      <p class="note" data-i18n="photoNote"></p>
     </div>
   </div>
 
@@ -508,17 +731,18 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
         <div><span class="lab">DRIVES</span><b id="h-n">0</b></div>
         <div><span class="lab">TIME</span><b id="h-h">0:00</b></div>
       </div>
+      <p class="week" id="week-sum"></p>
       <div class="hist-tools" id="hist-tools"><span></span><button class="link" id="sel-start" data-i18n="selectDelete">選んで消す</button></div>
       <div class="sel-bar" id="sel-bar" hidden>
-        <span id="sel-main"><button class="btn small danger" id="sel-delete" disabled></button> <button class="link" id="sel-cancel" data-i18n="clearNo">やめる</button></span>
-        <span id="sel-confirm" hidden><span id="sel-confirm-text"></span> <button class="link danger" id="sel-yes" data-i18n="clearYes">消す</button> <button class="link" id="sel-no" data-i18n="clearNo">やめる</button></span>
+        <span id="sel-main"><button class="btn small danger" id="sel-delete" disabled></button> <button class="link" id="sel-cancel" data-i18n="cancel">やめる</button></span>
+        <span id="sel-confirm" hidden><span id="sel-confirm-text"></span> <button class="link danger" id="sel-yes" data-i18n="clearYes">消す</button> <button class="link" id="sel-no" data-i18n="cancel">やめる</button></span>
       </div>
       <ol class="hist" id="hist-list"></ol>
       <p class="note" id="hist-empty" data-i18n="histEmpty"></p>
       <p class="note" id="store-note"></p>
       <div>
         <button class="link danger" id="clear-start" data-i18n="clearAll">記録をすべて消す</button>
-        <span id="clear-confirm" hidden><span data-i18n="clearConfirm"></span> <button class="link danger" id="clear-yes" data-i18n="clearYes">消す</button> <button class="link" id="clear-no" data-i18n="clearNo">やめる</button></span>
+        <span id="clear-confirm" hidden><span data-i18n="clearConfirm"></span> <button class="link danger" id="clear-yes" data-i18n="clearYes">消す</button> <button class="link" id="clear-no" data-i18n="cancel">やめる</button></span>
       </div>
     </div>
   </div>
@@ -545,13 +769,42 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
           <label><input type="radio" name="verb" value="chatty"><span data-i18n="verbChatty">たくさん</span></label>
         </div>
         <p class="note" data-i18n="verbNote"></p>
+        <label class="toggle"><input type="checkbox" id="set-greet"><span data-i18n="greetOn"></span></label>
       </div>
       <div class="group">
         <h3 data-i18n="grpVoice">声</h3>
         <label class="toggle"><input type="checkbox" id="set-voice"><span data-i18n="voiceOn">声で話す</span></label>
+        <label class="field"><span data-i18n="voiceSel">声の種類</span><select id="set-voice-name"></select></label>
         <label class="field"><span data-i18n="pitchLabel">声の高さ</span><input type="range" id="set-pitch" min="-0.4" max="0.4" step="0.05"></label>
+        <label class="field"><span data-i18n="rateLabel">話す速さ</span><input type="range" id="set-rate" min="0.7" max="1.5" step="0.05"></label>
+        <label class="field"><span data-i18n="volLabel">声の大きさ</span><input type="range" id="set-volume" min="0.2" max="1" step="0.05"></label>
         <button class="btn" id="voice-test" data-i18n="voiceTest">声を試す</button>
         <p class="note" id="voice-note"></p>
+        <details class="tips"><summary data-i18n="voiceTipsTitle"></summary><p data-i18n="voiceTips"></p></details>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpView">表示</h3>
+        <label class="field"><span data-i18n="themeLabel">画面の色</span>
+          <select id="set-theme"><option value="auto" data-i18n="themeAuto"></option><option value="light" data-i18n="themeLight"></option><option value="dark" data-i18n="themeDark"></option></select>
+        </label>
+        <label class="field"><span data-i18n="zoomLabel">キャラの大きさ</span><input type="range" id="set-zoom" min="0.6" max="1.8" step="0.05"></label>
+        <p class="note" data-i18n="zoomHint"></p>
+        <span class="note" data-i18n="motionLabel"></span>
+        <div class="seg" role="radiogroup">
+          <label><input type="radio" name="motion" value="low"><span data-i18n="motionLow"></span></label>
+          <label><input type="radio" name="motion" value="mid"><span data-i18n="motionMid"></span></label>
+          <label><input type="radio" name="motion" value="high"><span data-i18n="motionHigh"></span></label>
+        </div>
+        <span class="note" data-i18n="driveCharLabel"></span>
+        <div class="seg" role="radiogroup">
+          <label><input type="radio" name="drivechar" value="show"><span data-i18n="dcShow"></span></label>
+          <label><input type="radio" name="drivechar" value="dim"><span data-i18n="dcDim"></span></label>
+          <label><input type="radio" name="drivechar" value="hide"><span data-i18n="dcHide"></span></label>
+        </div>
+        <label class="field"><span data-i18n="bubbleOpacity">吹き出しの濃さ</span><input type="range" id="set-bubble-op" min="0.3" max="1" step="0.05"></label>
+        <label class="toggle"><input type="checkbox" id="set-bubble-fade"><span data-i18n="bubbleFade"></span></label>
+        <p class="note" data-i18n="bubbleNote"></p>
+        <label class="toggle"><input type="checkbox" id="set-haptics"><span data-i18n="hapticsOn"></span></label>
       </div>
       <div class="group">
         <h3 data-i18n="grpStops">SA・PA・道の駅</h3>
@@ -567,17 +820,37 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
         <p class="note" data-i18n="placesNote"></p>
       </div>
       <div class="group">
+        <h3 data-i18n="grpWeather">天気の演出</h3>
+        <label class="toggle"><input type="checkbox" id="set-weather"><span data-i18n="weatherOn"></span></label>
+        <p class="note" data-i18n="weatherNote"></p>
+        <button class="btn" id="rain-test" data-i18n="rainTest">雨の演出を試す</button>
+      </div>
+      <div class="group">
         <h3 data-i18n="grpDrive">運転</h3>
+        <label class="toggle"><input type="checkbox" id="set-safety"><span data-i18n="safetyOn"></span></label>
+        <p class="note" data-i18n="safetyNote"></p>
+        <p class="note" id="pip-note" data-i18n="pipNote"></p>
         <label class="field"><span data-i18n="breakLabel">休憩をすすめる間隔</span>
           <select id="set-break"><option value="60" data-i18n="break60"></option><option value="90" data-i18n="break90"></option><option value="120" data-i18n="break120"></option></select>
         </label>
       </div>
       <div class="group">
         <h3 data-i18n="grpModel">キャラクターの見た目</h3>
-        <label class="field"><span data-i18n="vrmLabel">自分のVRMファイルを読み込む</span><input type="file" id="vrm-file" accept=".vrm,.glb"></label>
-        <p class="note" data-i18n="vrmNote"></p>
-        <p class="note" id="vrm-note"></p>
-        <div><button class="link" id="vrm-reset" data-i18n="vrmReset">最初の見た目に戻す</button></div>
+        <button class="btn" id="open-look-settings" data-i18n="lookBtn">見た目を変える</button>
+      </div>
+      <div class="group">
+        <h3 data-i18n="grpData">データ</h3>
+        <div id="data-tools">
+          <div class="row"><button class="btn" id="export-btn" data-i18n="exportBtn"></button></div>
+          <label class="btn" for="import-file" data-i18n="importLabel" style="text-align:center"></label>
+          <input type="file" id="import-file" accept="application/json,.json" hidden>
+          <p class="note" data-i18n="dataNote"></p>
+          <div class="inline-confirm" id="import-confirm" hidden><span data-i18n="importConfirm"></span><button class="btn small danger" id="import-yes" data-i18n="importYes"></button><button class="link" id="import-no" data-i18n="cancel"></button></div>
+          <p class="note" id="data-note" aria-live="polite"></p>
+        </div>
+        <p class="note" id="data-unavailable" data-i18n="exportUnavailable" hidden></p>
+        <div><button class="link" id="reset-start" data-i18n="resetSettings"></button></div>
+        <div class="inline-confirm" id="reset-confirm" hidden><span data-i18n="resetConfirm"></span><button class="btn small danger" id="reset-yes" data-i18n="resetYes"></button><button class="link" id="reset-no" data-i18n="cancel"></button></div>
       </div>
       <div class="credits" data-i18n="credits"></div>
     </div>
@@ -589,7 +862,8 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
   "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
-    "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.4.4/lib/three-vrm.module.min.js"
+    "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.4.4/lib/three-vrm.module.min.js",
+    "@pixiv/three-vrm-animation": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm-animation@3.4.4/lib/three-vrm-animation.module.min.js"
   }
 }
 </script>
@@ -597,21 +871,28 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+import { VRMAnimationLoaderPlugin, createVRMAnimationHumanoidTracks } from '@pixiv/three-vrm-animation';
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Inside the claude.ai viewer some features (downloads, outside data) are not available.
+const IN_CLAUDE = !!(window.claude && typeof window.claude.use === 'function');
 // On claude.ai the model ships as base64 text (that host only serves web file types); the own-site build serves the .vrm directly.
 const MODEL_URL = 'models/michi.vrm.b64.txt';
 const MODEL_BYTES = 7593724;
 const LS_KEY = 'drive-buddy-state-v1';
+const PHOTO_KEY = 'drive-buddy-photos-v1';
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const rnd = (arr) => arr[(Math.random() * arr.length) | 0];
 
 /* =========================================================
    Data (inlined at build time from web/src)
    ========================================================= */
 const I18N = __I18N__;
 const PRESETS = __PERSONAS__;
-const PRESET_ORDER = ['kohai', 'onee', 'genki', 'ottori'];
+const ITEMS = __ITEMS__;
+const PRESET_ORDER = ['kohai', 'onee', 'genki', 'ottori', 'sora'];
 const LANGS = ['ja', 'zh', 'ko', 'en'];
 
 // Emotion + gesture for each line key ([emo, gesture], or a list matched to variant index).
@@ -626,23 +907,39 @@ const META = {
   hourly: ['relaxed', 'nod'], chat: [['happy', 'tilt'], ['relaxed', 'nod'], ['happy', 'nod']],
   breakDue: ['neutral', 'nod'], breakNag: ['angry', 'shake'], breakTaken: [['happy', 'hop'], ['relaxed', 'nod']],
   arriveShort: ['happy', 'hop'], arriveMid: ['happy', 'nod'], arriveLong: ['relaxed', 'nod'], arriveVlong: ['relaxed', 'nod'],
-  saved: ['happy', 'wave'], discarded: ['neutral', 'nod'], levelUp: ['happy', 'hop'], milestone: ['happy', 'nod'],
+  saved: ['happy', 'wave'], discarded: ['neutral', 'nod'], levelUp: ['happy', 'hop'], milestone: ['happy', 'nod'], newPlace: ['happy', 'hop'],
   demoStart: ['relaxed', 'nod'], demoEnd: ['happy', 'wave'], voiceTest: ['happy', 'wave'], newModel: ['surprised', 'tilt'], hello: ['happy', 'wave'],
   stopAhead: ['neutral', 'tilt'], stopAheadBreak: ['neutral', 'nod'], stopYes: ['happy', 'nod'], stopNo: ['neutral', 'nod'],
   stopNoReply: ['neutral', 'tilt'], stopReached: ['relaxed', 'nod'],
+  restStart: ['relaxed', 'nod'], itemGet: ['happy', 'hop'],
+  giftLove: ['happy', 'hop'], giftLike: ['happy', 'nod'], giftNeutral: ['relaxed', 'nod'], giftDislike: ['sad', 'shake'],
+  rainStart: ['neutral', 'tilt'],
+  season: ['happy', 'wave'], anniv: ['happy', 'hop'], photo: ['happy', 'nod'], medal: ['happy', 'hop'], arriveSmooth: ['happy', 'nod'],
 };
 // In "guidance only" mode these lines still show in the bubble but are not spoken.
-const QUIET_IN_GUIDE = new Set(['checkIntro', 'checkBelt', 'checkMirror', 'checkLight', 'checkRoute', 'checkDone', 'hourly', 'chat', 'breakTaken', 'saved', 'discarded', 'levelUp', 'milestone', 'newModel']);
+const QUIET_IN_GUIDE = new Set(['checkIntro', 'checkBelt', 'checkMirror', 'checkLight', 'checkRoute', 'checkDone', 'hourly', 'chat', 'breakTaken', 'saved', 'discarded', 'levelUp', 'milestone', 'newModel', 'newPlace', 'itemGet', 'medal', 'photo']);
 const LINE_KEYS = Object.keys(PRESETS.kohai.lines.ja);
+// Keys that are only ever appended to another line.
+const SUFFIX_KEYS = new Set(['arriveGoodBreak', 'arriveNoBreak', 'arriveLate', 'arriveSmooth']);
+function keyGroup(k) {
+  if (k.startsWith('greet') || k === 'hello' || k === 'season' || k === 'anniv') return 'greet';
+  if (k.startsWith('check')) return 'check';
+  if (['depart', 'departSkip', 'departLate', 'hourly', 'chat', 'demoStart', 'rainStart'].includes(k)) return 'drive';
+  if (k.startsWith('break') || k.startsWith('stop') || k === 'restStart' || k === 'itemGet') return 'rest';
+  if (k.startsWith('arrive') || ['saved', 'discarded', 'levelUp', 'milestone', 'newPlace', 'demoEnd'].includes(k)) return 'arrive';
+  return 'other';
+}
+const GROUP_ORDER = ['greet', 'check', 'drive', 'rest', 'arrive', 'other'];
 
 // Rest stops for the demo route (Tokyo → Mt. Fuji on the Tomei Expressway). Sample data, not live.
 const DEMO_STOPS = [
-  { at: 26, km: 4, kind: 'SA', hours: '24h', crowd: 2, name: { ja: '海老名サービスエリア', zh: '海老名服务区', ko: '에비나 휴게소', en: 'Ebina Service Area' }, short: { ja: '海老名SA(下り)', zh: '海老名服务区(下行)', ko: '에비나 휴게소(하행)', en: 'Ebina SA (westbound)' } },
-  { at: 58, km: 3, kind: 'PA', hours: '24h', crowd: 0, name: { ja: '鮎沢パーキングエリア', zh: '鲇泽停车区', ko: '아유자와 주차구역', en: 'Ayuzawa Parking Area' }, short: { ja: '鮎沢PA(下り)', zh: '鲇泽停车区(下行)', ko: '아유자와 PA(하행)', en: 'Ayuzawa PA (westbound)' } },
-  { at: 106, km: 6, kind: 'SA', hours: '24h', crowd: 1, name: { ja: '足柄サービスエリア', zh: '足柄服务区', ko: '아시가라 휴게소', en: 'Ashigara Service Area' }, short: { ja: '足柄SA(下り)', zh: '足柄服务区(下行)', ko: '아시가라 휴게소(하행)', en: 'Ashigara SA (westbound)' } },
-  { at: 150, km: 2, kind: 'michi', hours: [8, 18], crowd: 0, name: { ja: '道の駅すばしり', zh: '公路休息站「须走」', ko: '미치노에키 스바시리', en: 'Michi-no-Eki Subashiri' }, short: { ja: '道の駅 すばしり', zh: '公路休息站 须走', ko: '미치노에키 스바시리', en: 'Roadside Station Subashiri' } },
+  { at: 26, km: 4, kind: 'SA', pref: 'JP-14', hours: '24h', crowd: 2, name: { ja: '海老名サービスエリア', zh: '海老名服务区', ko: '에비나 휴게소', en: 'Ebina Service Area' }, short: { ja: '海老名SA(下り)', zh: '海老名服务区(下行)', ko: '에비나 휴게소(하행)', en: 'Ebina SA (westbound)' } },
+  { at: 58, km: 3, kind: 'PA', pref: 'JP-22', hours: '24h', crowd: 0, name: { ja: '鮎沢パーキングエリア', zh: '鲇泽停车区', ko: '아유자와 주차구역', en: 'Ayuzawa Parking Area' }, short: { ja: '鮎沢PA(下り)', zh: '鲇泽停车区(下行)', ko: '아유자와 PA(하행)', en: 'Ayuzawa PA (westbound)' } },
+  { at: 106, km: 6, kind: 'SA', pref: 'JP-22', hours: '24h', crowd: 1, name: { ja: '足柄サービスエリア', zh: '足柄服务区', ko: '아시가라 휴게소', en: 'Ashigara Service Area' }, short: { ja: '足柄SA(下り)', zh: '足柄服务区(下行)', ko: '아시가라 휴게소(하행)', en: 'Ashigara SA (westbound)' } },
+  { at: 150, km: 2, kind: 'michi', pref: 'JP-22', hours: [8, 18], crowd: 0, name: { ja: '道の駅すばしり', zh: '公路休息站「须走」', ko: '미치노에키 스바시리', en: 'Michi-no-Eki Subashiri' }, short: { ja: '道の駅 すばしり', zh: '公路休息站 须走', ko: '미치노에키 스바시리', en: 'Roadside Station Subashiri' } },
 ];
 const DEMO_KMH = 80;
+const REST_SEC = 120; // a 2-minute rest earns a souvenir
 
 // Trait combinations for the custom builder.
 const TRAITS = {
@@ -652,6 +949,44 @@ const TRAITS = {
 };
 const TEMP_BASE = { cool: 'onee', genki: 'genki', ottori: 'ottori', sewa: 'kohai', tsun: 'kohai' };
 const TEMP_VOICE = { cool: { pitch: 0.95, rate: 0.98 }, genki: { pitch: 1.4, rate: 1.12 }, ottori: { pitch: 1.15, rate: 0.9 }, sewa: { pitch: 1.2, rate: 1.02 }, tsun: { pitch: 1.3, rate: 1.06 } };
+
+// Each preset recolours the bundled model so the four characters look different.
+const LOOK_TINT = {
+  kohai: null,
+  onee: { hair: '#2a2a33', iris: '#4b6d96', tops: '#2f3a52' },
+  genki: { hair: '#e08a3c', iris: '#c27a2c', tops: '#ffd347' },
+  ottori: { hair: '#caa1ab', iris: '#a35c7c', tops: '#e6dcf5' },
+  sora: { hair: '#232327', iris: '#b8302f', tops: '#2b2b30' },
+};
+// On the own site, some characters wear one of the sample avatars unless the person picks another look.
+const DEFAULT_LOOK = { genki: 'sample-b', ottori: 'sample-a', sora: 'sample-c' };
+// Official VRoid sample avatars (VRoid Project / pixiv Inc.; commercial use, edits and redistribution allowed).
+// Own-site build only: the claude.ai version ships just the default model.
+const SAMPLE_LOOKS = {
+  'sample-a': { ja: 'ショートヘアの女の子', zh: '短发女孩', ko: '단발 소녀', en: 'Short-haired girl', sw: ['#5b3a2e', '#f4efe9', '#8a5a3c', '#5b3a2e'] },
+  'sample-b': { ja: '星飾りの女の子', zh: '星星发饰女孩', ko: '별 장식 소녀', en: 'Girl with star clips', sw: ['#4a3a7a', '#2a2a33', '#e0b040', '#4a3a7a'] },
+  'sample-c': { ja: '黒髪の男の子', zh: '黑发男孩', ko: '검은 머리 소년', en: 'Dark-haired boy', sw: ['#222226', '#1c1c20', '#b8302f', '#222226'] },
+};
+const UMBRELLA_COLOR = { kohai: '#f08a9a', onee: '#2d3b55', genki: '#ffcc33', ottori: '#b9a3e3', sora: '#3c4b5c' };
+const MOTION_MUL = { low: 0.5, mid: 1, high: 1.35 };
+
+/* ---------- items ---------- */
+const ITEM_BY_ID = {};
+for (const it of ITEMS.general) ITEM_BY_ID[it.id] = it;
+for (const it of ITEMS.special) ITEM_BY_ID[it.id] = it;
+for (const [code, it] of Object.entries(ITEMS.prefs)) { it.code = code; ITEM_BY_ID[it.id] = it; }
+const ALL_ITEMS = [...ITEMS.general, ...Object.values(ITEMS.prefs), ...ITEMS.special];
+const rarityOf = (id) => (id.startsWith('s-') ? 3 : id.startsWith('p-') ? 2 : 1);
+const ICON_PATHS = {
+  sweet: '<path d="M4.6 20.4 20.4 4.6" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="8.6" cy="15.4" r="3.2"/><circle cx="12" cy="12" r="3.2" opacity=".8"/><circle cx="15.4" cy="8.6" r="3.2" opacity=".6"/>',
+  fruit: '<circle cx="12" cy="14" r="7"/><path d="M12 7c0-2 1-3.4 3-4" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M12.6 6.6c2.4-1.6 5-.6 5.6 1-2.6 1.1-4.6.6-5.6-1z"/>',
+  savory: '<circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r="1.1" fill="#fff" opacity=".7"/><circle cx="14" cy="9" r="1.1" fill="#fff" opacity=".7"/><circle cx="12" cy="14" r="1.1" fill="#fff" opacity=".7"/><circle cx="15.5" cy="14.5" r="1.1" fill="#fff" opacity=".7"/>',
+  meal: '<path d="M3 11h18a9 9 0 0 1-18 0z"/><path d="M8.5 8.5c0-2 2-2 2-4.5M12.5 8.5c0-2 2-2 2-4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/>',
+  meat: '<ellipse cx="14.5" cy="9.5" rx="6.2" ry="5" transform="rotate(-38 14.5 9.5)"/><rect x="5" y="14" width="7" height="2.8" rx="1.4" transform="rotate(-38 8.5 15.4)"/><circle cx="4.9" cy="19.2" r="1.8"/><circle cx="3.4" cy="17.4" r="1.6"/>',
+  seafood: '<path d="M2.5 12c3-5.2 10.4-6.2 14.6-2L21 7v10l-3.9-3c-4.2 4.2-11.6 3.2-14.6-2z"/><circle cx="7.6" cy="11" r="1.1" fill="#fff"/>',
+  drink: '<path d="M5 8.5h12v5.5a6 6 0 0 1-12 0z"/><path d="M17 9.5h1.4a2.6 2.6 0 0 1 0 5.2H17" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M8.5 3.5c0 1.5 1.5 1.5 1.5 3M12.5 3.5c0 1.5 1.5 1.5 1.5 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none"/>',
+  goods: '<path d="M7 3h10v12l-5 6-5-6z"/><circle cx="12" cy="7.2" r="1.6" fill="#fff"/><path d="M9.5 11h5" stroke="#fff" stroke-width="1.2" opacity=".7"/>',
+};
 
 /* =========================================================
    Storage: per-person private doc in the artifact db,
@@ -667,29 +1002,43 @@ function defaultLang() {
 const defaultSettings = () => ({
   lang: defaultLang(), persona: 'kohai', callName: '', voice: true, pitchAdj: 0, breakMin: 120,
   verbosity: 'normal', stopsOn: true, stopsInfo: true, voiceReply: true, placesOn: true,
+  voiceNames: {}, rateMul: 1, volume: 1, greetOn: true,
+  theme: 'auto', zoom: 1, motion: 'mid', driveChar: 'dim', haptics: true, bubbleOp: 1, bubbleFade: false,
+  weatherOn: true, looks: {}, onboarded: false, motionSlots: {}, safetyOn: false, seasonSaid: '', annivSaid: [],
 });
-const defaultState = () => ({ v: 2, settings: defaultSettings(), drives: [], custom: null });
+const defaultState = () => ({ v: 3, settings: defaultSettings(), drives: [], custom: null, heard: {}, bag: {}, got: {}, gifts: [], prefs: {}, medals: {}, photos: 0 });
+const isObj = (o) => o && typeof o === 'object' && !Array.isArray(o);
 function normalize(d) {
   const base = defaultState();
-  if (!d || typeof d !== 'object') return base;
-  const s = { ...base.settings, ...(d.settings || {}) };
-  if (d.v !== 2) { // from v0.1: "先輩" was the default, now the persona decides
+  if (!isObj(d)) return base;
+  const s = { ...base.settings, ...(isObj(d.settings) ? d.settings : {}) };
+  if (!d.v || d.v < 2) { // from v0.1: "先輩" was the default, now the persona decides
     if (s.callName === '先輩') s.callName = '';
     if (!d.settings || !d.settings.lang) s.lang = 'ja';
   }
+  if (d.v && d.v < 3 && Array.isArray(d.drives) && d.drives.length) s.onboarded = true;
   if (!LANGS.includes(s.lang)) s.lang = 'ja';
+  for (const k of ['voiceNames', 'looks', 'motionSlots']) if (!isObj(s[k])) s[k] = {};
   delete s.pitch;
+  if (!Array.isArray(s.annivSaid)) s.annivSaid = [];
   return {
-    v: 2, settings: s,
+    v: 3, settings: s,
     drives: Array.isArray(d.drives) ? d.drives.slice(0, 500) : [],
-    custom: d.custom && typeof d.custom === 'object' && d.custom.lines ? d.custom : null,
+    custom: isObj(d.custom) && d.custom.lines ? d.custom : null,
+    heard: isObj(d.heard) ? d.heard : {},
+    bag: isObj(d.bag) ? d.bag : {},
+    got: isObj(d.got) ? d.got : {},
+    gifts: Array.isArray(d.gifts) ? d.gifts.slice(0, 1000) : [],
+    prefs: isObj(d.prefs) ? d.prefs : {},
+    medals: isObj(d.medals) ? d.medals : {},
+    photos: Number(d.photos) || 0,
   };
 }
 const Store = {
   kind: 'memory', state: defaultState(), ref: null, chain: Promise.resolve(),
   async init() {
     try {
-      if (window.claude && typeof window.claude.use === 'function') {
+      if (IN_CLAUDE) {
         const [db, user] = await Promise.all([window.claude.use('db'), window.claude.use('user')]);
         const uid = user ? await user.id() : null;
         if (db && uid) {
@@ -724,6 +1073,46 @@ const S = () => Store.state.settings;
 let saveSoonTimer;
 function saveSoon() { clearTimeout(saveSoonTimer); saveSoonTimer = setTimeout(() => Store.save(), 700); }
 
+// Souvenir photos stay in this browser only (they would be too large for the shared store).
+const Photos = {
+  map: null,
+  load() { if (this.map) return this.map; try { this.map = JSON.parse(localStorage.getItem(PHOTO_KEY) || '{}') || {}; } catch { this.map = {}; } return this.map; },
+  get(id) { return this.load()[id] || null; },
+  set(id, url) { this.load()[id] = url; try { localStorage.setItem(PHOTO_KEY, JSON.stringify(this.map)); return true; } catch { return false; } },
+  all() { return { ...this.load() }; },
+  replace(obj) { this.map = isObj(obj) ? obj : {}; try { localStorage.setItem(PHOTO_KEY, JSON.stringify(this.map)); } catch {} },
+};
+
+// Loaded VRM files are kept in IndexedDB so they survive reloads.
+const IDB = {
+  db: null,
+  open() {
+    if (this.db) return Promise.resolve(this.db);
+    return new Promise((resolve, reject) => {
+      try {
+        const r = indexedDB.open('drive-buddy', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('models', { keyPath: 'id' });
+        r.onsuccess = () => { this.db = r.result; resolve(this.db); };
+        r.onerror = () => reject(r.error);
+      } catch (e) { reject(e); }
+    });
+  },
+  async run(mode, fn) {
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('models', mode);
+      const req = fn(tx.objectStore('models'));
+      tx.oncomplete = () => resolve(req ? req.result : undefined);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  },
+  put(rec) { return this.run('readwrite', (s) => s.put(rec)); },
+  get(id) { return this.run('readonly', (s) => s.get(id)); },
+  all() { return this.run('readonly', (s) => s.getAll()); },
+  del(id) { return this.run('readwrite', (s) => s.delete(id)); },
+};
+
 /* =========================================================
    Language + persona helpers
    ========================================================= */
@@ -743,7 +1132,7 @@ function baseOf(p) { return isCustom(p) ? (PRESETS[p.base] || PRESETS.kohai) : p
 const swappedCache = new Map();
 function linesOf(p) {
   if (isCustom(p)) {
-    if (p.lang === lang()) return p.lines;
+    if (p.lang === lang()) return { ...baseOf(p).lines[lang()], ...p.lines };
     // Written in another language: borrow the base character's lines, but keep the custom name.
     const b = baseOf(p), L = lang(), key = `${p.name}|${b.id}|${L}`;
     if (!swappedCache.has(key)) {
@@ -763,6 +1152,27 @@ function defaultCall(p) {
   return b.call[lang()] || b.call.ja;
 }
 const callName = () => (S().callName || '').trim() || defaultCall(persona());
+const personaIdOf = (p) => (isCustom(p) ? 'custom' : p.id);
+const itemName = (it) => it[lang()] || it.ja;
+
+function buzz(ms = 20) { if (S().haptics && navigator.vibrate) { try { navigator.vibrate(ms); } catch {} } }
+function toast(text) {
+  if (document.body.dataset.mode === 'drive') return; // nothing extra to look at while driving
+  const slot = $('#toast-slot'); slot.textContent = '';
+  const el = document.createElement('div'); el.className = 'toast'; el.textContent = text;
+  slot.append(el);
+  setTimeout(() => { if (el.parentNode) el.remove(); }, 2800);
+}
+function itemIcon(it, { big = false, photo = true } = {}) {
+  const box = document.createElement('span');
+  box.className = 'ico' + (big ? ' big' : '');
+  const ph = photo && it && Photos.get(it.id);
+  if (!it) { box.classList.add('locked'); box.innerHTML = '<svg viewBox="0 0 24 24"><text x="12" y="17" font-size="14" text-anchor="middle" fill="currentColor">?</text></svg>'; return box; }
+  if (ph) { const img = document.createElement('img'); img.src = ph; img.alt = ''; box.append(img); return box; }
+  box.style.setProperty('--h', (ITEMS.cats[it.cat] || {}).hue ?? 40);
+  box.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON_PATHS[it.cat] || ICON_PATHS.goods}</svg>`;
+  return box;
+}
 
 /* =========================================================
    3D character
@@ -770,12 +1180,14 @@ const callName = () => (S().callName || '').trim() || defaultCall(persona());
 const stage = $('#stage');
 const canvas = $('#c');
 const Char = {
-  vrm: null, headY: 1.42, flip: 1,
+  vrm: null, headY: 1.42, flip: 1, modelKey: null,
   emotion: 'neutral', emoW: {}, speaking: false,
   blinkAt: 2, blinkT: -1, mouth: { aa: 0, ih: 0, ou: 0, ee: 0, oh: 0 }, mouthTarget: null, mouthNext: 0,
-  gesture: null, lowPower: false, expr: 1,
+  gesture: null, lowPower: false, expr: 1, nextIdle: 6, idleDir: 1,
+  lookUntil: 0, lookStart: 0, lookYaw: 0, lookPitch: 0, umb: 0, umbVel: [0], michiBuf: null,
+  saccX: 0, saccY: 0, saccNext: 0, hipsOff: 0,
 };
-let renderer = null, scene, camera, clock;
+let renderer = null, scene, camera, clock, lookObj, gazeObj, umbrella;
 const loader = new GLTFLoader();
 loader.register((parser) => new VRMLoaderPlugin(parser));
 
@@ -786,18 +1198,38 @@ function initGL() {
     console.warn('WebGL unavailable', e);
     return false;
   }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setPixelRatio(pixelRatioNow());
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   scene = new THREE.Scene();
   camera = new THREE.PerspectiveCamera(26, 1, 0.1, 20);
   const key = new THREE.DirectionalLight(0xffffff, 2.7);
   key.position.set(0.6, 1.2, 1.6).normalize();
   scene.add(key);
+  lookObj = new THREE.Object3D(); scene.add(lookObj);
+  gazeObj = new THREE.Object3D(); scene.add(gazeObj);
+  umbrella = makeUmbrella(); scene.add(umbrella);
   clock = new THREE.Clock();
   new ResizeObserver(resize).observe(stage);
   resize();
   renderer.setAnimationLoop(loop);
   return true;
+}
+function makeUmbrella() {
+  const g = new THREE.Group();
+  const canopyMat = new THREE.MeshBasicMaterial({ color: 0xf08a9a, side: THREE.DoubleSide, transparent: true, opacity: 0.94 });
+  const canopy = new THREE.Mesh(new THREE.ConeGeometry(0.4, 0.16, 10, 1, true), canopyMat);
+  canopy.position.y = 0.5;
+  const rim = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.ConeGeometry(0.4, 0.16, 10, 1, true)), new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 }));
+  rim.position.y = 0.5;
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.56, 6), new THREE.MeshBasicMaterial({ color: 0x3b3b44 }));
+  shaft.position.y = 0.28;
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.015, 8, 6), new THREE.MeshBasicMaterial({ color: 0x3b3b44 }));
+  tip.position.y = 0.59;
+  g.add(canopy, rim, shaft, tip);
+  g.userData.canopyMat = canopyMat;
+  g.visible = false;
+  g.traverse((o) => { o.frustumCulled = false; });
+  return g;
 }
 function resize() {
   if (!renderer) return;
@@ -807,21 +1239,25 @@ function resize() {
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   frame();
+  RainFX.resize();
 }
+const zoomLevel = () => clamp(Number(S().zoom) || 1, 0.6, 1.8);
 function frame() {
-  // Frame from the waist up; keep the face in the upper part of the stage, clear of the speech bubble.
-  const H = 1.08;
+  if (!camera) return;
+  // Default frames the character from the waist up; zooming in moves toward the face, zooming out shows the whole body.
+  const z = zoomLevel();
+  const H = 1.08 / z;
   const fov = THREE.MathUtils.degToRad(camera.fov);
   let d = (H / 2) / Math.tan(fov / 2);
-  const minW = 0.66, visW = H * camera.aspect;
+  const minW = 0.66 / z, visW = H * camera.aspect;
   if (visW < minW) d *= minW / visW;
-  const ty = Char.headY - 0.25;
+  const ty = Char.headY - 0.25 + (z > 1 ? (z - 1) * 0.18 : -(1 - z) * 0.55);
   camera.position.set(0, ty + 0.04, d);
   camera.lookAt(0, ty, 0);
 }
 
-async function fetchBundledModel(onProgress) {
-  const res = await fetch(MODEL_URL);
+async function fetchBundledModel(onProgress, url = MODEL_URL) {
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`model fetch failed (${res.status})`);
   const total = Number(res.headers.get('content-length')) || MODEL_BYTES;
   let bytes;
@@ -836,7 +1272,7 @@ async function fetchBundledModel(onProgress) {
     bytes = new Uint8Array(got); let o = 0;
     for (const p of parts) { bytes.set(p, o); o += p.length; }
   } else bytes = new Uint8Array(await res.arrayBuffer());
-  if (!MODEL_URL.endsWith('.b64.txt')) return bytes.buffer;
+  if (!url.endsWith('.b64.txt')) return bytes.buffer;
   const bin = atob(new TextDecoder().decode(bytes).trim());
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
@@ -855,54 +1291,180 @@ async function loadModel(source) {
   Char.flip = vrm.meta && vrm.meta.metaVersion === '0' ? -1 : 1;
   Char.emoW = {};
   Char.hipsBaseY = null;
+  poseState.clear(); poseSnap = true;
+  Motion.playing = null; Motion.mixer = null;
   scene.add(vrm.scene);
-  if (vrm.lookAt) vrm.lookAt.target = camera;
+  if (vrm.lookAt) vrm.lookAt.target = gazeObj || camera;
   vrm.scene.updateMatrixWorld(true);
   const head = vrm.humanoid.getRawBoneNode('head');
   if (head) { const v = new THREE.Vector3(); head.getWorldPosition(v); Char.headY = v.y; }
   frame();
   return vrm;
 }
+// Summarise a VRM's own usage terms (VRM 1.0 and 0.x fields).
+function licenseSummary(meta) {
+  if (!meta) return '';
+  const parts = [];
+  if (meta.metaVersion === '0') {
+    if (meta.allowedUserName) parts.push(`avatar: ${meta.allowedUserName}`);
+    if (meta.commercialUssageName) parts.push(`commercial: ${meta.commercialUssageName}`);
+    if (meta.licenseName) parts.push(`license: ${meta.licenseName}`);
+  } else {
+    if (meta.avatarPermission) parts.push(`avatar: ${meta.avatarPermission}`);
+    if (meta.commercialUsage) parts.push(`commercial: ${meta.commercialUsage}`);
+    if (meta.licenseUrl) parts.push(`license: ${meta.licenseUrl}`);
+  }
+  return parts.join(' / ');
+}
 
+/* ---------- recolouring the bundled model ---------- */
+const grayCache = new Map();
+function grayTexture(tex) {
+  if (!tex || !tex.image) return null;
+  if (grayCache.has(tex.uuid)) return grayCache.get(tex.uuid);
+  const img = tex.image;
+  const w = img.width, h = img.height;
+  if (!w || !h) return null;
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const data = ctx.getImageData(0, 0, w, h); const px = data.data;
+  for (let i = 0; i < px.length; i += 4) {
+    const L = (0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]) / 255;
+    const g = Math.round(clamp(0.42 + L * 0.8, 0, 1) * 255);
+    px[i] = px[i + 1] = px[i + 2] = g;
+  }
+  ctx.putImageData(data, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.flipY = tex.flipY; t.colorSpace = tex.colorSpace; t.wrapS = tex.wrapS; t.wrapT = tex.wrapT;
+  t.magFilter = tex.magFilter; t.minFilter = tex.minFilter; t.needsUpdate = true;
+  grayCache.set(tex.uuid, t);
+  return t;
+}
+function applyTint(tint) {
+  if (!Char.vrm) return;
+  Char.vrm.scene.traverse((o) => {
+    if (!o.isMesh) return;
+    for (const m of [].concat(o.material)) {
+      if (!m || !m.color) continue;
+      const u = m.userData;
+      if (!u.orig) u.orig = { map: m.map, smt: m.shadeMultiplyTexture, color: m.color.clone(), shade: m.shadeColorFactor ? m.shadeColorFactor.clone() : null };
+      const name = m.name || '';
+      const part = /HAIR/i.test(name) ? 'hair' : /EyeIris/i.test(name) ? 'iris' : /Tops/i.test(name) ? 'tops' : null;
+      // restore first, then apply
+      m.map = u.orig.map; if ('shadeMultiplyTexture' in m) m.shadeMultiplyTexture = u.orig.smt;
+      m.color.copy(u.orig.color); if (u.orig.shade && m.shadeColorFactor) m.shadeColorFactor.copy(u.orig.shade);
+      if (!tint || !part || !tint[part]) continue;
+      const col = new THREE.Color(tint[part]);
+      if (part === 'hair' || part === 'iris') {
+        const g = grayTexture(u.orig.map);
+        if (g) { m.map = g; if ('shadeMultiplyTexture' in m && u.orig.smt) m.shadeMultiplyTexture = grayTexture(u.orig.smt) || g; }
+      }
+      m.color.copy(col);
+      if (m.shadeColorFactor) m.shadeColorFactor.copy(col).multiplyScalar(part === 'tops' ? 0.8 : 0.72);
+    }
+  });
+}
+
+/* ---------- pose, idle life, touch-look, umbrella ---------- */
 const bone = (n) => Char.vrm.humanoid.getNormalizedBoneNode(n);
+const lerp = THREE.MathUtils.lerp;
+// Each joint follows its target pose through a critically damped spring ("smooth damp"), so a motion that
+// interrupts another never makes a joint jump, and speeds change gradually. Smaller numbers follow faster.
+const SMOOTH = { hips: 0.14, spine: 0.16, chest: 0.14, neck: 0.09, head: 0.07, leftUpperArm: 0.11, rightUpperArm: 0.11, leftLowerArm: 0.09, rightLowerArm: 0.075, leftHand: 0.12, rightHand: 0.12 };
+function smoothDamp(cur, target, velArr, i, smoothTime, dt) {
+  const omega = 2 / smoothTime, x = omega * dt;
+  const ex = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
+  const change = cur - target;
+  const temp = (velArr[i] + omega * change) * dt;
+  velArr[i] = (velArr[i] - omega * temp) * ex;
+  return target + (change + temp) * ex;
+}
+const poseState = new Map();
+let poseDt = 1 / 60, poseSnap = true;
 function rot(n, x, y, z) {
   const b = bone(n); if (!b) return;
-  b.rotation.set(x * Char.flip, y, z * Char.flip);
+  const tx = x * Char.flip, ty = y, tz = z * Char.flip;
+  let st = poseState.get(n);
+  if (!st || poseSnap) { st = { cur: [tx, ty, tz], vel: [0, 0, 0] }; poseState.set(n, st); }
+  else {
+    const k = SMOOTH[n] || 0.12;
+    st.cur[0] = smoothDamp(st.cur[0], tx, st.vel, 0, k, poseDt);
+    st.cur[1] = smoothDamp(st.cur[1], ty, st.vel, 1, k, poseDt);
+    st.cur[2] = smoothDamp(st.cur[2], tz, st.vel, 2, k, poseDt);
+  }
+  b.rotation.set(st.cur[0], st.cur[1], st.cur[2]);
 }
-const env = (p) => Math.sin(Math.PI * Math.min(1, Math.max(0, p)));
+const sstep = (a, b, x) => { const u = clamp((x - a) / (b - a), 0, 1); return u * u * (3 - 2 * u); };
+// rise – hold – settle envelope for a gesture (p = 0..1)
+const envAHR = (p, a = 0.25, r = 0.65) => sstep(0, a, p) * (1 - sstep(r, 1, p));
+// a few unrelated sine waves read as organic drift rather than a metronome
+const drift = (t, seed) => Math.sin(t * 0.71 + seed) * 0.5 + Math.sin(t * 1.37 + seed * 2.1) * 0.3 + Math.sin(t * 2.13 + seed * 3.7) * 0.2;
+const hipsVel = [0];
 
-function applyPose(t) {
+// What one gesture adds to the resting pose at progress p (0..1).
+function gestureDelta(kind, p, t, amp, dir) {
+  const d = { hx: 0, hy: 0, hz: 0, sz: 0, cx: 0, lu: 0, ru: 0, hip: 0, wave: 0 };
+  if (kind === 'nod') d.hx = 0.19 * Math.sin(p * Math.PI * 2) ** 2 * amp;
+  else if (kind === 'tilt') { const e = envAHR(p, 0.28, 0.62); d.hz = 0.2 * e * amp * dir; d.sz = 0.04 * e * amp * dir; }
+  else if (kind === 'down') { const e = envAHR(p, 0.3, 0.7); d.hx = 0.22 * e * amp; d.lu = 0.08 * e; d.ru = -0.08 * e; }
+  else if (kind === 'shake') d.hy = 0.19 * Math.sin(p * Math.PI * 6) * envAHR(p, 0.15, 0.75) * amp;
+  else if (kind === 'look') { const e = envAHR(p, 0.22, 0.68); d.hy = 0.34 * e * amp * dir; d.sz = -0.02 * e * dir; }
+  else if (kind === 'stretch') { const e = envAHR(p, 0.3, 0.7); d.lu = 0.3 * e; d.ru = -0.3 * e; d.hx = -0.14 * e * amp; d.cx = -0.05 * e; }
+  else if (kind === 'hop') { const e = envAHR(p, 0.15, 0.6); d.hip = 0.035 * Math.sin(p * Math.PI * 2) ** 2 * amp; d.lu = 0.35 * e; d.ru = -0.35 * e; d.hz = 0.08 * e * amp; }
+  else if (kind === 'surprised') { const e = envAHR(p, 0.12, 0.6); d.hx = -0.12 * e * amp; d.lu = 0.25 * e; d.ru = -0.25 * e; }
+  else if (kind === 'wave') { const e = envAHR(p, 0.18, 0.78); d.wave = e; d.hz = 0.1 * e * amp; }
+  return d;
+}
+function applyPose(t, dt) {
+  poseDt = clamp(dt, 1 / 240, 0.12);
+  const mm = MOTION_MUL[S().motion] || 1;
   const br = Math.sin(t * 1.7);
-  const sw = Math.sin(t * 0.55);
-  const g = Char.gesture;
-  let p = 0, k = null;
-  if (g) { p = (t - g.t0) / g.dur; k = g.kind; if (p >= 1) { Char.gesture = null; k = null; } }
-  const e = k ? env(p) : 0;
-  const amp = (reduceMotion ? 0.4 : 1) * (0.6 + 0.4 * Char.expr);
+  const amp = (reduceMotion ? 0.4 : 1) * (0.6 + 0.4 * Char.expr) * mm;
 
   let lUz = -1.22 + br * 0.015, rUz = 1.22 - br * 0.015;
   let lLy = -0.32, rLy = 0.32, rLz = 0, rUy = 0;
-  let headX = Math.sin(t * 0.9) * 0.015, headY = sw * 0.05, headZ = Math.sin(t * 0.43) * 0.03;
-  let spineZ = sw * 0.012, hipsY = 0, chestX = br * 0.012;
+  let headX = drift(t * 0.8, 2) * 0.014 * mm, headY = drift(t * 0.55, 1) * 0.05 * mm, headZ = drift(t * 0.45, 3) * 0.03 * mm;
+  // slow weight shift between the feet
+  const shift = Math.sin(t * 0.33) * mm;
+  let spineZ = shift * 0.014, hipsZ = -shift * 0.006, hipsY = 0, chestX = br * 0.012, wave = 0;
+  // small nods that follow the voice while talking
+  if (Char.speaking) headX += ((Char.mouth.aa || 0) + (Char.mouth.oh || 0)) * 0.035 * amp;
 
-  if (k === 'nod') headX += 0.16 * Math.sin(p * Math.PI * 2) ** 2 * amp;
-  if (k === 'tilt') { headZ += 0.2 * e * amp; spineZ += 0.04 * e * amp; }
-  if (k === 'down') { headX += 0.22 * e * amp; lUz += 0.08 * e; rUz -= 0.08 * e; }
-  if (k === 'shake') headY += 0.14 * Math.sin(p * Math.PI * 6) * e * amp;
-  if (k === 'hop') {
-    hipsY = 0.035 * Math.abs(Math.sin(p * Math.PI * 2)) * amp;
-    lUz += 0.35 * e; rUz -= 0.35 * e;
-    headZ += 0.08 * e * amp;
+  // the current gesture, plus the one it interrupted fading out over 0.3 s
+  const layers = [];
+  const g = Char.gesture;
+  if (g) { const p = (t - g.t0) / g.dur; if (p >= 1) Char.gesture = null; else layers.push([g, p, 1]); }
+  const f = Char.fading;
+  if (f) {
+    const w = 1 - sstep(f.fadeStart, f.fadeStart + 0.3, t), p = (t - f.t0) / f.dur;
+    if (w <= 0 || p >= 1) Char.fading = null; else layers.push([f, p, w]);
   }
-  if (k === 'surprised') { headX -= 0.12 * e * amp; lUz += 0.25 * e; rUz -= 0.25 * e; }
-  if (k === 'wave') {
-    rUz = THREE.MathUtils.lerp(rUz, 0.42, e);
-    rUy = THREE.MathUtils.lerp(0, 0.3, e);
-    rLz = THREE.MathUtils.lerp(0, -1.75, e) + (reduceMotion ? 0 : Math.sin(t * 10) * 0.3 * e);
-    rLy = THREE.MathUtils.lerp(rLy, 0, e);
-    headZ += 0.1 * e * amp;
+  for (const [ge, p, w] of layers) {
+    const d = gestureDelta(ge.kind, p, t, amp, ge.dir ?? Char.idleDir);
+    headX += d.hx * w; headY += d.hy * w; headZ += d.hz * w; spineZ += d.sz * w; chestX += d.cx * w;
+    lUz += d.lu * w; rUz += d.ru * w; hipsY += d.hip * w; wave = Math.max(wave, d.wave * w);
+  }
+  // waving needs the right hand, so it gives way to an umbrella
+  wave *= 1 - sstep(0.15, 0.6, Char.umb);
+  if (wave > 0) {
+    rUz = lerp(rUz, 0.42, wave);
+    rUy = lerp(0, 0.3, wave);
+    rLz = lerp(0, -1.75, wave) + (reduceMotion ? 0 : Math.sin(t * 10) * 0.3 * wave);
+    rLy = lerp(rLy, 0, wave);
+  }
+  // head follows a tap on the screen for a moment
+  if (t < Char.lookUntil) {
+    const w = sstep(Char.lookStart, Char.lookStart + 0.35, t) * (1 - sstep(Char.lookUntil - 0.7, Char.lookUntil, t));
+    headY += Char.lookYaw * w; headX += Char.lookPitch * w;
+  }
+  // holding an umbrella
+  const u = Char.umb;
+  if (u > 0.001) {
+    rUz = lerp(rUz, 1.0, u); rUy = lerp(rUy, 0.6, u); rLy = lerp(rLy, 1.55, u); rLz = lerp(rLz, -0.15, u);
   }
 
+  rot('hips', 0, 0, hipsZ);
   rot('leftUpperArm', 0, 0, lUz);
   rot('rightUpperArm', 0, rUy, rUz);
   rot('leftLowerArm', 0, lLy, 0);
@@ -914,7 +1476,52 @@ function applyPose(t) {
   rot('neck', 0, headY * 0.4, 0);
   rot('head', headX, headY * 0.6, headZ);
   const hips = bone('hips');
-  if (hips) { if (Char.hipsBaseY == null) Char.hipsBaseY = hips.position.y; hips.position.y = Char.hipsBaseY + hipsY; }
+  if (hips) {
+    if (Char.hipsBaseY == null) Char.hipsBaseY = hips.position.y;
+    Char.hipsOff = poseSnap ? hipsY : smoothDamp(Char.hipsOff || 0, hipsY, hipsVel, 0, 0.06, poseDt);
+    hips.position.y = Char.hipsBaseY + Char.hipsOff;
+  }
+  poseSnap = false;
+}
+// Eyes: small quick glances (saccades) around the viewer, steadier while talking; a tap overrides them.
+function updateGaze(t) {
+  const la = Char.vrm && Char.vrm.lookAt; if (!la || !gazeObj) return;
+  if (t < Char.lookUntil) { if (la.target !== lookObj) la.target = lookObj; return; }
+  if (la.target !== gazeObj) la.target = gazeObj;
+  if (t >= Char.saccNext) {
+    const centre = Math.random() < (Char.speaking ? 0.55 : 0.3);
+    Char.saccX = centre ? 0 : (Math.random() - 0.5) * 0.16;
+    Char.saccY = centre ? 0 : (Math.random() - 0.5) * 0.07;
+    Char.saccNext = t + (Char.speaking ? 1.2 + Math.random() * 2 : 0.5 + Math.random() * 2.2);
+  }
+  gazeObj.position.set(camera.position.x + Char.saccX, camera.position.y + Char.saccY, camera.position.z);
+}
+function idleTick(t) {
+  if (S().motion === 'low' || reduceMotion || Char.speaking || Char.gesture || Char.lowPower) return;
+  if (t < Char.nextIdle) return;
+  Char.idleDir = Math.random() < 0.5 ? -1 : 1;
+  if (!(Math.random() < 0.3 && playSlot('idle'))) gesture(rnd(['look', 'look', 'tilt', 'stretch', 'nod']));
+  const mm = MOTION_MUL[S().motion] || 1;
+  Char.nextIdle = t + (7 + Math.random() * 9) / mm;
+}
+const handPos = new THREE.Vector3(), headPos = new THREE.Vector3(), umbDir = new THREE.Vector3();
+const UP = new THREE.Vector3(0, 1, 0);
+// The shaft starts at the right hand and leans toward a point just above the head, so the canopy covers it.
+function placeUmbrella() {
+  if (!umbrella || !Char.vrm) return;
+  umbrella.visible = Char.umb > 0.55;
+  if (!umbrella.visible) return;
+  const hand = Char.vrm.humanoid.getRawBoneNode('rightHand');
+  const head = Char.vrm.humanoid.getRawBoneNode('head');
+  if (!hand || !head) { umbrella.visible = false; return; }
+  hand.getWorldPosition(handPos); head.getWorldPosition(headPos);
+  umbrella.position.copy(handPos);
+  umbDir.set(headPos.x - handPos.x, headPos.y + 0.32 - handPos.y, (headPos.z - handPos.z) * 0.5 + 0.05);
+  if (umbDir.y < 0.2) umbDir.y = 0.2;
+  umbDir.normalize();
+  umbrella.quaternion.setFromUnitVectors(UP, umbDir);
+  const s = clamp((Char.umb - 0.55) / 0.45, 0, 1);
+  umbrella.scale.setScalar(0.6 + 0.4 * s);
 }
 
 const EMO_W = { happy: 0.75, relaxed: 0.7, sad: 0.65, angry: 0.6, surprised: 0.7 };
@@ -931,7 +1538,7 @@ function updateFace(dt, t) {
     Char.blinkT += dt;
     const p = Char.blinkT / 0.16;
     blink = p < 1 ? Math.sin(Math.PI * p) : 0;
-    if (p >= 1) { Char.blinkT = -1; Char.blinkAt = t + 1.8 + Math.random() * 4; }
+    if (p >= 1) { Char.blinkT = -1; Char.blinkAt = t + (Math.random() < 0.15 ? 0.12 : 1.8 + Math.random() * 4); }
   } else if (t >= Char.blinkAt) Char.blinkT = 0;
   const closed = Math.max(Char.emoW.happy || 0, Char.emoW.relaxed || 0);
   em.setValue('blink', blink * Math.max(0, 1 - closed * 1.4));
@@ -949,17 +1556,514 @@ function updateFace(dt, t) {
   }
 }
 
+// Rendering quality adapts to the phone: if frames come too slowly, the resolution steps down (never back up,
+// to avoid flicker). Add ?fps to the address to see the frame rate on screen.
+const Quality = { max: Math.min(window.devicePixelRatio || 1, 2), ratio: Math.min(window.devicePixelRatio || 1, 2), sum: 0, n: 0, meter: null, shown: 0 };
+const pixelRatioNow = () => (Char.lowPower ? 1 : Quality.ratio);
+function trackQuality(rawDt) {
+  if (Char.lowPower || document.hidden || rawDt <= 0 || rawDt > 0.5) { Quality.sum = Quality.n = 0; return; }
+  Quality.sum += rawDt; Quality.n += 1;
+  if (Quality.meter && Quality.sum >= 0.5 && Quality.n) Quality.shown = Quality.n / Quality.sum;
+  if (Quality.sum < 3) { if (Quality.meter) Quality.meter.textContent = `${Math.round(Quality.shown || 0)} fps ×${Quality.ratio}`; return; }
+  const fps = Quality.n / Quality.sum; Quality.sum = Quality.n = 0;
+  if (fps < 40 && Quality.ratio > 1) { Quality.ratio = Math.max(1, Quality.ratio - 0.25); renderer.setPixelRatio(pixelRatioNow()); resize(); }
+}
 let frameSkip = 0;
 function loop() {
-  const dt = Math.min(clock.getDelta(), 0.1);
-  if (Char.lowPower && (frameSkip++ % 4)) return; // ~15fps while driving to save battery
+  const raw = clock.getDelta();
+  const dt = Math.min(raw, 0.1);
+  trackQuality(raw);
+  // While driving the character is drawn less often to save battery (15 fps; 30 fps with "lots of motion").
+  const skip = S().motion === 'high' ? 2 : 4;
+  if (Char.lowPower && (frameSkip++ % skip)) { Char.skipped = (Char.skipped || 0) + dt; return; }
   const t = clock.elapsedTime;
+  const step = Math.min(dt + (Char.skipped || 0), 0.12); Char.skipped = 0;
+  const wantUmb = rainActive() && document.body.dataset.mode !== 'drive' ? 1 : 0;
+  Char.umb = clamp(smoothDamp(Char.umb, wantUmb, Char.umbVel, 0, 0.45, step), 0, 1);
   if (Char.vrm) {
-    applyPose(t);
-    updateFace(Char.lowPower ? dt * 4 : dt, t);
-    Char.vrm.update(Char.lowPower ? Math.min(dt * 4, 0.1) : dt);
+    idleTick(t);
+    applyPose(t, step);
+    blendMotion(t, step);
+    updateGaze(t);
+    updateFace(step, t);
+    Char.vrm.update(step);
+    placeUmbrella();
   }
   renderer.render(scene, camera);
+  if (Pip.on) drawPip();
+}
+
+// Debug only: replays a fixed script of gestures at a fixed frame rate and records the bone rotations,
+// so motion smoothness can be measured (see dev/motion_check.mjs).
+function simulateMotion({ seconds = 20, fps = 60, events = [] } = {}) {
+  const names = ['hips', 'spine', 'chest', 'neck', 'head', 'leftUpperArm', 'rightUpperArm', 'leftLowerArm', 'rightLowerArm'];
+  const dt = 1 / fps, frames = [];
+  let umbWant = 0;
+  Char.gesture = null; Char.fading = null; Char.umb = 0; Char.umbVel[0] = 0; Char.idleDir = 1; Char.lookUntil = 0; Char.speaking = false;
+  const t0 = 1000;
+  const q = new THREE.Quaternion();
+  for (let i = 0; i < Math.round(seconds * fps); i++) {
+    const t = t0 + i * dt;
+    for (const e of events) {
+      if (Math.round(e.t * fps) !== i) continue;
+      if (e.kind === 'umbOn') umbWant = 1;
+      else if (e.kind === 'umbOff') umbWant = 0;
+      else if (e.kind === 'lookTap') { Char.lookStart = t; Char.lookUntil = t + 2.6; Char.lookYaw = 0.4 * Char.flip; Char.lookPitch = 0.12; }
+      else startGesture(e.kind, t);
+    }
+    Char.umb = clamp(smoothDamp(Char.umb, umbWant, Char.umbVel, 0, 0.45, dt), 0, 1);
+    applyPose(t, dt);
+    frames.push(names.map((n) => { const b = bone(n); if (!b) return [0, 0, 0, 1]; q.copy(b.quaternion); return q.toArray().map((x) => Math.round(x * 1e5) / 1e5); }));
+  }
+  return { names, fps, frames };
+}
+
+/* ---------- touch: look toward the tap, pinch to zoom, double-tap to reset ---------- */
+const pointers = new Map();
+let pinch = null, pinchedAt = 0, lastTapAt = 0, tapTimer = 0;
+const ray = new THREE.Raycaster(), plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.6), hit = new THREE.Vector3();
+function setZoom(z, save = true) {
+  S().zoom = clamp(Math.round(z * 100) / 100, 0.6, 1.8);
+  frame();
+  if ($('#set-zoom')) $('#set-zoom').value = S().zoom;
+  if (save) saveSoon();
+}
+canvas.addEventListener('pointerdown', (e) => {
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  try { canvas.setPointerCapture(e.pointerId); } catch {}
+  if (pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    pinch = { d0: Math.hypot(a.x - b.x, a.y - b.y), z0: zoomLevel() };
+    return;
+  }
+  if (!camera || !Char.vrm || document.body.dataset.mode === 'drive') return;
+  const r = canvas.getBoundingClientRect();
+  const nx = ((e.clientX - r.left) / r.width) * 2 - 1, ny = -(((e.clientY - r.top) / r.height) * 2 - 1);
+  ray.setFromCamera({ x: nx, y: ny }, camera);
+  if (ray.ray.intersectPlane(plane, hit)) {
+    lookObj.position.copy(hit);
+    if (Char.vrm.lookAt) Char.vrm.lookAt.target = lookObj;
+  }
+  const t = clock ? clock.elapsedTime : 0;
+  Char.lookStart = t; Char.lookUntil = t + 2.6;
+  Char.lookYaw = clamp(nx * 0.45, -0.45, 0.45) * Char.flip;
+  Char.lookPitch = clamp(-ny * 0.25, -0.25, 0.25);
+});
+canvas.addEventListener('pointermove', (e) => {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch && pointers.size === 2) {
+    const [a, b] = [...pointers.values()];
+    const d = Math.hypot(a.x - b.x, a.y - b.y);
+    if (pinch.d0 > 10) setZoom(pinch.z0 * (d / pinch.d0), false);
+    pinchedAt = Date.now();
+  }
+});
+const endPointer = (e) => {
+  pointers.delete(e.pointerId);
+  if (pinch && pointers.size < 2) { pinch = null; pinchedAt = Date.now(); saveSoon(); }
+};
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+let taps = [];
+canvas.addEventListener('click', () => {
+  if (document.body.dataset.mode === 'drive') return;
+  if (Date.now() - pinchedAt < 450) return;
+  const now = Date.now();
+  if (now - lastTapAt < 320) { clearTimeout(tapTimer); lastTapAt = 0; setZoom(1); return; }
+  lastTapAt = now;
+  clearTimeout(tapTimer);
+  tapTimer = setTimeout(() => {
+    taps = taps.filter((x) => now - x < 4000); taps.push(now);
+    if (taps.length >= 5) { taps = []; say('tapAnnoyed'); } else say('tap');
+  }, 300);
+});
+$('#zoom-in').addEventListener('click', () => setZoom(zoomLevel() + 0.15));
+$('#zoom-out').addEventListener('click', () => setZoom(zoomLevel() - 0.15));
+
+/* =========================================================
+   Motion files (VRMA): played on top of the hand-made motions
+   for the moments they are assigned to, with a 0.4 s cross-fade.
+   ========================================================= */
+const animLoader = new GLTFLoader();
+animLoader.register((parser) => new VRMAnimationLoaderPlugin(parser));
+const MOT_SLOTS = ['wave', 'hop', 'nod', 'idle'];
+const POSE_BONES = new Set(['hips', 'spine', 'chest', 'neck', 'head', 'leftUpperArm', 'rightUpperArm', 'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand']);
+const Motion = { anims: new Map(), clips: new WeakMap(), mixer: null, playing: null, ready: false };
+async function parseVRMA(bytes) {
+  const gltf = await animLoader.parseAsync(bytes.slice(0), '');
+  const anim = gltf.userData.vrmAnimations && gltf.userData.vrmAnimations[0];
+  if (!anim) throw new Error('no VRMA');
+  return anim;
+}
+async function loadMotionsFromStore() {
+  try {
+    const recs = (await IDB.all()).filter((r) => r.id.startsWith('vrma:'));
+    for (const r of recs) if (!Motion.anims.has(r.id)) { try { Motion.anims.set(r.id, { name: r.name, anim: await parseVRMA(r.bytes) }); } catch {} }
+  } catch {}
+  for (const [id, v] of memModels) if (id.startsWith('vrma:') && !Motion.anims.has(id)) { try { Motion.anims.set(id, { name: v.name, anim: await parseVRMA(v.bytes) }); } catch {} }
+  Motion.ready = true;
+}
+function clipFor(id) {
+  const vrm = Char.vrm, rec = Motion.anims.get(id); if (!vrm || !rec) return null;
+  let perVrm = Motion.clips.get(vrm); if (!perVrm) { perVrm = new Map(); Motion.clips.set(vrm, perVrm); }
+  if (!perVrm.has(id)) {
+    const { rotation } = createVRMAnimationHumanoidTracks(rec.anim, vrm.humanoid, vrm.meta && vrm.meta.metaVersion === '0' ? '0' : '1');
+    const nodes = [];
+    for (const name of rotation.keys()) { const n = vrm.humanoid.getNormalizedBoneNode(name); if (n) nodes.push([name, n]); }
+    perVrm.set(id, { clip: new THREE.AnimationClip(id, rec.anim.duration, [...rotation.values()]), nodes });
+  }
+  return perVrm.get(id);
+}
+function playMotion(id) {
+  if (!Char.vrm || Char.lowPower || !clock) return false;
+  const c = clipFor(id); if (!c) return false;
+  if (!Motion.mixer || Motion.mixer.getRoot() !== Char.vrm.scene) Motion.mixer = new THREE.AnimationMixer(Char.vrm.scene);
+  Motion.mixer.stopAllAction();
+  const action = Motion.mixer.clipAction(c.clip);
+  action.reset(); action.setLoop(THREE.LoopOnce, 1); action.clampWhenFinished = true; action.play();
+  Motion.playing = { action, nodes: c.nodes, t0: clock.elapsedTime, dur: Math.min(c.clip.duration, 12) };
+  return true;
+}
+function playSlot(kind) {
+  const id = (S().motionSlots || {})[kind];
+  return !!(id && Motion.anims.has(id) && playMotion(id));
+}
+const motQ = new THREE.Quaternion(), restQ = new THREE.Quaternion();
+const motSaved = [];
+function blendMotion(t, dt) {
+  const p = Motion.playing; if (!p) return;
+  const el = t - p.t0;
+  if (el >= p.dur || Char.lowPower) { Motion.playing = null; Motion.mixer && Motion.mixer.stopAllAction(); return; }
+  const w = sstep(0, 0.4, el) * (1 - sstep(p.dur - 0.5, p.dur, el));
+  // what the hand-made pose (or the rest pose, for joints it leaves alone) says right now
+  motSaved.length = 0;
+  for (const [name, n] of p.nodes) motSaved.push(POSE_BONES.has(name) ? n.quaternion.clone() : restQ);
+  Motion.mixer.update(dt);
+  p.nodes.forEach(([, n], i) => { motQ.copy(n.quaternion); n.quaternion.copy(motSaved[i]).slerp(motQ, w); });
+}
+
+/* =========================================================
+   Smooth driving (experimental): counts sharp braking / starts from
+   the phone's motion sensor. Sustained force over ~0.36 g for 0.45 s.
+   ========================================================= */
+const Safety = {
+  on: false, count: 0, above: 0, last: 0, grav: null,
+  async permit() {
+    if (typeof DeviceMotionEvent === 'undefined') return false;
+    if (typeof DeviceMotionEvent.requestPermission === 'function') {
+      try { return (await DeviceMotionEvent.requestPermission()) === 'granted'; } catch { return false; }
+    }
+    return true;
+  },
+  start() {
+    if (typeof DeviceMotionEvent === 'undefined') return false;
+    this.count = 0; this.above = 0; this.last = 0; this.grav = null; this.on = true;
+    addEventListener('devicemotion', onDeviceMotion);
+    return true;
+  },
+  stop() { removeEventListener('devicemotion', onDeviceMotion); this.on = false; return this.count; },
+};
+function onDeviceMotion(e) {
+  if (!Safety.on) return;
+  let x, y, z;
+  const a = e.acceleration;
+  if (a && a.x != null) { x = a.x; y = a.y; z = a.z; }
+  else {
+    const g = e.accelerationIncludingGravity; if (!g || g.x == null) return;
+    // estimate gravity with a slow filter and take it away
+    if (!Safety.grav) Safety.grav = { x: g.x, y: g.y, z: g.z };
+    const G = Safety.grav; G.x += (g.x - G.x) * 0.02; G.y += (g.y - G.y) * 0.02; G.z += (g.z - G.z) * 0.02;
+    x = g.x - G.x; y = g.y - G.y; z = g.z - G.z;
+  }
+  const dt = clamp((e.interval || 16) / 1000, 0.005, 0.2);
+  const m = Math.hypot(x, y, z);
+  Safety.above = m > 3.5 ? Safety.above + dt : Math.max(0, Safety.above - dt * 2);
+  const now = Date.now();
+  if (Safety.above > 0.45 && now - Safety.last > 4000) { Safety.count += 1; Safety.last = now; Safety.above = 0; }
+}
+
+/* =========================================================
+   Picture-in-picture (experimental): the character in a small floating
+   window, so it can sit next to a map app.
+   ========================================================= */
+const Pip = { cv: null, ctx: null, video: null, on: false, timer: 0 };
+const pipSupported = () => !IN_CLAUDE && !!document.pictureInPictureEnabled && typeof HTMLVideoElement !== 'undefined' && 'requestPictureInPicture' in HTMLVideoElement.prototype && typeof HTMLCanvasElement.prototype.captureStream === 'function';
+function preparePip() {
+  $('#pip-btn').hidden = !pipSupported();
+  if (!pipSupported() || Pip.video) return;
+  try {
+    Pip.cv = document.createElement('canvas'); Pip.cv.width = 360; Pip.cv.height = 420;
+    Pip.ctx = Pip.cv.getContext('2d');
+    drawPip();
+    Pip.video = document.createElement('video');
+    Pip.video.muted = true; Pip.video.playsInline = true;
+    Pip.video.srcObject = Pip.cv.captureStream(12);
+    Pip.video.play().catch(() => {});
+    Pip.video.addEventListener('leavepictureinpicture', () => { Pip.on = false; clearInterval(Pip.timer); });
+  } catch { Pip.video = null; }
+}
+function wrapText(g, text, maxW, maxLines) {
+  const lines = []; let cur = '';
+  const units = lang() === 'en' || lang() === 'ko' ? text.split(/(?<=\s)/) : [...text];
+  for (const u of units) {
+    if (g.measureText(cur + u).width > maxW && cur) { lines.push(cur.trimEnd()); cur = u.trimStart(); if (lines.length === maxLines) break; }
+    else cur += u;
+  }
+  if (lines.length < maxLines && cur) lines.push(cur);
+  if (lines.length === maxLines && units.join('').length > lines.join('').length + 1) lines[maxLines - 1] = lines[maxLines - 1].replace(/.$/, '…');
+  return lines;
+}
+const SKY = { dawn: ['#f3c5a0', '#a9cbe8'], day: ['#8cc4ee', '#e3f1ff'], dusk: ['#f2a072', '#58609c'], night: ['#0d1a35', '#27385f'], late: ['#060914', '#161e38'] };
+function drawPip() {
+  const g = Pip.ctx; if (!g) return;
+  const W = Pip.cv.width, H = Pip.cv.height;
+  const [a, b] = SKY[tod()]; const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, a); grd.addColorStop(1, b);
+  g.fillStyle = grd; g.fillRect(0, 0, W, H);
+  if (renderer) {
+    const sw = canvas.width, sh = canvas.height, areaH = H - 110;
+    const sc = Math.min(areaH / sh, (W * 1.25) / sw);
+    g.drawImage(canvas, (W - sw * sc) / 2, areaH - sh * sc, sw * sc, sh * sc);
+  }
+  g.fillStyle = 'rgba(255,255,255,0.94)'; g.fillRect(0, H - 110, W, 110);
+  g.fillStyle = '#132031'; g.font = '700 20px "Zen Maru Gothic", "BIZ UDPGothic", sans-serif';
+  const lines = wrapText(g, lastLineText, W - 28, 3);
+  lines.forEach((l, i) => g.fillText(l, 14, H - 80 + i * 28));
+  if (drive) { g.fillStyle = '#b35c00'; g.font = '700 16px "B612 Mono", monospace'; g.fillText(hms(elapsedSec()), W - 96, 22); }
+}
+async function startPip() {
+  if (!Pip.video) preparePip();
+  if (!Pip.video) { toast(T('pipFail')); return; }
+  try {
+    if (Pip.video.readyState < 1) await new Promise((r) => Pip.video.addEventListener('loadedmetadata', r, { once: true }));
+    await Pip.video.requestPictureInPicture();
+    Pip.on = true;
+    // the page stops drawing when hidden, so keep the small window updated from a timer
+    clearInterval(Pip.timer);
+    Pip.timer = setInterval(() => { if (document.hidden && renderer) { const t = clock.elapsedTime; if (Char.vrm) { applyPose(t, 0.25); updateFace(0.25, t); Char.vrm.update(0.25); } renderer.render(scene, camera); drawPip(); } }, 250);
+  } catch (e) { console.warn(e); toast(T('pipFail')); }
+}
+function stopPip() {
+  clearInterval(Pip.timer); Pip.on = false;
+  try { if (document.pictureInPictureElement) document.exitPictureInPicture(); } catch {}
+}
+$('#pip-btn').addEventListener('click', () => { if (Pip.on) stopPip(); else startPip(); });
+
+/* =========================================================
+   Commemorative photo: the character, the current line and the date
+   on one 4:5 image to save or share.
+   ========================================================= */
+let photoBlob = null, photoUrl = '';
+async function takePhoto() {
+  if (!renderer || !Char.vrm) return;
+  renderer.render(scene, camera);
+  const W = 1080, H = 1350, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  const [a, b] = SKY[tod()]; const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, a); grd.addColorStop(1, b);
+  g.fillStyle = grd; g.fillRect(0, 0, W, H);
+  // fit the character to the picture height so the head is never cut off (the sides show the sky)
+  const sw = canvas.width, sh = canvas.height, areaH = H - 300;
+  const sc = Math.min(areaH / sh, (W * 1.25) / sw);
+  g.drawImage(canvas, (W - sw * sc) / 2, areaH - sh * sc + 30, sw * sc, sh * sc);
+  // caption card
+  const pad = 48, top = H - 330;
+  g.fillStyle = 'rgba(255,255,255,0.95)'; g.beginPath();
+  if (g.roundRect) g.roundRect(32, top + 10, W - 64, 290, 28); else g.rect(32, top + 10, W - 64, 290);
+  g.fill();
+  g.fillStyle = '#b35c00'; g.font = '700 34px "Zen Maru Gothic", "BIZ UDPGothic", sans-serif'; g.fillText(nameOf(persona()), pad + 16, top + 66);
+  g.fillStyle = '#132031'; g.font = '500 40px "Zen Maru Gothic", "BIZ UDPGothic", sans-serif';
+  wrapText(g, lastLineText, W - 2 * pad - 40, 3).forEach((l, i) => g.fillText(l, pad + 16, top + 126 + i * 54));
+  const d = new Date(); const last = Store.state.drives[0];
+  const place = last && last.to && last.to.name && Date.now() - new Date(last.start).getTime() < 6 * 3600 * 1000 ? `  ${last.to.name}` : '';
+  g.fillStyle = '#586a7e'; g.font = '400 28px "BIZ UDPGothic", sans-serif';
+  g.fillText(`${d.getFullYear()}.${pad2(d.getMonth() + 1)}.${pad2(d.getDate())}${place}`, pad + 16, top + 282);
+  g.textAlign = 'right'; g.fillText(T('photoMade'), W - pad - 16, top + 282); g.textAlign = 'left';
+  photoBlob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.9));
+  if (photoUrl) URL.revokeObjectURL(photoUrl);
+  photoUrl = URL.createObjectURL(photoBlob);
+  $('#photo-img').src = photoUrl;
+  Store.state.photos = (Store.state.photos || 0) + 1; saveSoon();
+}
+const pad2 = (n) => String(n).padStart(2, '0');
+$('#photo-btn').addEventListener('click', async () => {
+  buzz(20);
+  say('photo', {}, { toastNew: false });
+  await new Promise((r) => setTimeout(r, 900)); // let the smile and nod show
+  await takePhoto();
+  openSheet('#sheet-photo');
+  const fresh = checkMedals(false); if (fresh.length) toast(T('medalGet', { m: medalName(fresh[0]) }));
+});
+function shareFile(blob, name, text) {
+  const file = new File([blob], name, { type: blob.type });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) return navigator.share({ files: [file], text }).then(() => true).catch(() => false);
+  return Promise.resolve(false);
+}
+function downloadBlob(blob, name) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+const photoName = () => { const d = new Date(); return `drive-buddy-${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}.jpg`; };
+$('#photo-share').addEventListener('click', async () => { if (photoBlob && !(await shareFile(photoBlob, photoName(), T('shareTag')))) downloadBlob(photoBlob, photoName()); });
+$('#photo-save').addEventListener('click', () => { if (photoBlob) downloadBlob(photoBlob, photoName()); });
+$('#share-summary').addEventListener('click', async () => {
+  const p = pending; if (!p) return;
+  const text = T('shareText', { name: nameOf(persona()), dur: fmtDur(p.rawMin), km: p.km != null ? `${fmtKm(p.km)} km` : '—', b: p.breaks }) + ' ' + T('shareTag');
+  try {
+    if (navigator.share) { await navigator.share({ text }); return; }
+    await navigator.clipboard.writeText(text); toast(T('copied'));
+  } catch { /* cancelled */ }
+});
+
+/* =========================================================
+   Medals (achievements), worked out from what is already recorded
+   ========================================================= */
+const MEDALS = [
+  ['first', (c) => c.drives >= 1], ['drives10', (c) => c.drives >= 10], ['drives50', (c) => c.drives >= 50],
+  ['hours10', (c) => c.min >= 600], ['km1000', (c) => c.km >= 1000], ['check10', (c) => c.checked >= 10],
+  ['rest5', (c) => c.goodRest >= 5], ['smooth5', (c) => c.smooth >= 5], ['morning', (c) => c.morning >= 1],
+  ['pref5', (c) => c.prefs >= 5], ['pref20', (c) => c.prefs >= 20], ['items10', (c) => c.items >= 10],
+  ['rare', (c) => c.rare >= 1], ['gift10', (c) => c.gifts >= 10], ['lines50', (c) => c.linesPct >= 0.5],
+  ['bondMax', (c) => c.lv >= LEVEL_PTS.length - 1], ['photo1', (c) => c.photos >= 1],
+];
+function medalCtx() {
+  const st = Store.state, ds = st.drives, t = totals();
+  const p = persona(), lines = linesOf(p), heard = (st.heard[personaIdOf(p)] || {})[lang()] || {};
+  let total = 0; for (const v of Object.values(lines)) total += Array.isArray(v) ? v.length : 1;
+  return {
+    drives: ds.length, min: t.min, km: t.km, checked: ds.filter((d) => d.checked).length,
+    goodRest: ds.filter((d) => d.min >= 90 && d.breaks > 0).length, smooth: ds.filter((d) => d.harsh === 0 && d.min >= 10).length,
+    morning: ds.filter((d) => { const h = new Date(d.start).getHours(); return h >= 5 && h < 9; }).length,
+    prefs: Object.keys(st.prefs).length, items: Object.keys(st.got).length, rare: Object.keys(st.got).filter((id) => rarityOf(id) === 3).length,
+    gifts: st.gifts.length, linesPct: total ? Object.keys(heard).length / total : 0, lv: levelOf(totalPts()), photos: st.photos || 0,
+  };
+}
+const medalName = (id) => (T('medals')[id] || [id])[0];
+// Returns the medals earned just now (and records them).
+function checkMedals(announce) {
+  const ctx = medalCtx(), got = Store.state.medals, fresh = [];
+  for (const [id, test] of MEDALS) if (!got[id] && test(ctx)) { got[id] = new Date().toISOString(); fresh.push(id); }
+  if (fresh.length) { saveSoon(); if (announce) toast(T('medalGet', { m: medalName(fresh[0]) })); }
+  return fresh;
+}
+function renderCollMedals(body) {
+  const got = Store.state.medals, names = T('medals');
+  const n = MEDALS.filter(([id]) => got[id]).length;
+  const head = document.createElement('p'); head.className = 'coll-head'; head.textContent = T('medalsProgress', { n, total: MEDALS.length });
+  const grid = document.createElement('div'); grid.className = 'medal-grid';
+  for (const [id] of MEDALS) {
+    const [nm, desc] = names[id] || [id, ''];
+    const cell = document.createElement('div'); cell.className = 'medal' + (got[id] ? ' on' : '');
+    const ic = document.createElement('i'); ic.textContent = got[id] ? '★' : '?';
+    const tx = document.createElement('div'); const b = document.createElement('b'); b.textContent = nm; tx.append(b, desc);
+    cell.append(ic, tx); grid.append(cell);
+  }
+  body.append(head, grid);
+}
+
+/* weekly summary in the drive log */
+function weekStart(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x.getTime(); }
+function renderWeek() {
+  const now = Date.now(), w0 = weekStart(now), w1 = w0 - 7 * 86400000;
+  const sum = (a, b) => { const ds = Store.state.drives.filter((d) => { const t = new Date(d.start).getTime(); return t >= a && t < b; }); return { n: ds.length, min: ds.reduce((x, d) => x + (d.min || 0), 0), b: ds.reduce((x, d) => x + (d.breaks || 0), 0) }; };
+  const a = sum(w0, Infinity), b = sum(w1, w0);
+  const el = $('#week-sum'); el.textContent = '';
+  if (!Store.state.drives.length) return;
+  el.append(T('weekSum', { n: a.n, t: hm(a.min), b: a.b }), '  ', T('lastWeek', { n: b.n, t: hm(b.min) }));
+}
+
+/* =========================================================
+   Rain: drops on the windshield and a wiper while driving,
+   falling rain and an umbrella otherwise.
+   ========================================================= */
+const RainFX = {
+  on: false, raf: 0, cv: $('#rain-c'), ctx: null, w: 0, h: 0, drops: [], streaks: [], wipeStart: 0, last: 0,
+  resize() {
+    if (!this.cv) return;
+    const r = stage.getBoundingClientRect();
+    this.w = Math.max(1, Math.round(r.width)); this.h = Math.max(1, Math.round(r.height));
+    this.cv.width = this.w; this.cv.height = this.h;
+    this.ctx = this.cv.getContext('2d');
+  },
+  start() {
+    if (this.on) return;
+    this.on = true; $('#rain').hidden = false; $('#rain-chip').hidden = false;
+    this.resize(); this.drops = []; this.streaks = []; this.wipeStart = performance.now() + 1500;
+    const tick = (now) => { if (!this.on) return; this.draw(now); this.raf = requestAnimationFrame(tick); };
+    this.raf = requestAnimationFrame(tick);
+  },
+  stop() { this.on = false; cancelAnimationFrame(this.raf); $('#rain').hidden = true; $('#rain-chip').hidden = true; },
+  draw(now) {
+    const { ctx, w, h } = this; if (!ctx) return;
+    const dt = Math.min(0.05, (now - (this.last || now)) / 1000); this.last = now;
+    ctx.clearRect(0, 0, w, h);
+    const driving = document.body.dataset.mode === 'drive';
+    // falling rain
+    const want = reduceMotion ? 20 : 70;
+    while (this.streaks.length < want) this.streaks.push({ x: Math.random() * w, y: Math.random() * h, v: 500 + Math.random() * 300, l: 10 + Math.random() * 14 });
+    ctx.strokeStyle = 'rgba(220,232,245,0.45)'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const s of this.streaks) {
+      if (!reduceMotion) { s.y += s.v * dt; s.x -= s.v * dt * 0.18; }
+      if (s.y > h) { s.y = -s.l; s.x = Math.random() * (w + 40); }
+      ctx.moveTo(s.x, s.y); ctx.lineTo(s.x + s.l * 0.18, s.y - s.l);
+    }
+    ctx.stroke();
+    if (!driving) return;
+    // drops collecting on the glass
+    if (this.drops.length < 140 && Math.random() < (reduceMotion ? 0.05 : 0.45)) this.drops.push({ x: Math.random() * w, y: Math.random() * h * 0.92, r: 1.5 + Math.random() * 4 });
+    for (const d of this.drops) {
+      ctx.beginPath(); ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(200,220,240,0.32)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(d.x - d.r * 0.3, d.y - d.r * 0.3, d.r * 0.35, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fill();
+    }
+    // wiper: a sweep across and back every few seconds, clearing the drops it passes
+    const period = reduceMotion ? 7000 : 3400, sweep = 1300;
+    const ph = (now - this.wipeStart) % period;
+    if (now > this.wipeStart && ph < sweep) {
+      const q = ph / sweep; const a = q < 0.5 ? q * 2 : (1 - q) * 2; // 0 → 1 → 0
+      const ang = (-80 + a * 160) * Math.PI / 180;
+      const px = w * 0.32, py = h + 18, len = Math.hypot(w, h) * 0.78;
+      const ex = px + Math.sin(ang) * len, ey = py - Math.cos(ang) * len;
+      ctx.strokeStyle = 'rgba(20,24,30,0.85)'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(ex, ey); ctx.stroke();
+      this.drops = this.drops.filter((d) => {
+        const da = Math.atan2(d.x - px, py - d.y);
+        return Math.abs(da - ang) > 0.08 || Math.hypot(d.x - px, d.y - py) > len;
+      });
+    }
+  },
+};
+const Weather = {
+  raining: false, checkedAt: 0, demoUntil: 0, demoTimer: 0,
+  async check(lat, lon) {
+    if (!S().weatherOn || IN_CLAUDE) return;
+    this.checkedAt = Date.now();
+    try {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(3)}&longitude=${lon.toFixed(3)}&current=precipitation,rain,showers,weather_code`;
+      const res = await fetch(url); if (!res.ok) return;
+      const c = (await res.json()).current || {};
+      const wet = (c.precipitation || 0) > 0.05 || (c.rain || 0) > 0 || (c.showers || 0) > 0
+        || [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(c.weather_code);
+      this.set(wet);
+    } catch { /* weather is a nice-to-have */ }
+  },
+  set(wet) {
+    const was = this.raining; this.raining = wet; updateRainFX();
+    if (wet && !was && drive && !drive.demo) say('rainStart');
+  },
+  demo() {
+    this.demoUntil = Date.now() + 10000; updateRainFX();
+    clearTimeout(this.demoTimer); this.demoTimer = setTimeout(updateRainFX, 10100);
+  },
+};
+function rainActive() { return !!S().weatherOn && (Weather.raining || Date.now() < Weather.demoUntil); }
+function updateRainFX() { if (rainActive()) RainFX.start(); else RainFX.stop(); updateUmbrellaColor(); }
+function updateUmbrellaColor() {
+  if (!umbrella) return;
+  const pid = personaIdOf(persona());
+  const base = pid === 'custom' ? (Store.state.custom?.base || 'kohai') : pid;
+  umbrella.userData.canopyMat.color.set(UMBRELLA_COLOR[base] || '#f08a9a');
 }
 
 /* =========================================================
@@ -971,26 +2075,46 @@ const VOICE_PREF = {
   ko: /SunHi|Yuna|Heami|Google 한국/i,
   en: /Jenny|Aria|Samantha|Zira|Google US English/i,
 };
+const VOICE_MALE = {
+  ja: /Keita|Ichiro|Otoya|Takumi|Daichi|Naoki|Kenji|男性|male/i,
+  zh: /Yunxi|Yunyang|Yunjian|Kangkang|Li-mu|male/i,
+  ko: /InJoon|Hyunsu|GookMin|male/i,
+  en: /Guy|David|Mark|Daniel|Alex|Fred|Davis|Tony|male/i,
+};
+const normLang = (v) => (v.lang || '').toLowerCase().replace('_', '-');
 const Voice = {
   ok: 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined',
   voice: null,
+  list() { return this.ok ? speechSynthesis.getVoices().filter((v) => normLang(v).startsWith(lang())) : []; },
   pick() {
     if (!this.ok) return;
     const L = lang(), tts = T('ttsLang').toLowerCase();
-    const vs = speechSynthesis.getVoices();
-    const inLang = vs.filter((v) => (v.lang || '').toLowerCase().replace('_', '-').startsWith(L));
-    this.voice = inLang.find((v) => VOICE_PREF[L].test(v.name) && v.lang.toLowerCase().replace('_', '-') === tts)
+    const inLang = this.list();
+    const want = (S().voiceNames || {})[L];
+    const male = !!(baseOf(persona()).voice || {}).male;
+    this.voice = (want && inLang.find((v) => v.name === want))
+      || (male && inLang.find((v) => VOICE_MALE[L].test(v.name)))
+      || inLang.find((v) => VOICE_PREF[L].test(v.name) && normLang(v) === tts)
       || inLang.find((v) => VOICE_PREF[L].test(v.name))
-      || inLang.find((v) => v.lang.toLowerCase().replace('_', '-') === tts)
+      || inLang.find((v) => normLang(v) === tts)
       || inLang[0] || null;
   },
 };
-if (Voice.ok) { Voice.pick(); speechSynthesis.addEventListener?.('voiceschanged', () => Voice.pick()); }
-let activated = false;
-addEventListener('pointerdown', () => { activated = true; }, { capture: true });
-addEventListener('keydown', () => { activated = true; }, { capture: true });
+if (Voice.ok) { Voice.pick(); speechSynthesis.addEventListener?.('voiceschanged', () => { Voice.pick(); if (!$('#sheet-settings').hidden) renderSettings(); }); }
+// Browsers only allow speech after the page has been tapped once. A line that arrives before that
+// (usually the opening greeting) waits and is spoken on the first tap, unless something newer was said by then.
+let activated = false, pendingVoice = null;
+const canSpeak = () => activated || !!(navigator.userActivation && navigator.userActivation.hasBeenActive);
+const onActivate = () => {
+  activated = true;
+  setTimeout(() => {
+    const pv = pendingVoice; pendingVoice = null; $('#tap-voice').hidden = true;
+    if (pv && pv.my === sayToken && S().voice) speakNow(pv.text, pv.my, () => {});
+  }, 0);
+};
+for (const ev of ['pointerup', 'click', 'keydown', 'touchend']) addEventListener(ev, onActivate, { capture: true });
 
-let sayToken = 0, typeTimer = 0;
+let sayToken = 0, typeTimer = 0, fadeTimer = 0;
 const lastPicked = new Map();
 function pickIndex(key, n) {
   if (n <= 1) return 0;
@@ -1002,10 +2126,19 @@ function pickIndex(key, n) {
 function fill(text, vars = {}) {
   return String(text).replace(/\{(\w+)\}/g, (_, k) => (k === 'name' ? callName() : (vars[k] ?? '')));
 }
-const GEST_DUR = { nod: 1.0, tilt: 1.6, down: 1.8, shake: 1.0, hop: 1.0, surprised: 1.0, wave: 2.2 };
+function startGesture(kind, t) {
+  if (kind === 'wave' || kind === 'hop' || kind === 'nod') playSlot(kind);
+  const g = Char.gesture;
+  if (g && (t - g.t0) / g.dur < 1) Char.fading = { ...g, fadeStart: t };
+  Char.gesture = { kind, t0: t, dur: GEST_DUR[kind] || 1.2, dir: Char.idleDir };
+}
+const GEST_DUR = { nod: 1.0, tilt: 1.6, down: 1.8, shake: 1.0, hop: 1.0, surprised: 1.0, wave: 2.2, look: 2.4, stretch: 2.2 };
 function gesture(kind) {
   if (!kind || !clock) return;
-  Char.gesture = { kind, t0: clock.elapsedTime, dur: GEST_DUR[kind] || 1.2 };
+  const t = clock.elapsedTime;
+  startGesture(kind, t);
+  // people tend to blink as they turn their head
+  if (['look', 'shake', 'tilt', 'surprised'].includes(kind) && Char.blinkT < 0 && Math.random() < 0.6) Char.blinkAt = t + 0.04;
 }
 function typeText(text) {
   const el = $('#line');
@@ -1024,20 +2157,67 @@ function lineText(key, vars) {
   if (Array.isArray(entry)) { idx = pickIndex(key, entry.length); entry = entry[idx]; }
   return { text: fill(entry, vars), idx };
 }
-/** Show and speak one line. Resolves when the voice (or its stand-in timing) has finished. */
-function say(key, vars = {}, opts = {}) {
+// The line collection remembers every line heard, per character and language.
+function recordHeard(key, idx, text) {
+  const pid = personaIdOf(persona()), L = lang(), h = Store.state.heard;
+  if (!h[pid]) h[pid] = {};
+  if (!h[pid][L]) h[pid][L] = {};
+  const k = `${key}#${idx}`, isNew = !h[pid][L][k];
+  h[pid][L][k] = text;
+  saveSoon();
+  return isNew;
+}
+function emoFor(key, idx) {
   const p = persona();
-  let { text, idx } = lineText(key, vars);
-  if (opts.extra) text += T('joinSuffix') + lineText(opts.extra, vars).text;
   let m = META[key] || ['neutral', null];
   if (Array.isArray(m[0])) m = m[idx % m.length];
-  const emo = (p.emoMap && p.emoMap[m[0]]) || m[0];
-  const gest = (p.gestMap && p.gestMap[m[1]]) || m[1];
+  return [(p.emoMap && p.emoMap[m[0]]) || m[0], (p.gestMap && p.gestMap[m[1]]) || m[1]];
+}
+/** Show and speak one line. Resolves when the voice (or its stand-in timing) has finished. */
+function say(key, vars = {}, opts = {}) {
+  const main = lineText(key, vars);
+  let text = main.text, isNew = recordHeard(key, main.idx, main.text);
+  if (opts.extra) {
+    const ex = lineText(opts.extra, vars);
+    text += T('joinSuffix') + ex.text;
+    isNew = recordHeard(opts.extra, ex.idx, ex.text) || isNew;
+  }
+  if (isNew && opts.toastNew !== false) toast(T('newLine'));
+  const [emo, gest] = emoFor(key, main.idx);
   const speakIt = !opts.silent && !(S().verbosity === 'guide' && QUIET_IN_GUIDE.has(key));
+  return present(text, emo, gest, speakIt);
+}
+const estimateMs = (text) => Math.min(9000, 700 + [...text].length * (lang() === 'en' ? 55 : 120));
+function speakNow(text, my, done) {
+  try {
+    const p = persona();
+    speechSynthesis.cancel();
+    if (!Voice.voice) Voice.pick(); // voices can arrive late on the first load in Chrome
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = T('ttsLang');
+    if (Voice.voice) u.voice = Voice.voice;
+    const base = p.voice || { pitch: 1.2, rate: 1 };
+    u.pitch = clamp(base.pitch + (Number(S().pitchAdj) || 0), 0.1, 2);
+    u.rate = clamp((base.rate || 1) * (Number(S().rateMul) || 1), 0.5, 2);
+    u.volume = clamp(Number(S().volume) || 1, 0, 1);
+    u.onstart = () => { if (my === sayToken) Char.speaking = true; };
+    const end = () => { if (my === sayToken) Char.speaking = false; done(); };
+    u.onend = end; u.onerror = end;
+    Char.speaking = true;
+    setTimeout(() => { if (my === sayToken) Char.speaking = false; }, estimateMs(text) + 4000);
+    speechSynthesis.speak(u);
+    return true;
+  } catch (e) { console.warn(e); return false; }
+}
+let lastLineText = '';
+function present(text, emo, gest, speakIt) {
   const my = ++sayToken;
+  lastLineText = text;
   Char.emotion = emo;
   gesture(gest);
   typeText(text);
+  const bubble = $('#bubble');
+  bubble.classList.remove('faded'); clearTimeout(fadeTimer);
   if (drive) drive.lastSpoke = elapsedSec() / 60;
   return new Promise((resolve) => {
     let finished = false;
@@ -1046,31 +2226,26 @@ function say(key, vars = {}, opts = {}) {
       if (my === sayToken) {
         Char.speaking = false;
         setTimeout(() => { if (my === sayToken) Char.emotion = 'neutral'; }, 2200);
+        if (S().bubbleFade) fadeTimer = setTimeout(() => { if (my === sayToken) bubble.classList.add('faded'); }, 3500);
       }
       resolve(my === sayToken);
     };
-    const estimate = Math.min(9000, 700 + [...text].length * (lang() === 'en' ? 55 : 120));
-    if (speakIt && Voice.ok && S().voice && activated) {
-      try {
-        speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = T('ttsLang');
-        if (Voice.voice) u.voice = Voice.voice;
-        const base = (isCustom(p) ? p.voice : p.voice) || { pitch: 1.2, rate: 1 };
-        u.pitch = Math.min(2, Math.max(0.1, base.pitch + (Number(S().pitchAdj) || 0)));
-        u.rate = base.rate || 1;
-        u.onstart = () => { if (my === sayToken) Char.speaking = true; };
-        u.onend = done; u.onerror = done;
-        Char.speaking = true;
-        speechSynthesis.speak(u);
-        setTimeout(done, estimate + 4000);
-        return;
-      } catch (e) { console.warn(e); }
+    const estimate = estimateMs(text);
+    pendingVoice = null; $('#tap-voice').hidden = true;
+    if (speakIt && Voice.ok && S().voice) {
+      if (canSpeak()) {
+        if (speakNow(text, my, done)) { setTimeout(done, estimate + 4000); return; }
+      } else {
+        pendingVoice = { my, text };
+        $('#tap-voice').hidden = false;
+      }
     }
     Char.speaking = speakIt;
     setTimeout(done, speakIt ? estimate : Math.min(estimate, 2500));
   });
 }
+$('#bubble').addEventListener('click', () => { $('#bubble').classList.remove('faded'); clearTimeout(fadeTimer); });
+function applyBubble() { document.documentElement.style.setProperty('--bubble-op', clamp(Number(S().bubbleOp) || 1, 0.3, 1)); if (!S().bubbleFade) $('#bubble').classList.remove('faded'); }
 
 /* =========================================================
    Time of day + formatting
@@ -1090,6 +2265,7 @@ setInterval(updateSky, 5 * 60 * 1000);
 const pad = (n) => String(n).padStart(2, '0');
 const hms = (s) => { s = Math.max(0, Math.floor(s)); return `${pad(Math.floor(s / 3600))}:${pad(Math.floor(s / 60) % 60)}:${pad(s % 60)}`; };
 const hm = (min) => { min = Math.max(0, Math.round(min)); return `${Math.floor(min / 60)}:${pad(min % 60)}`; };
+const ms = (sec) => { sec = Math.max(0, Math.ceil(sec)); return `${Math.floor(sec / 60)}:${pad(sec % 60)}`; };
 function fmtDur(min) {
   min = Math.max(0, Math.round(min)); const h = Math.floor(min / 60), m = min % 60; const d = T('dur');
   if (!h) return d.m.replace('{m}', m);
@@ -1111,13 +2287,13 @@ function fmtHours(h) {
    Affinity + home/history rendering
    ========================================================= */
 const LEVEL_PTS = [0, 30, 80, 160, 300, 500];
-// Bond points come from the drive log itself, so deleting a drive also takes back its points.
+// Bond points come from the drive log plus souvenirs given, so deleting a drive also takes back its points.
 // Per drive: 10 + 1 per 10 minutes (max 12) + 5 for the pre-drive check + 5 for taking a break on a 90-minute+ drive.
 function drivePts(d) {
   const min = Number(d.min) || 0;
-  return 10 + Math.min(12, Math.floor(min / 10)) + (d.checked ? 5 : 0) + (min >= 90 && d.breaks > 0 ? 5 : 0);
+  return 10 + Math.min(12, Math.floor(min / 10)) + (d.checked ? 5 : 0) + (min >= 90 && d.breaks > 0 ? 5 : 0) + (d.harsh === 0 && min >= 10 ? 3 : 0);
 }
-const totalPts = () => Store.state.drives.reduce((a, d) => a + drivePts(d), 0);
+const totalPts = () => Math.max(0, Store.state.drives.reduce((a, d) => a + drivePts(d), 0) + Store.state.gifts.reduce((a, g) => a + (Number(g.d) || 0), 0));
 function levelOf(pts) { let i = 0; LEVEL_PTS.forEach((min, k) => { if (pts >= min) i = k; }); return i; }
 function renderAffinity() {
   const pts = totalPts(), i = levelOf(pts), names = T('levels');
@@ -1134,6 +2310,7 @@ function totals() {
   const ds = Store.state.drives;
   return { n: ds.length, min: ds.reduce((a, d) => a + (d.min || 0), 0), km: ds.reduce((a, d) => a + (typeof d.km === 'number' ? d.km : 0), 0) };
 }
+const bagCount = () => Object.values(Store.state.bag).reduce((a, n) => a + (Number(n) || 0), 0);
 function renderHome() {
   const t = totals();
   $('#odo-km').textContent = fmtKm(t.km);
@@ -1143,6 +2320,7 @@ function renderHome() {
   $('#last-drive').textContent = last
     ? T('lastDrive', { date: fmtDate(last.start), dur: fmtDur(last.min), km: typeof last.km === 'number' ? `${T('listSep')}${fmtKm(last.km)} km` : '' })
     : T('lastNone');
+  $('#open-gifts').textContent = T('openGifts', { n: bagCount() });
   renderAffinity();
 }
 function renderHistory() {
@@ -1181,6 +2359,7 @@ function renderHistory() {
   }
   renderSelBar();
   $('#hist-empty').hidden = Store.state.drives.length > 0;
+  renderWeek();
   $('#store-note').textContent = T({ cloud: 'storeCloud', local: 'storeLocal', memory: 'storeMemory' }[Store.kind]);
 }
 function renderIdentity() {
@@ -1191,6 +2370,12 @@ function renderIdentity() {
   $('#fallback').textContent = [...nm][0] || '?';
   canvas.setAttribute('aria-label', nm);
   Char.expr = p.expr ?? baseOf(p).expr ?? 1;
+  updateUmbrellaColor();
+}
+function applyTheme() {
+  const th = S().theme;
+  if (th === 'light' || th === 'dark') document.documentElement.dataset.theme = th;
+  else if (!IN_CLAUDE) delete document.documentElement.dataset.theme;
 }
 function applyI18n() {
   document.documentElement.lang = lang();
@@ -1202,6 +2387,10 @@ function applyI18n() {
   if (!$('#sheet-history').hidden) renderHistory();
   if (!$('#sheet-settings').hidden) renderSettings();
   if (!$('#sheet-persona').hidden) renderPersonaSheet();
+  if (!$('#sheet-look').hidden) renderLookSheet();
+  if (!$('#sheet-gifts').hidden) renderGifts();
+  if (!$('#sheet-coll').hidden) renderColl();
+  if (!$('#sheet-welcome').hidden) renderWelcome();
   if (pending) renderArrive();
   if (drive) tick();
 }
@@ -1213,7 +2402,7 @@ function setMode(m) {
   document.body.dataset.mode = m;
   for (const id of ['home', 'check', 'drive', 'arrive']) $('#p-' + id).hidden = id !== m;
   Char.lowPower = m === 'drive' && !(drive && drive.demo);
-  if (renderer) renderer.setPixelRatio(Char.lowPower ? 1 : Math.min(window.devicePixelRatio || 1, 2));
+  if (renderer) renderer.setPixelRatio(pixelRatioNow());
   resize();
   $('#panel').scrollTop = 0;
 }
@@ -1236,6 +2425,7 @@ $$('.check').forEach((btn) => btn.addEventListener('click', () => {
   const k = btn.dataset.k;
   checks[k] = !checks[k];
   btn.setAttribute('aria-pressed', String(checks[k]));
+  buzz(12);
   const all = Object.values(checks).every(Boolean);
   $('#depart').disabled = !all;
   if (checks[k]) say(all ? 'checkDone' : CHECK_KEY[k]);
@@ -1253,28 +2443,41 @@ function startDrive({ demo, checked }) {
     demo, checked, startedAt: now, sim: 0, lastReal: now,
     breaks: 0, lastHour: 0, breakAt: Number(S().breakMin) || 120, dueSaid: false, nagAt: Infinity,
     km: 0, gps: demo ? 'demo' : 'pending', lastPos: null, watch: null, startFix: null, lastFix: null,
-    lastSpoke: 0, nextChat: 25, stops: demo ? DEMO_STOPS.map((s) => ({ ...s, state: 'ahead' })) : [], stop: null,
+    lastSpoke: 0, nextChat: 25, stops: demo ? DEMO_STOPS.map((s) => ({ ...s, state: 'ahead' })) : [], stop: null, rest: null,
+    real: demo ? null : { list: [], fetchedAt: 0, fetchedPos: null, announced: new Set(), lastAnnounce: -99, heading: null, speedKmh: 0, prevFix: null, busy: false },
   };
-  hideStopCard();
+  hideStopCard(); hideRestCard();
+  drive.safety = !demo && S().safetyOn && Safety.start();
   setMode('drive');
+  preparePip();
+  document.body.dataset.driveChar = S().driveChar || 'dim';
   $('#demo-chip').hidden = !demo;
   $('#wake-note').textContent = '';
+  buzz(30);
   if (demo) say('demoStart');
   else if (tod(new Date(now)) === 'late') say('departLate');
   else if (!checked) say('departSkip');
   else say('depart');
   if (!demo) {
     startGPS();
-    if (S().placesOn) { const d = drive; getFix(15000).then((f) => { if (f && !d.startFix) d.startFix = f; }); }
+    if (S().placesOn || S().weatherOn) {
+      const d = drive;
+      getFix(15000).then((f) => {
+        if (!f) return;
+        if (!d.startFix) d.startFix = f;
+        if (drive === d && S().weatherOn) Weather.check(f.lat, f.lon);
+      });
+    }
   }
   requestWake();
   clearInterval(driveTimer);
   driveTimer = setInterval(tick, demo ? 250 : 1000);
   tick();
 }
-// Demo time runs at 120×, but slows down while a rest stop is being asked about or approached.
+// Demo time runs at 120×, but slows down while a rest stop is being asked about, approached, or rested at.
 function curSpeed() {
   if (!drive || !drive.demo) return 1;
+  if (drive.rest) return 20;
   const st = drive.stop;
   if (st && st.state === 'asking') return 2;
   if (st && st.state === 'going') return 30;
@@ -1293,11 +2496,13 @@ function tick() {
   $('#trip-time').textContent = hms(s);
   if (drive.demo) $('#demo-chip').textContent = `DEMO ×${curSpeed()}`;
   const br = $('#trip-break');
-  const stopBusy = drive.stop && (drive.stop.state === 'asking' || drive.stop.state === 'going');
-  if (m >= drive.breakAt) {
+  const busy = drive.rest || (drive.stop && (drive.stop.state === 'asking' || drive.stop.state === 'going'));
+  if (drive.rest) {
+    br.textContent = T('resting'); br.classList.remove('due');
+  } else if (m >= drive.breakAt) {
     br.textContent = T('breakNow');
     br.classList.add('due');
-    if (!stopBusy) {
+    if (!busy) {
       if (!drive.dueSaid) { drive.dueSaid = true; drive.nagAt = m + 30; say('breakDue', { t: fmtDur(m) }); }
       else if (m >= drive.nagAt) { drive.nagAt = m + 30; say('breakNag'); }
     }
@@ -1307,42 +2512,110 @@ function tick() {
     const h = Math.floor(m / 60);
     if (h >= 1 && h > drive.lastHour) {
       drive.lastHour = h;
-      if (drive.breakAt - m > 5 && !stopBusy && S().verbosity !== 'guide') say('hourly', { h });
+      if (drive.breakAt - m > 5 && !busy && S().verbosity !== 'guide') say('hourly', { h });
     }
   }
-  if (drive.demo) drive.km = (m / 60) * DEMO_KMH;
+  if (drive.demo && !drive.rest) drive.km = (m / 60) * DEMO_KMH - (drive.restKm || 0);
+  if (drive.demo && drive.rest) drive.restKm = (m / 60) * DEMO_KMH - drive.km;
   const kmEl = $('#trip-km');
   if (drive.gps === 'on' || drive.gps === 'demo') kmEl.textContent = `${fmtKm(drive.km)} km`;
   else if (drive.gps === 'pending') kmEl.textContent = T('gpsPending');
   else kmEl.textContent = T('gpsOff');
 
   if (!drive) return;
+  if (drive.rest) { updateRest(s); return; }
   updateStops(m);
+  // weather every 15 minutes on a real drive
+  if (!drive.demo && S().weatherOn && drive.lastFix && Date.now() - Weather.checkedAt > 15 * 60 * 1000) Weather.check(drive.lastFix.lat, drive.lastFix.lon);
   // small talk in chatty mode, only when nothing else was said recently
   if (S().verbosity === 'chatty' && m >= drive.nextChat && !drive.stop && m - drive.lastSpoke > 8 && m < drive.breakAt - 5) {
     drive.nextChat = m + 25;
     say('chat');
   }
 }
-$('#break-btn').addEventListener('click', () => {
-  if (!drive) return;
-  takeBreak();
-  say('breakTaken');
-  tick();
-});
-function takeBreak() {
+$('#break-btn').addEventListener('click', () => { if (drive && !drive.rest) enterRest({}); });
+function resetBreakTimer() {
   const m = elapsedSec() / 60;
-  drive.breaks += 1;
   drive.breakAt = m + (Number(S().breakMin) || 120);
   drive.dueSaid = false; drive.nagAt = Infinity;
   drive.lastHour = Math.floor(m / 60);
 }
+
+/* ---------- resting + souvenirs ---------- */
+function pickItem(prefCode) {
+  const r = Math.random();
+  if (r < 0.06) return rnd(ITEMS.special);
+  const local = prefCode && ITEMS.prefs[prefCode];
+  if (local && r < 0.62) return local;
+  return rnd(ITEMS.general);
+}
+function enterRest({ stop = null, pref = null, quiet = false }) {
+  if (!drive || drive.rest) return;
+  drive.breaks += 1;
+  drive.rest = { t0: elapsedSec(), real0: Date.now(), pref, stop, granted: null, grantedAt: 0 };
+  hideStopCard();
+  $('#break-btn').hidden = true;
+  renderRestCard();
+  buzz(20);
+  if (!quiet) say('restStart', { min: Math.round(REST_SEC / 60) });
+  // where are we resting? (prefecture decides the local souvenir)
+  if (!drive.demo && !pref) {
+    const r = drive.rest;
+    const fixP = drive.lastFix && Date.now() - drive.lastFix.t < 120000 ? Promise.resolve(drive.lastFix) : getFix(8000);
+    fixP.then((f) => (f ? placeInfo(f.lat, f.lon) : null)).then((info) => {
+      if (info && info.prefCode) { r.pref = info.prefCode; markPref(info.prefCode, info.prefName); }
+    });
+  }
+}
+function updateRest(s) {
+  const r = drive.rest;
+  const el = s - r.t0;
+  $('#rest-time').textContent = ms(el);
+  $('#rest-bar').style.width = `${clamp((el / REST_SEC) * 100, 0, 100)}%`;
+  $('#rest-goal').textContent = r.granted ? T('restDone') : T('restGoal', { t: ms(REST_SEC - el) });
+  if (!r.granted && el >= REST_SEC) grantItem();
+  if (drive.demo && r.granted && Date.now() - r.grantedAt > 5000) endRest();
+}
+function grantItem() {
+  const r = drive.rest; if (!r || r.granted) return;
+  const it = pickItem(r.pref);
+  r.granted = it.id; r.grantedAt = Date.now();
+  const st = Store.state;
+  st.bag[it.id] = (st.bag[it.id] || 0) + 1;
+  const g = st.got[it.id] || { n: 0, first: new Date().toISOString() };
+  g.n += 1; st.got[it.id] = g;
+  Store.save();
+  const box = $('#rest-got'); box.textContent = '';
+  const nm = document.createElement('span'); nm.textContent = `${itemName(it)}`;
+  const rar = document.createElement('span'); rar.className = `rar r${rarityOf(it.id)}`; rar.textContent = T(`rare${rarityOf(it.id)}`);
+  nm.append(rar);
+  box.append(itemIcon(it), nm); box.hidden = false;
+  buzz(40);
+  say('itemGet', { item: itemName(it) });
+  checkMedals(false);
+  renderHome();
+}
+function renderRestCard() { $('#rest-card').hidden = false; $('#rest-got').hidden = true; $('#drive-hint').hidden = true; }
+function hideRestCard() { $('#rest-card').hidden = true; $('#break-btn').hidden = false; if ($('#stop-card').hidden) $('#drive-hint').hidden = false; }
+function endRest() {
+  if (!drive || !drive.rest) return;
+  drive.rest = null;
+  resetBreakTimer();
+  hideRestCard();
+  say('depart');
+}
+$('#rest-end').addEventListener('click', endRest);
 
 /* ---------- rest stops (demo data) ---------- */
 let listenTimer = 0, recog = null, micBlocked = false;
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 function stopTags(st) {
   const box = $('#stop-tags'); box.textContent = '';
+  if (st.real) {
+    const o = document.createElement('span'); o.className = 'tag'; o.textContent = 'OpenStreetMap'; box.append(o);
+    if (st.hoursRaw) { const h = document.createElement('span'); h.className = 'tag'; h.textContent = st.hoursRaw === '24h' ? fmtHours('24h') : st.hoursRaw; box.append(h); }
+    return;
+  }
   const a = document.createElement('span'); a.className = 'tag'; a.textContent = fmtHours(st.hours);
   const b = document.createElement('span'); b.className = `tag c${st.crowd}`; b.textContent = T('crowd')[st.crowd];
   box.append(a, b);
@@ -1355,7 +2628,8 @@ function renderStopCard() {
   $('#stop-name').textContent = st.short[lang()] || st.short.ja;
   stopTags(st);
   const m = elapsedSec() / 60;
-  const left = Math.max(0, (st.reachAt - m) * (DEMO_KMH / 60));
+  const left = st.real ? st.dist : Math.max(0, (st.reachAt - m) * (DEMO_KMH / 60));
+  $('#stop-note').textContent = st.real ? T('realStopNote') : T('sampleData');
   $('#stop-dist').textContent = T('stopAway', { d: T('distShow', { n: left.toFixed(1) }) });
   const asking = st.state === 'asking';
   $('#stop-actions').hidden = !asking;
@@ -1365,16 +2639,17 @@ function renderStopCard() {
   $('#drive-hint').hidden = true;
 }
 function hideStopCard() {
-  $('#stop-card').hidden = true; $('#drive-hint').hidden = false;
+  $('#stop-card').hidden = true; if ($('#rest-card').hidden) $('#drive-hint').hidden = false;
   stopListening();
 }
 function updateStops(m) {
+  if (!drive.demo) { updateRealStops(m); return; }
   if (!drive.stops.length) return;
   const st = drive.stop;
   if (st) {
     if (st.state === 'going' && m >= st.reachAt) {
       drive.stop = null; hideStopCard();
-      takeBreak();
+      enterRest({ stop: st, pref: st.pref, quiet: true });
       say('stopReached', { stop: st.name[lang()] || st.name.ja });
       return;
     }
@@ -1388,13 +2663,13 @@ function updateStops(m) {
 }
 async function announceStop(st, m) {
   st.state = 'asking';
-  st.reachAt = st.at + st.km / (DEMO_KMH / 60);
+  if (!st.real) st.reachAt = st.at + st.km / (DEMO_KMH / 60);
   drive.stop = st;
   renderStopCard();
-  const info = S().stopsInfo ? T('info', { hours: fmtHours(st.hours), crowd: T('crowd')[st.crowd] }) : '';
+  const info = !S().stopsInfo ? '' : st.real ? (st.hoursRaw ? T('infoHours', { h: st.hoursRaw === '24h' ? fmtHours('24h') : st.hoursRaw }) : '') : T('info', { hours: fmtHours(st.hours), crowd: T('crowd')[st.crowd] });
   const key = m >= drive.breakAt - 15 ? 'stopAheadBreak' : 'stopAhead';
   setListenNote('');
-  const finished = await say(key, { stop: st.name[lang()] || st.name.ja, dist: T('distSpeak', { n: st.km }), info });
+  const finished = await say(key, { stop: st.name[lang()] || st.name.ja, dist: T('distSpeak', { n: st.real ? Math.max(1, Math.round(st.dist)) : st.km }), info });
   if (!drive || drive.stop !== st || st.state !== 'asking') return;
   if (finished) startListening(st);
   clearTimeout(listenTimer);
@@ -1432,7 +2707,9 @@ function stopListening() { try { recog && recog.abort(); } catch {} recog = null
 function answerStop(yes) {
   const st = drive && drive.stop; if (!st || st.state !== 'asking') return;
   stopListening();
+  buzz(20);
   const name = st.name[lang()] || st.name.ja;
+  st.decidedAt = Date.now();
   if (yes === true) { st.state = 'going'; say('stopYes', { stop: name }); }
   else { st.state = 'passed'; say(yes === false ? 'stopNo' : 'stopNoReply', { stop: name }); }
   setListenNote('');
@@ -1440,6 +2717,70 @@ function answerStop(yes) {
 }
 $('#stop-yes').addEventListener('click', () => answerStop(true));
 $('#stop-no').addEventListener('click', () => answerStop(false));
+
+/* ---------- real rest stops ahead, from OpenStreetMap (experimental) ----------
+   SA = highway=services, PA = highway=rest_area, roadside stations by their name (道の駅).
+   Only places in the direction of travel, 2–9 km away. When the same place exists on both
+   carriageways, the one on the left of the travel direction is ours (Japan drives on the left). */
+const OVERPASS = 'https://overpass-api.de/api/interpreter';
+function bearingDeg(a, b) {
+  const r = Math.PI / 180;
+  const y = Math.sin((b.lon - a.lon) * r) * Math.cos(b.lat * r);
+  const x = Math.cos(a.lat * r) * Math.sin(b.lat * r) - Math.sin(a.lat * r) * Math.cos(b.lat * r) * Math.cos((b.lon - a.lon) * r);
+  return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+}
+const angDiff = (a, b) => Math.abs(((a - b + 540) % 360) - 180);
+const stopBaseName = (n) => n.replace(/[（(][^)）]*[)）]/g, '').replace(/上り線?|下り線?|内回り|外回り/g, '').trim();
+async function fetchRealStops(lat, lon) {
+  const q = `[out:json][timeout:20];nwr["highway"~"^(services|rest_area)$"](around:12000,${lat.toFixed(4)},${lon.toFixed(4)});out center tags 80;`;
+  const res = await fetch(OVERPASS, { method: 'POST', body: 'data=' + encodeURIComponent(q), headers: { 'Content-Type': 'application/x-www-form-urlencoded' } });
+  if (!res.ok) throw new Error('overpass ' + res.status);
+  const j = await res.json();
+  return (j.elements || []).map((el) => {
+    const t = el.tags || {}, c = el.center || el;
+    const nm = t['name:ja'] || t.name || '';
+    if (!nm || c.lat == null) return null;
+    const kind = /道の駅/.test(nm) ? 'michi' : /PA|パーキング/.test(nm) ? 'PA' : /SA|サービスエリア/.test(nm) ? 'SA' : t.highway === 'services' ? 'SA' : 'PA';
+    const oh = (t.opening_hours || '').trim();
+    return { id: el.type + el.id, lat: c.lat, lon: c.lon, kind, nm, names: { ja: nm, en: t['name:en'] || nm, zh: t['name:zh'] || nm, ko: t['name:ko'] || nm }, hoursRaw: oh === '24/7' ? '24h' : oh };
+  }).filter(Boolean);
+}
+function updateRealStops(m) {
+  const r = drive.real; if (!r || IN_CLAUDE) return;
+  const f = drive.lastFix; if (!f || Date.now() - f.t > 30000) return;
+  if (S().stopsOn && !r.busy && r.speedKmh > 25 && (!r.fetchedPos || haversine(r.fetchedPos, f) > 4000 || Date.now() - r.fetchedAt > 15 * 60000)) {
+    r.busy = true; r.fetchedPos = { lat: f.lat, lon: f.lon }; r.fetchedAt = Date.now();
+    fetchRealStops(f.lat, f.lon).then((list) => { r.list = list; }).catch(() => {}).finally(() => { r.busy = false; });
+  }
+  const st = drive.stop;
+  if (st && st.real) {
+    st.dist = haversine(f, st) / 1000;
+    st.minDist = Math.min(st.minDist ?? st.dist, st.dist);
+    if (st.state === 'going' && (st.dist < 0.25 || (st.dist < 0.6 && r.speedKmh < 20))) {
+      drive.stop = null; hideStopCard();
+      enterRest({ stop: st, quiet: true });
+      say('stopReached', { stop: st.name[lang()] || st.name.ja });
+      return;
+    }
+    if (st.dist > st.minDist + 1.5 || (st.state === 'passed' && Date.now() - (st.decidedAt || 0) > 120000)) { drive.stop = null; hideStopCard(); return; }
+    renderStopCard();
+    return;
+  }
+  if (st || drive.rest || !S().stopsOn || r.heading == null || r.speedKmh < 30 || m - r.lastAnnounce < 8) return;
+  const nearBreak = m >= drive.breakAt - 15;
+  const cands = r.list
+    .filter((s) => !r.announced.has(s.id) && (nearBreak || s.kind !== 'PA'))
+    .map((s) => ({ ...s, dist: haversine(f, s) / 1000, brg: bearingDeg(f, s) }))
+    .filter((s) => s.dist >= 2 && s.dist <= 9 && angDiff(s.brg, r.heading) < 35);
+  if (!cands.length) return;
+  const lateral = (s) => s.dist * Math.sin(((s.brg - r.heading) * Math.PI) / 180); // negative = left of travel
+  const groups = new Map();
+  for (const c of cands) { const k = stopBaseName(c.nm); const g = groups.get(k); if (!g || lateral(c) < lateral(g)) groups.set(k, c); }
+  const pick = [...groups.values()].sort((a, b) => a.dist - b.dist)[0];
+  for (const s of r.list) if (stopBaseName(s.nm) === stopBaseName(pick.nm)) r.announced.add(s.id);
+  r.lastAnnounce = m;
+  announceStop({ real: true, id: pick.id, lat: pick.lat, lon: pick.lon, kind: pick.kind, name: pick.names, short: pick.names, hoursRaw: pick.hoursRaw, dist: pick.dist, state: 'ahead' }, m);
+}
 
 /* ---------- GPS + wake lock ---------- */
 function haversine(a, b) {
@@ -1459,6 +2800,20 @@ function startGPS() {
       if (!drive.startFix && accuracy <= 200) drive.startFix = drive.lastFix;
       if (accuracy > 60) return;
       const here = { lat, lon };
+      const r = drive.real;
+      if (r) {
+        const sp = pos.coords.speed;
+        if (sp != null && sp >= 0) r.speedKmh = sp * 3.6;
+        if (!r.prevFix) r.prevFix = { lat, lon, t: Date.now() };
+        else {
+          const dd = haversine(r.prevFix, here);
+          if (dd > 40) {
+            r.heading = bearingDeg(r.prevFix, here);
+            if (sp == null) r.speedKmh = (dd / Math.max(1, (Date.now() - r.prevFix.t) / 1000)) * 3.6;
+            r.prevFix = { lat, lon, t: Date.now() };
+          }
+        }
+      }
       if (!drive.lastPos) { drive.lastPos = here; return; }
       const d = haversine(drive.lastPos, here);
       if (d > 10) { if (d < 5000) drive.km += d / 1000; drive.lastPos = here; }
@@ -1477,23 +2832,24 @@ async function requestWake() {
 function releaseWake() { try { wake && wake.release(); } catch {} wake = null; }
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && drive && document.body.dataset.mode === 'drive' && (!wake || wake.released)) requestWake();
+  if (document.visibilityState === 'visible' && drive) tick();
 });
 
-/* ---------- start / end places ---------- */
-function getFix(timeout = 10000) {
+/* ---------- places + prefectures ---------- */
+function getFix(timeout = 10000, maximumAge = 60000) {
   return new Promise((resolve) => {
     if (!('geolocation' in navigator)) { resolve(null); return; }
     try {
       navigator.geolocation.getCurrentPosition(
         (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy, t: Date.now() }),
-        () => resolve(null), { enableHighAccuracy: true, timeout, maximumAge: 60000 });
+        () => resolve(null), { enableHighAccuracy: true, timeout, maximumAge });
     } catch { resolve(null); }
   });
 }
 const round3 = (x) => Math.round(x * 1000) / 1000; // about 100 m
 const geoCache = new Map();
-// Neighbourhood-level name from OpenStreetMap (Nominatim). Low volume only: two lookups per drive.
-function placeName(lat, lon) {
+// Neighbourhood-level name and prefecture from OpenStreetMap (Nominatim). Low volume only: a few lookups per drive.
+function placeInfo(lat, lon) {
   const key = `${round3(lat)},${round3(lon)},${lang()}`;
   if (!geoCache.has(key)) {
     geoCache.set(key, (async () => {
@@ -1505,18 +2861,33 @@ function placeName(lat, lon) {
         const city = a.city || a.town || a.village || a.county || '';
         const area = a.city_district || a.suburb || a.quarter || a.neighbourhood || '';
         const parts = [city, area].filter(Boolean);
-        if (!parts.length && (a.state || a.province)) parts.push(a.state || a.province);
-        return parts.join(lang() === 'en' ? ', ' : ' ') || null;
+        const prefName = a.province || a.state || '';
+        if (!parts.length && prefName) parts.push(prefName);
+        const iso = a['ISO3166-2-lvl4'] || a['ISO3166-2-lvl3'] || '';
+        return { name: parts.join(lang() === 'en' ? ', ' : ' ') || null, prefCode: /^JP-\d\d$/.test(iso) ? iso : null, prefName };
       } catch { return null; }
     })());
   }
   return geoCache.get(key);
 }
+// Returns true when this prefecture is new.
+function markPref(code, name) {
+  if (!code || !ITEMS.prefs[code]) return false;
+  if (Store.state.prefs[code]) return false;
+  Store.state.prefs[code] = { at: new Date().toISOString(), name: name || '' };
+  saveSoon();
+  return true;
+}
+const prefLabel = (code) => (ITEMS.prefs[code] ? ITEMS.prefs[code].pref[lang()] || ITEMS.prefs[code].pref.ja : code);
 async function resolvePlaces(d) {
   let end = d.lastFix && Date.now() - d.lastFix.t < 120000 ? d.lastFix : null;
   if (!end) end = await getFix(8000);
   const start = d.startFix;
-  const pack = async (f) => (f ? { name: await placeName(f.lat, f.lon), lat: round3(f.lat), lon: round3(f.lon) } : null);
+  const pack = async (f) => {
+    if (!f) return null;
+    const info = await placeInfo(f.lat, f.lon);
+    return { name: info ? info.name : null, lat: round3(f.lat), lon: round3(f.lon), pref: info && info.prefCode ? info.prefCode : undefined };
+  };
   const [from, to] = await Promise.all([pack(start), pack(end)]);
   return { from, to };
 }
@@ -1543,7 +2914,7 @@ function placeLine(el, from, to) {
   const step = () => {
     const p = Math.min(1, (performance.now() - start) / MS);
     fillEl.style.transform = `scaleX(${p})`;
-    if (p >= 1) { reset(); arrive(); } else raf = requestAnimationFrame(step);
+    if (p >= 1) { reset(); buzz(40); arrive(); } else raf = requestAnimationFrame(step);
   };
   btn.addEventListener('pointerdown', (e) => { if (e.button > 0) return; holding = true; start = performance.now(); raf = requestAnimationFrame(step); });
   ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => btn.addEventListener(ev, () => { if (holding) reset(); }));
@@ -1559,11 +2930,14 @@ function arrive() {
   releaseWake();
   const min = elapsedSec() / 60;
   const d = drive; drive = null;
-  hideStopCard();
+  hideStopCard(); hideRestCard();
+  delete document.body.dataset.driveChar;
   const km = d.gps === 'on' || d.demo ? d.km : null;
   const long = min >= 90;
-  const pts = d.demo ? 0 : drivePts({ min: Math.max(1, Math.round(min)), checked: d.checked, breaks: d.breaks });
-  pending = { start: new Date(d.startedAt).toISOString(), min: Math.max(1, Math.round(min)), rawMin: min, km, breaks: d.breaks, checked: d.checked, demo: d.demo, pts };
+  const harsh = !d.demo && d.safety ? Safety.stop() : null;
+  const pts = d.demo ? 0 : drivePts({ min: Math.max(1, Math.round(min)), checked: d.checked, breaks: d.breaks, harsh: harsh ?? undefined });
+  pending = { start: new Date(d.startedAt).toISOString(), min: Math.max(1, Math.round(min)), rawMin: min, km, breaks: d.breaks, checked: d.checked, demo: d.demo, pts, harsh };
+  stopPip();
   if (!d.demo && S().placesOn && (d.startFix || d.lastFix || d.gps !== 'off')) {
     const p = pending;
     p.placesLooking = true;
@@ -1581,6 +2955,7 @@ function arrive() {
   if (!d.demo && tod() === 'late') extra = 'arriveLate';
   else if (long && d.breaks > 0) extra = 'arriveGoodBreak';
   else if (min >= Number(S().breakMin || 120) + 30 && d.breaks === 0) extra = 'arriveNoBreak';
+  else if (harsh === 0 && min >= 10) extra = 'arriveSmooth';
   say(cat, {}, { extra });
 }
 function renderArrive() {
@@ -1590,6 +2965,9 @@ function renderArrive() {
   $('#sum-km').textContent = p.km != null ? `${fmtKm(p.km)} km` : '—';
   $('#sum-breaks').textContent = T('times', { n: p.breaks });
   $('#sum-pts').textContent = p.demo ? T('demoTag') : `+${p.pts}`;
+  $('#sum-harsh-box').hidden = p.harsh == null;
+  if (p.harsh != null) $('#sum-harsh').textContent = T('harshN', { n: p.harsh });
+  $('#share-summary').hidden = p.demo;
   const pe = $('#sum-places');
   if (p.placesLooking) { pe.hidden = false; pe.textContent = T('placeLooking'); }
   else if (p.from || p.to) { pe.hidden = false; pe.textContent = ''; placeLine(pe, p.from, p.to); }
@@ -1597,6 +2975,12 @@ function renderArrive() {
   $('#km-field').hidden = p.demo || p.km != null;
   $('#save-drive').textContent = p.demo ? T('backHome') : T('save');
   $('#discard-drive').hidden = p.demo;
+}
+// Visiting a new prefecture earns a line of its own.
+function newPrefsFrom(pl) {
+  const fresh = [];
+  for (const x of [pl.from, pl.to]) if (x && x.pref && markPref(x.pref)) fresh.push(x.pref);
+  return fresh;
 }
 $('#save-drive').addEventListener('click', () => {
   if (!pending) { setMode('home'); return; }
@@ -1608,55 +2992,67 @@ $('#save-drive').addEventListener('click', () => {
     km: p.km != null ? Math.round(p.km * 10) / 10 : (Number.isFinite(kmIn) && kmIn > 0 ? Math.round(kmIn * 10) / 10 : null),
     breaks: p.breaks, checked: p.checked,
   };
+  if (p.harsh != null) rec.harsh = p.harsh;
   if (p.from) rec.from = p.from;
   if (p.to) rec.to = p.to;
+  const beforeLv = levelOf(totalPts());
+  Store.state.drives = [rec, ...Store.state.drives].slice(0, 500);
+  const fresh = newPrefsFrom(p);
+  Store.save();
+  buzz(20);
+  setMode('home');
+  renderHome();
+  const n = Store.state.drives.length, afterLv = levelOf(totalPts());
+  const medals = checkMedals(false);
+  const after = () => {
+    if (afterLv > beforeLv) return say('levelUp', { lv: T('levels')[afterLv] });
+    if (fresh.length) return say('newPlace', { place: prefLabel(fresh[0]) });
+    if (medals.length) return say('medal', { medal: medalName(medals[0]) });
+    if ([5, 10, 20, 30, 50, 100, 200].includes(n)) return say('milestone', { n });
+    return say('saved');
+  };
+  after();
+  if (medals.length) toast(T('medalGet', { m: medalName(medals[0]) }));
   if (p.placesLooking && p.placesDone) {
     p.placesDone.then((pl) => {
       const r = Store.state.drives.find((x) => x.id === rec.id); if (!r) return;
       if (pl.from) r.from = pl.from; if (pl.to) r.to = pl.to;
+      const late = newPrefsFrom(pl);
+      checkMedals(true);
       Store.save(); renderHome(); if (!$('#sheet-history').hidden) renderHistory();
+      if (late.length && document.body.dataset.mode === 'home') say('newPlace', { place: prefLabel(late[0]) });
     });
   }
-  const beforeLv = levelOf(totalPts());
-  Store.state.drives = [rec, ...Store.state.drives].slice(0, 500);
-  Store.save();
-  setMode('home');
-  renderHome();
-  const n = Store.state.drives.length, afterLv = levelOf(totalPts());
-  if (afterLv > beforeLv) say('levelUp', { lv: T('levels')[afterLv] });
-  else if ([5, 10, 20, 30, 50, 100, 200].includes(n)) say('milestone', { n });
-  else say('saved');
 });
 $('#discard-drive').addEventListener('click', () => { pending = null; setMode('home'); say('discarded'); });
 
-/* ---------- tapping the character ---------- */
-let taps = [];
-canvas.addEventListener('click', () => {
-  if (document.body.dataset.mode === 'drive') return;
-  const now = Date.now();
-  taps = taps.filter((x) => now - x < 4000); taps.push(now);
-  if (taps.length >= 5) { taps = []; say('tapAnnoyed'); } else say('tap');
-});
-
 /* ---------- sheets ---------- */
 let lastFocus = null;
+const SHEET_RENDER = {
+  '#sheet-history': () => renderHistory(), '#sheet-settings': () => renderSettings(), '#sheet-persona': () => renderPersonaSheet(),
+  '#sheet-look': () => renderLookSheet(), '#sheet-gifts': () => renderGifts(), '#sheet-coll': () => renderColl(), '#sheet-welcome': () => renderWelcome(),
+};
 function openSheet(id) {
-  lastFocus = document.activeElement;
+  $$('.sheet').forEach((s) => { if (!s.hidden && `#${s.id}` !== id) s.hidden = true; });
+  if (!lastFocus || !document.contains(lastFocus) || lastFocus.closest('.sheet')) lastFocus = document.activeElement;
   const el = $(id); el.hidden = false;
-  if (id === '#sheet-history') renderHistory();
-  if (id === '#sheet-settings') renderSettings();
-  if (id === '#sheet-persona') renderPersonaSheet();
+  (SHEET_RENDER[id] || (() => {}))();
   el.querySelector('[data-close]').focus();
 }
 function closeSheets() {
   $$('.sheet').forEach((s) => { s.hidden = true; });
   $('#clear-confirm').hidden = true; $('#clear-start').hidden = false;
   histSel.on = false; histSel.ids.clear(); $('#sel-main').hidden = false; $('#sel-confirm').hidden = true;
-  if (lastFocus && lastFocus.focus) lastFocus.focus();
+  $('#leave-confirm').hidden = true;
+  if (!S().onboarded && Store.state.drives.length === 0) { S().onboarded = true; saveSoon(); }
+  if (lastFocus && lastFocus.focus && document.contains(lastFocus)) lastFocus.focus();
+  lastFocus = null;
 }
 $('#open-history').addEventListener('click', () => openSheet('#sheet-history'));
 $('#open-settings').addEventListener('click', () => openSheet('#sheet-settings'));
 $('#open-persona').addEventListener('click', () => openSheet('#sheet-persona'));
+$('#open-gifts').addEventListener('click', () => openSheet('#sheet-gifts'));
+$('#open-coll').addEventListener('click', () => openSheet('#sheet-coll'));
 $$('[data-close]').forEach((b) => b.addEventListener('click', closeSheets));
 addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
 
@@ -1687,6 +3083,156 @@ $('#clear-yes').addEventListener('click', () => {
   renderHistory(); renderHome();
 });
 
+/* ---------- souvenirs: giving them to the character ---------- */
+function reactionFor(p, it) {
+  const r = rarityOf(it.id), base = baseOf(p);
+  if (r === 3) return ['giftLove', 10];
+  if ((base.likes || []).includes(it.cat)) return r === 2 ? ['giftLove', 8] : ['giftLike', 5];
+  if ((base.dislikes || []).includes(it.cat)) return ['giftDislike', -3];
+  return ['giftNeutral', 2];
+}
+function renderGifts() {
+  const box = $('#gift-list'); box.textContent = '';
+  const ids = Object.keys(Store.state.bag).filter((id) => Store.state.bag[id] > 0 && ITEM_BY_ID[id]);
+  ids.sort((a, b) => rarityOf(b) - rarityOf(a));
+  for (const id of ids) {
+    const it = ITEM_BY_ID[id];
+    const row = document.createElement('div'); row.className = 'item-row';
+    const nm = document.createElement('div'); nm.className = 'nm';
+    const b = document.createElement('b'); b.textContent = itemName(it);
+    const rar = document.createElement('span'); rar.className = `rar r${rarityOf(id)}`; rar.textContent = T(`rare${rarityOf(id)}`);
+    b.append(rar);
+    const sub = document.createElement('span');
+    sub.textContent = `${(ITEMS.cats[it.cat] || {})[lang()] || ''}${it.pref ? T('listSep') + (it.pref[lang()] || it.pref.ja) : ''}  ×${Store.state.bag[id]}`;
+    nm.append(b, sub);
+    const give = document.createElement('button'); give.className = 'btn small';
+    give.textContent = T('giftBtn', { name: nameOf(persona()) });
+    give.addEventListener('click', () => giveItem(id));
+    row.append(itemIcon(it), nm, give);
+    box.append(row);
+  }
+  $('#gift-empty').hidden = ids.length > 0;
+}
+function giveItem(id) {
+  const it = ITEM_BY_ID[id]; if (!it || !(Store.state.bag[id] > 0)) return;
+  const p = persona();
+  const [key, delta] = reactionFor(p, it);
+  const before = levelOf(totalPts());
+  Store.state.bag[id] -= 1; if (Store.state.bag[id] <= 0) delete Store.state.bag[id];
+  Store.state.gifts.unshift({ id, p: personaIdOf(p), d: delta, at: new Date().toISOString() });
+  Store.state.gifts = Store.state.gifts.slice(0, 1000);
+  Store.save();
+  closeSheets();
+  renderHome();
+  buzz(25);
+  toast(T('bondDelta', { d: (delta > 0 ? '+' : '') + delta }));
+  const medals = checkMedals(false);
+  say(key, { item: itemName(it) }, { toastNew: false }).then(() => {
+    const after = levelOf(totalPts());
+    if (after > before) say('levelUp', { lv: T('levels')[after] });
+    else if (medals.length) { toast(T('medalGet', { m: medalName(medals[0]) })); say('medal', { medal: medalName(medals[0]) }); }
+  });
+}
+
+/* ---------- collection: lines, souvenirs, prefectures ---------- */
+let collTab = 'lines', photoFor = null;
+$$('.tabs [data-tab]').forEach((b) => b.addEventListener('click', () => { collTab = b.dataset.tab; renderColl(); }));
+function renderColl() {
+  $$('.tabs [data-tab]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === collTab)));
+  const body = $('#coll-body'); body.textContent = '';
+  if (collTab === 'lines') renderCollLines(body);
+  else if (collTab === 'items') renderCollItems(body);
+  else if (collTab === 'medals') renderCollMedals(body);
+  else renderCollPrefs(body);
+}
+function renderCollLines(body) {
+  const p = persona(), pid = personaIdOf(p), L = lang();
+  const lines = linesOf(p), heard = (Store.state.heard[pid] || {})[L] || {};
+  const groups = {}; let total = 0, n = 0;
+  for (const k of Object.keys(lines)) {
+    const v = lines[k], arr = Array.isArray(v) ? v : [v];
+    arr.forEach((_, i) => {
+      const g = keyGroup(k); (groups[g] = groups[g] || []).push({ k, i, text: heard[`${k}#${i}`] || null });
+      total += 1; if (heard[`${k}#${i}`]) n += 1;
+    });
+  }
+  const head = document.createElement('p'); head.className = 'coll-head'; head.textContent = T('collProgress', { name: nameOf(p), n, total });
+  const note = document.createElement('p'); note.className = 'note'; note.textContent = T('collNote');
+  body.append(head, note);
+  for (const g of GROUP_ORDER) {
+    if (!groups[g]) continue;
+    const sec = document.createElement('div'); sec.className = 'coll-group';
+    const h = document.createElement('h4'); h.textContent = T('collGroups')[g]; sec.append(h);
+    const locked = groups[g].filter((e) => !e.text).length;
+    for (const e of groups[g]) {
+      if (!e.text) continue;
+      const b = document.createElement('button'); b.className = 'line-item';
+      const pl = document.createElement('span'); pl.className = 'play'; pl.textContent = '▶';
+      const tx = document.createElement('span'); tx.textContent = e.text;
+      b.append(pl, tx);
+      b.addEventListener('click', () => { activated = true; const [emo, gest] = emoFor(e.k, e.i); present(e.text, emo, gest, true); });
+      sec.append(b);
+    }
+    if (locked) {
+      const b = document.createElement('div'); b.className = 'line-item locked';
+      const pl = document.createElement('span'); pl.className = 'play'; pl.textContent = '?';
+      const tx = document.createElement('span'); tx.textContent = `${T('collHint')} ×${locked}`;
+      b.append(pl, tx); sec.append(b);
+    }
+    body.append(sec);
+  }
+}
+function renderCollItems(body) {
+  const got = Store.state.got;
+  const n = ALL_ITEMS.filter((it) => got[it.id]).length;
+  const head = document.createElement('p'); head.className = 'coll-head'; head.textContent = T('itemsProgress', { n, total: ALL_ITEMS.length });
+  const note = document.createElement('p'); note.className = 'note'; note.textContent = T('photoNote');
+  const grid = document.createElement('div'); grid.className = 'coll-grid';
+  for (const it of ALL_ITEMS) {
+    const cell = document.createElement('div'); cell.className = 'coll-cell';
+    const has = !!got[it.id];
+    cell.append(itemIcon(has ? it : null));
+    const nm = document.createElement('b'); nm.textContent = has ? itemName(it) : '？？？';
+    const sub = document.createElement('span');
+    sub.textContent = it.pref ? (it.pref[lang()] || it.pref.ja) : T(`rare${rarityOf(it.id)}`);
+    cell.append(nm, sub);
+    if (has) {
+      const cnt = document.createElement('span'); cnt.textContent = `×${got[it.id].n}`; cell.append(cnt);
+      const ph = document.createElement('button'); ph.className = 'link'; ph.textContent = Photos.get(it.id) ? T('changePhoto') : T('addPhoto');
+      ph.addEventListener('click', () => { photoFor = it.id; $('#photo-file').value = ''; $('#photo-file').click(); });
+      cell.append(ph);
+    }
+    grid.append(cell);
+  }
+  body.append(head, note, grid);
+}
+function renderCollPrefs(body) {
+  const visited = Store.state.prefs;
+  const codes = Object.keys(ITEMS.prefs);
+  const n = codes.filter((c) => visited[c]).length;
+  const head = document.createElement('p'); head.className = 'coll-head'; head.textContent = T('prefsProgress', { n });
+  body.append(head);
+  if (!n) { const e = document.createElement('p'); e.className = 'note'; e.textContent = T('prefNone'); body.append(e); }
+  const grid = document.createElement('div'); grid.className = 'pref-grid';
+  for (const c of codes) {
+    const d = document.createElement('div'); d.className = 'pref' + (visited[c] ? ' on' : ''); d.textContent = prefLabel(c);
+    grid.append(d);
+  }
+  body.append(grid);
+}
+async function fileToThumb(file, max = 320) {
+  const bmp = await createImageBitmap(file);
+  const s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.78);
+}
+$('#photo-file').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0]; if (!f || !photoFor) return;
+  try { const url = await fileToThumb(f); if (!Photos.set(photoFor, url)) toast(T('lookStorageFull')); } catch { /* unreadable image */ }
+  photoFor = null; renderColl();
+});
+
 /* ---------- settings ---------- */
 function renderSettings() {
   const p = persona();
@@ -1695,16 +3241,37 @@ function renderSettings() {
   $('#set-name').value = S().callName || '';
   $('#set-name').placeholder = T('callPh', { call: defaultCall(p) });
   $('#set-voice').checked = !!S().voice;
+  const sel = $('#set-voice-name'); sel.textContent = '';
+  const auto = document.createElement('option'); auto.value = ''; auto.textContent = T('voiceAuto'); sel.append(auto);
+  for (const v of Voice.list()) { const o = document.createElement('option'); o.value = v.name; o.textContent = v.name; sel.append(o); }
+  sel.value = (S().voiceNames || {})[lang()] || '';
   $('#set-pitch').value = S().pitchAdj || 0;
+  $('#set-rate').value = S().rateMul || 1;
+  $('#set-volume').value = S().volume ?? 1;
+  $('#set-greet').checked = !!S().greetOn;
   $('#set-break').value = String(S().breakMin);
   $$('input[name="verb"]').forEach((r) => { r.checked = r.value === S().verbosity; });
+  $$('input[name="motion"]').forEach((r) => { r.checked = r.value === S().motion; });
+  $$('input[name="drivechar"]').forEach((r) => { r.checked = r.value === S().driveChar; });
+  $('#set-theme').value = S().theme || 'auto';
+  $('#set-zoom').value = zoomLevel();
+  $('#set-bubble-op').value = S().bubbleOp ?? 1;
+  $('#set-bubble-fade').checked = !!S().bubbleFade;
+  $('#set-haptics').checked = !!S().haptics;
   $('#set-stops').checked = !!S().stopsOn;
   $('#set-stops-info').checked = !!S().stopsInfo;
   $('#set-voice-reply').checked = !!S().voiceReply;
   $('#set-places').checked = !!S().placesOn;
+  $('#set-weather').checked = !!S().weatherOn;
+  $('#set-safety').checked = !!S().safetyOn;
+  $('#pip-note').hidden = !pipSupported();
   $('#mic-note').textContent = !SR || micBlocked ? T('micUnavailable') : '';
   $('#voice-note').textContent = !Voice.ok ? T('voiceNoTTS') : (Voice.voice ? T('voiceUsing', { v: Voice.voice.name }) : T('voiceNoLang'));
+  $('#data-tools').hidden = IN_CLAUDE;
+  $('#data-unavailable').hidden = !IN_CLAUDE;
 }
+const bindToggle = (id, key, after) => $(id).addEventListener('change', (e) => { S()[key] = e.target.checked; saveSoon(); after && after(); });
+const bindRange = (id, key, after) => $(id).addEventListener('input', (e) => { S()[key] = Number(e.target.value); saveSoon(); after && after(); });
 $('#set-lang').addEventListener('change', (e) => {
   S().lang = e.target.value; saveSoon();
   Voice.pick();
@@ -1712,59 +3279,325 @@ $('#set-lang').addEventListener('change', (e) => {
   say('hello');
 });
 $('#set-name').addEventListener('input', (e) => { S().callName = e.target.value.trim(); saveSoon(); });
-$('#set-voice').addEventListener('change', (e) => { S().voice = e.target.checked; if (!S().voice && Voice.ok) speechSynthesis.cancel(); saveSoon(); });
-$('#set-pitch').addEventListener('input', (e) => { S().pitchAdj = Number(e.target.value); saveSoon(); });
+bindToggle('#set-voice', 'voice', () => { if (!S().voice && Voice.ok) speechSynthesis.cancel(); });
+$('#set-voice-name').addEventListener('change', (e) => { S().voiceNames[lang()] = e.target.value; saveSoon(); Voice.pick(); renderSettings(); });
+bindRange('#set-pitch', 'pitchAdj');
+bindRange('#set-rate', 'rateMul');
+bindRange('#set-volume', 'volume');
+bindToggle('#set-greet', 'greetOn');
 $('#set-break').addEventListener('change', (e) => { S().breakMin = Number(e.target.value); saveSoon(); });
 $$('input[name="verb"]').forEach((r) => r.addEventListener('change', (e) => { if (e.target.checked) { S().verbosity = e.target.value; saveSoon(); } }));
-$('#set-stops').addEventListener('change', (e) => { S().stopsOn = e.target.checked; saveSoon(); });
-$('#set-stops-info').addEventListener('change', (e) => { S().stopsInfo = e.target.checked; saveSoon(); });
-$('#set-voice-reply').addEventListener('change', (e) => { S().voiceReply = e.target.checked; saveSoon(); });
-$('#set-places').addEventListener('change', (e) => { S().placesOn = e.target.checked; saveSoon(); });
-$('#voice-test').addEventListener('click', () => { activated = true; Voice.pick(); say('voiceTest'); renderSettings(); });
+$$('input[name="motion"]').forEach((r) => r.addEventListener('change', (e) => { if (e.target.checked) { S().motion = e.target.value; saveSoon(); } }));
+$$('input[name="drivechar"]').forEach((r) => r.addEventListener('change', (e) => { if (e.target.checked) { S().driveChar = e.target.value; saveSoon(); if (drive) document.body.dataset.driveChar = S().driveChar; } }));
+$('#set-theme').addEventListener('change', (e) => { S().theme = e.target.value; saveSoon(); applyTheme(); });
+$('#set-zoom').addEventListener('input', (e) => setZoom(Number(e.target.value)));
+bindRange('#set-bubble-op', 'bubbleOp', applyBubble);
+bindToggle('#set-bubble-fade', 'bubbleFade', applyBubble);
+bindToggle('#set-haptics', 'haptics', () => buzz(30));
+bindToggle('#set-stops', 'stopsOn');
+bindToggle('#set-stops-info', 'stopsInfo');
+bindToggle('#set-voice-reply', 'voiceReply');
+bindToggle('#set-places', 'placesOn');
+bindToggle('#set-weather', 'weatherOn', updateRainFX);
+$('#set-safety').addEventListener('change', async (e) => {
+  S().safetyOn = e.target.checked; saveSoon();
+  // iPhone asks for motion-sensor permission, and only from a tap
+  if (e.target.checked && !(await Safety.permit())) { S().safetyOn = false; e.target.checked = false; saveSoon(); toast(T('safetyNoSensor')); }
+});
+$('#rain-test').addEventListener('click', () => { const was = S().weatherOn; if (!was) { S().weatherOn = true; } Weather.demo(); if (!was) setTimeout(() => { S().weatherOn = false; updateRainFX(); }, 10100); closeSheets(); });
+$('#voice-test').addEventListener('click', () => { activated = true; Voice.pick(); say('voiceTest', {}, { toastNew: false }); renderSettings(); });
+$('#open-look-settings').addEventListener('click', () => openLook(S().persona));
 
+/* data: export / import / reset */
+$('#export-btn').addEventListener('click', () => {
+  const d = new Date();
+  const name = `drive-buddy-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`;
+  const blob = new Blob([JSON.stringify({ app: 'drive-buddy', v: 3, exportedAt: d.toISOString(), state: Store.state, photos: Photos.all() })], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.append(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+});
+let importData = null;
+$('#import-file').addEventListener('change', async (e) => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  try {
+    const j = JSON.parse(await f.text());
+    if (!j || j.app !== 'drive-buddy' || !isObj(j.state)) throw new Error('shape');
+    importData = j; $('#import-confirm').hidden = false; $('#data-note').textContent = '';
+  } catch { importData = null; $('#data-note').textContent = T('importFail'); }
+  e.target.value = '';
+});
+$('#import-no').addEventListener('click', () => { importData = null; $('#import-confirm').hidden = true; });
+$('#import-yes').addEventListener('click', async () => {
+  if (!importData) return;
+  Store.state = normalize(importData.state);
+  if (isObj(importData.photos)) Photos.replace(importData.photos);
+  importData = null; $('#import-confirm').hidden = true;
+  Store.save(); applyTheme(); applyBubble(); Voice.pick(); applyI18n(); await applyLook();
+  $('#data-note').textContent = T('importDone');
+});
+$('#reset-start').addEventListener('click', () => { $('#reset-confirm').hidden = false; });
+$('#reset-no').addEventListener('click', () => { $('#reset-confirm').hidden = true; });
+$('#reset-yes').addEventListener('click', () => {
+  const keep = { lang: S().lang, persona: S().persona, looks: S().looks, onboarded: true, callName: S().callName };
+  Store.state.settings = { ...defaultSettings(), ...keep };
+  Store.save(); $('#reset-confirm').hidden = true;
+  applyTheme(); applyBubble(); Voice.pick(); frame(); updateRainFX(); renderSettings();
+});
+
+/* =========================================================
+   Looks: the 3D model each character uses
+   ========================================================= */
+let lookPid = 'kohai';
+const lookIdFor = (pid) => (S().looks || {})[pid] || (!IN_CLAUDE && DEFAULT_LOOK[pid]) || 'michi';
+const tintFor = (pid) => LOOK_TINT[pid === 'custom' ? (Store.state.custom?.base || 'kohai') : pid] || null;
+const memModels = new Map(); // models we could not store on the device
+const sampleBufs = new Map();
+async function bytesForLook(key) {
+  if (memModels.has(key)) return memModels.get(key).bytes;
+  try { const rec = await IDB.get(key); return rec ? rec.bytes : null; } catch { return null; }
+}
+async function loadLookModel(key, onProgress) {
+  if (key === 'michi') {
+    if (!Char.michiBuf) Char.michiBuf = await fetchBundledModel(onProgress);
+    await loadModel(Char.michiBuf.slice(0));
+  } else if (SAMPLE_LOOKS[key]) {
+    if (!sampleBufs.has(key)) sampleBufs.set(key, await fetchBundledModel(onProgress, `models/${key}.vrm`));
+    await loadModel(sampleBufs.get(key).slice(0));
+  } else {
+    const bytes = await bytesForLook(key);
+    if (!bytes) throw new Error('missing model');
+    await loadModel(bytes.slice(0));
+  }
+  Char.modelKey = key;
+}
+let lookBusy = Promise.resolve();
+function applyLook() {
+  lookBusy = lookBusy.then(async () => {
+    if (!renderer) return;
+    const pid = S().persona, look = lookIdFor(pid);
+    const key = look.startsWith('michi') ? 'michi' : look;
+    if (Char.modelKey !== key) {
+      $('#loading').hidden = false;
+      try { await loadLookModel(key, (p) => { $('#loading-bar').style.width = `${Math.round(p * 100)}%`; }); }
+      catch (e) {
+        console.warn('look failed, back to default', e);
+        if (key !== 'michi') { delete S().looks[pid]; saveSoon(); await loadLookModel('michi'); }
+        else throw e;
+      } finally { $('#loading').hidden = true; }
+    }
+    if (Char.modelKey === 'michi') applyTint(look === 'michi-orig' ? null : tintFor(pid));
+  });
+  return lookBusy;
+}
+function setLook(pid, id) {
+  S().looks[pid] = id; saveSoon();
+  renderLookSheet();
+  if (pid === S().persona) applyLook().then(() => say('newModel', {}, { toastNew: false }));
+}
+function openLook(pid) { lookPid = pid; openSheet('#sheet-look'); }
+function swatch(t, given) {
+  const sw = document.createElement('span'); sw.className = 'sw';
+  const cols = given || (t ? [t.hair, t.tops, t.iris, t.hair] : ['#7a5a46', '#f4f4f4', '#6b4a33', '#7a5a46']);
+  for (const c of cols) { const i = document.createElement('i'); i.style.background = c; sw.append(i); }
+  return sw;
+}
+async function renderLookSheet() {
+  const pid = lookPid, cur = lookIdFor(pid);
+  const p = pid === 'custom' ? Store.state.custom : PRESETS[pid];
+  $('#l-title').textContent = T('lookTitle', { name: p ? nameOf(p) : '' });
+  const bi = $('#look-builtin'); bi.textContent = '';
+  const builtin = [['michi', T('lookTinted'), tintFor(pid)], ['michi-orig', T('lookOriginal'), null]];
+  if (!tintFor(pid)) builtin.splice(1, 1);
+  if (!IN_CLAUDE) for (const [id, sl] of Object.entries(SAMPLE_LOOKS)) builtin.push([id, sl[lang()] || sl.ja, null, sl.sw, `models/${id}.jpg`]);
+  for (const [id, label, t, sw, thumb] of builtin) {
+    const b = document.createElement('button'); b.className = 'look-cell' + (cur === id ? ' on' : '');
+    const s = document.createElement('span'); s.textContent = label;
+    if (thumb) { const img = document.createElement('img'); img.src = thumb; img.alt = ''; img.loading = 'lazy'; img.onerror = () => img.replaceWith(swatch(null, sw)); b.append(img, s); }
+    else b.append(swatch(t, sw), s);
+    b.addEventListener('click', () => setLook(pid, id));
+    bi.append(b);
+  }
+  const mine = $('#look-mine'); mine.textContent = '';
+  let recs = [];
+  try { recs = await IDB.all(); } catch {}
+  for (const [k, v] of memModels) if (!recs.find((r) => r.id === k)) recs.push({ id: k, ...v });
+  recs = recs.filter((r) => r.id.startsWith('user:') || r.id.startsWith('cc0:'));
+  if (!recs.length) { const n = document.createElement('p'); n.className = 'note'; n.textContent = T('lookNone'); mine.append(n); }
+  for (const r of recs) {
+    const row = document.createElement('div'); row.className = 'mine-row';
+    const nm = document.createElement('div'); nm.className = 'nm';
+    const b = document.createElement('b'); b.textContent = r.name || r.id;
+    const lic = document.createElement('div'); lic.className = 'note'; lic.textContent = r.license ? T('lookLicense', { s: r.license }) : T('lookLicenseUnknown');
+    nm.append(b, lic);
+    const use = document.createElement('button'); use.className = 'btn small';
+    use.textContent = cur === r.id ? T('inUse') : T('lookUse'); use.disabled = cur === r.id;
+    use.addEventListener('click', () => setLook(pid, r.id));
+    const del = document.createElement('button'); del.className = 'link danger'; del.textContent = T('lookDelete');
+    del.addEventListener('click', async () => {
+      try { await IDB.del(r.id); } catch {}
+      memModels.delete(r.id);
+      for (const [k, v] of Object.entries(S().looks)) if (v === r.id) delete S().looks[k];
+      saveSoon(); renderLookSheet(); applyLook();
+    });
+    row.append(nm, use, del);
+    mine.append(row);
+  }
+  $('#gallery-load').hidden = IN_CLAUDE;
+  if (IN_CLAUDE) $('#gallery-note').textContent = T('lookUnavailable');
+  if (!Motion.ready) await loadMotionsFromStore();
+  renderMotions();
+}
+function renderMotions() {
+  const box = $('#mot-list'); box.textContent = '';
+  if (!Motion.anims.size) { const n = document.createElement('p'); n.className = 'note'; n.textContent = T('lookNone'); box.append(n); return; }
+  const slots = S().motionSlots;
+  const slotOf = (id) => Object.keys(slots).find((k) => slots[k] === id) || '';
+  for (const [id, rec] of Motion.anims) {
+    const row = document.createElement('div'); row.className = 'mot-row';
+    const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = `${rec.name} (${rec.anim.duration.toFixed(1)}s)`;
+    const tryB = document.createElement('button'); tryB.className = 'btn small'; tryB.textContent = T('motTry');
+    tryB.addEventListener('click', () => { closeSheets(); setTimeout(() => playMotion(id), 250); });
+    const del = document.createElement('button'); del.className = 'link danger'; del.textContent = T('lookDelete');
+    del.addEventListener('click', async () => {
+      try { await IDB.del(id); } catch {}
+      memModels.delete(id); Motion.anims.delete(id);
+      for (const k of Object.keys(slots)) if (slots[k] === id) delete slots[k];
+      saveSoon(); renderMotions();
+    });
+    const sel = document.createElement('select'); sel.setAttribute('aria-label', T('motSlot'));
+    const labels = T('motSlots');
+    for (const k of ['', ...MOT_SLOTS]) { const o = document.createElement('option'); o.value = k; o.textContent = labels[k || 'off']; sel.append(o); }
+    sel.value = slotOf(id);
+    sel.addEventListener('change', () => {
+      for (const k of Object.keys(slots)) if (slots[k] === id) delete slots[k];
+      if (sel.value) slots[sel.value] = id;
+      saveSoon(); renderMotions();
+    });
+    row.append(nm, tryB, del, sel);
+    box.append(row);
+  }
+}
+$('#vrma-file').addEventListener('change', async (e) => {
+  const files = [...(e.target.files || [])]; const note = $('#mot-note');
+  let ok = 0, bad = 0;
+  for (const f of files) {
+    try {
+      const bytes = await f.arrayBuffer();
+      const anim = await parseVRMA(bytes);
+      const id = 'vrma:' + Math.random().toString(36).slice(2, 10);
+      const name = f.name.replace(/\.(vrma|glb)$/i, '');
+      await storeModel({ id, name, bytes, kind: 'vrma', addedAt: new Date().toISOString() });
+      Motion.anims.set(id, { name, anim });
+      // fill an empty moment automatically: greeting-like names go to "wave", the rest to free slots
+      const slots = S().motionSlots;
+      const guess = /挨拶|あいさつ|greet|wave|hello|bow|お辞儀/i.test(name) ? 'wave' : /idle|待機/i.test(name) ? 'idle' : /v.?サイン|peace|pose|ポーズ|spin|回る/i.test(name) ? 'hop' : null;
+      if (guess && !slots[guess]) slots[guess] = id;
+      ok++;
+    } catch { bad++; }
+  }
+  saveSoon();
+  note.textContent = [ok ? T('motLoaded', { n: ok }) : '', bad ? T('motFail') : ''].filter(Boolean).join(' ');
+  e.target.value = '';
+  renderMotions();
+});
+async function storeModel(rec) {
+  try { await IDB.put(rec); return true; }
+  catch { memModels.set(rec.id, rec); return false; }
+}
 $('#vrm-file').addEventListener('change', async (e) => {
   const f = e.target.files && e.target.files[0];
   if (!f || !renderer) return;
   const note = $('#vrm-note');
   note.textContent = T('vrmLoading');
-  const url = URL.createObjectURL(f);
   try {
-    const vrm = await loadModel(url);
-    const nm = vrm.meta && (vrm.meta.name || vrm.meta.title);
-    note.textContent = T('vrmLoaded', { n: nm ? `: ${nm}` : '' });
-    closeSheets();
-    say('newModel');
+    const bytes = await f.arrayBuffer();
+    const vrm = await loadModel(bytes.slice(0));
+    const id = 'user:' + Math.random().toString(36).slice(2, 10);
+    const nm = (vrm.meta && (vrm.meta.name || vrm.meta.title)) || f.name.replace(/\.(vrm|glb)$/i, '');
+    const ok = await storeModel({ id, name: nm, bytes, license: licenseSummary(vrm.meta), addedAt: new Date().toISOString() });
+    Char.modelKey = null; // force a clean reload through applyLook
+    note.textContent = ok ? T('vrmLoaded', { n: `: ${nm}` }) : T('lookStorageFull');
+    setLook(lookPid, id);
   } catch {
     note.textContent = T('vrmFail');
-  } finally { URL.revokeObjectURL(url); }
+    applyLook();
+  } finally { e.target.value = ''; }
 });
-$('#vrm-reset').addEventListener('click', async () => {
-  if (!renderer) return;
-  $('#vrm-note').textContent = T('vrmLoading');
-  try { await loadModel(await fetchBundledModel()); $('#vrm-note').textContent = T('vrmBack'); closeSheets(); say('tap'); }
-  catch { $('#vrm-note').textContent = T('vrmFail'); }
+
+/* free CC0 avatars (100Avatars by Polygonal Mind, listed by the Open Source Avatars registry) */
+const CC0_SETS = ['100avatars-r1', '100avatars-r2', '100avatars-r3'];
+const REGISTRY = 'https://raw.githubusercontent.com/ToxSam/open-source-avatars/main/data/avatars/';
+$('#gallery-load').addEventListener('click', async () => {
+  const note = $('#gallery-note'), grid = $('#gallery');
+  note.textContent = T('lookDownloading'); grid.textContent = '';
+  try {
+    const lists = await Promise.all(CC0_SETS.map((s) => fetch(REGISTRY + s + '.json').then((r) => (r.ok ? r.json() : []))));
+    const avatars = lists.flat().filter((a) => a && a.model_file_url && (a.format || 'VRM').toUpperCase() === 'VRM' && a.is_public !== false);
+    if (!avatars.length) throw new Error('empty');
+    note.textContent = '';
+    for (const a of avatars) {
+      const b = document.createElement('button'); b.className = 'look-cell';
+      const img = document.createElement('img'); img.loading = 'lazy'; img.alt = ''; if (a.thumbnail_url) img.src = a.thumbnail_url;
+      const s = document.createElement('span'); s.textContent = a.name;
+      b.append(img, s);
+      b.addEventListener('click', () => pickCC0(a));
+      grid.append(b);
+    }
+  } catch { note.textContent = T('lookOnlineFail'); }
 });
+async function pickCC0(a) {
+  const note = $('#gallery-note');
+  const id = 'cc0:' + a.id;
+  note.textContent = T('lookDownloading');
+  try {
+    let have = false;
+    try { have = !!(await IDB.get(id)); } catch {}
+    if (!have && !memModels.has(id)) {
+      const res = await fetch(a.model_file_url);
+      if (!res.ok) throw new Error('http');
+      const bytes = await res.arrayBuffer();
+      await storeModel({ id, name: a.name, bytes, license: 'CC0 (100Avatars / Polygonal Mind)', addedAt: new Date().toISOString() });
+    }
+    note.textContent = '';
+    setLook(lookPid, id);
+  } catch { note.textContent = T('lookDlFail'); }
+}
+/* leaving the app for VRoid sites */
+$$('[data-leave]').forEach((b) => b.addEventListener('click', () => {
+  $('#leave-text').textContent = T('lookLeave', { site: b.dataset.site });
+  $('#leave-go').href = b.dataset.leave;
+  $('#leave-confirm').hidden = false;
+}));
+$('#leave-no').addEventListener('click', () => { $('#leave-confirm').hidden = true; });
+$('#leave-go').addEventListener('click', () => { $('#leave-confirm').hidden = true; });
 
 /* ---------- persona sheet ---------- */
 function setPersona(id) {
   S().persona = id; saveSoon();
+  Voice.pick();
   renderIdentity();
   renderPersonaSheet();
   closeSheets();
-  say('hello');
+  applyLook().then(() => say('hello'));
 }
-function personaCard(p, id) {
+function personaCard(p, id, { onPick, compact = false } = {}) {
   const on = S().persona === id;
   const card = document.createElement('div'); card.className = 'pcard' + (on ? ' on' : '');
   const n = document.createElement('div'); n.className = 'pn'; n.textContent = nameOf(p);
   const t = document.createElement('div'); t.className = 'pt'; t.textContent = taglineOf(p);
   let actionEl;
   if (on) { actionEl = document.createElement('span'); actionEl.className = 'badge pb'; actionEl.textContent = T('inUse'); }
-  else { actionEl = document.createElement('button'); actionEl.className = 'btn small pb'; actionEl.textContent = T('use'); actionEl.addEventListener('click', () => setPersona(id)); }
+  else { actionEl = document.createElement('button'); actionEl.className = 'btn small pb'; actionEl.textContent = T('use'); actionEl.addEventListener('click', () => (onPick ? onPick(id) : setPersona(id))); }
   const sample = document.createElement('p'); sample.className = 'ps';
   const lines = linesOf(p);
   sample.textContent = '「' + String(lines.hello || '').replace(/\{name\}/g, (S().callName || '').trim() || defaultCall(p)) + '」';
   card.append(n, actionEl, t, sample);
+  if (!compact) {
+    const lk = document.createElement('button'); lk.className = 'link'; lk.style.gridColumn = '1 / -1'; lk.style.justifySelf = 'start';
+    lk.textContent = T('lookBtn'); lk.addEventListener('click', () => openLook(id));
+    card.append(lk);
+  }
   if (isCustom(p) && p.lang !== lang()) {
     const warn = document.createElement('p'); warn.className = 'note'; warn.style.gridColumn = '1 / -1';
     warn.textContent = T('genNeedLang', { lang: I18N[p.lang]?.langName || p.lang });
@@ -1791,7 +3624,6 @@ function sameTraits() {
   const c = Store.state.custom && Store.state.custom.traits; if (!c) return false;
   return c.rel === $('#tr-rel').value && c.temp === $('#tr-temp').value && c.quirk === $('#tr-quirk').value;
 }
-const rnd = (arr) => arr[(Math.random() * arr.length) | 0];
 $('#tr-random').addEventListener('click', () => {
   $('#tr-rel').value = rnd(TRAITS.rel); $('#tr-temp').value = rnd(TRAITS.temp); $('#tr-quirk').value = rnd(TRAITS.quirk);
   renderPersonaSheet();
@@ -1815,7 +3647,8 @@ function buildPrompt(traits, L, base) {
     'Rules:',
     '- Driving safety comes first. Never encourage speeding, using the phone while driving, or driving while sleepy. Advice about breaks and sleep stays sincere even when the character teases.',
     '- Friendly only: no romantic or sexual content.',
-    '- Keep each {placeholder} wherever the reference line for the same key uses it, spelled exactly the same. {name} = how the character addresses the driver, {h} = a number of hours, {t} = an elapsed-time phrase, {n} = a count, {lv} = a bond level name, {dist} = a distance phrase, {stop} = a rest-stop name, {info} = a short sentence about opening hours and crowding (it may be empty, so the line must still read well without it).',
+    '- Keep each {placeholder} wherever the reference line for the same key uses it, spelled exactly the same. {name} = how the character addresses the driver, {h} = a number of hours, {t} = an elapsed-time phrase, {n} = a count, {lv} = a bond level name, {dist} = a distance phrase, {stop} = a rest-stop name, {info} = a short sentence about opening hours and crowding (it may be empty, so the line must still read well without it), {min} = a number of minutes, {item} = a souvenir name, {place} = a prefecture name, {event} = a seasonal day such as Christmas, {medal} = an achievement name.',
+    '- giftLove / giftLike / giftNeutral / giftDislike are reactions when the driver gives the character a souvenir it loves / likes / feels neutral about / dislikes.',
     '- When the reference value for a key is a list, return a list with the same number of items.',
     '- arriveGoodBreak, arriveNoBreak and arriveLate are short add-on sentences appended right after an arrival line.',
     '',
@@ -1833,8 +3666,8 @@ function validateCustom(raw, base, L) {
   let used = 0;
   for (const k of LINE_KEYS) {
     const ref = refLines[k], got = raw.lines[k];
-    const need = new Set((JSON.stringify(ref).match(/\{(h|t|n|lv|dist|stop|info)\}/g) || []));
-    const okStr = (s) => typeof s === 'string' && s.trim() && s.length <= 220 && [...need].every((ph) => s.includes(ph) || (Array.isArray(ref)));
+    const need = new Set((JSON.stringify(ref).match(/\{(h|t|n|lv|dist|stop|info|min|item|place|event|medal)\}/g) || []));
+    const okStr = (s) => typeof s === 'string' && s.trim() && s.length <= 220 && [...need].every((ph) => s.includes(ph));
     if (Array.isArray(ref)) {
       const arr = Array.isArray(got) ? got.filter((s) => typeof s === 'string' && s.trim() && s.length <= 220) : [];
       const fine = arr.filter((s) => [...need].every((ph) => s.includes(ph)));
@@ -1857,7 +3690,7 @@ $('#tr-generate').addEventListener('click', async () => {
   const traits = { rel: $('#tr-rel').value, temp: $('#tr-temp').value, quirk: $('#tr-quirk').value };
   const L = lang(), baseId = TEMP_BASE[traits.temp] || 'kohai', base = PRESETS[baseId];
   let sample = null;
-  try { sample = window.claude && typeof window.claude.use === 'function' ? await window.claude.use('sample') : null; } catch {}
+  try { sample = IN_CLAUDE ? await window.claude.use('sample') : null; } catch {}
   if (!sample) { status.textContent = T('genNoSample'); return; }
   genCtl = new AbortController();
   btn.disabled = true; cancel.hidden = false;
@@ -1883,25 +3716,70 @@ $('#tr-generate').addEventListener('click', async () => {
 });
 $('#gen-cancel').addEventListener('click', () => { if (genCtl) genCtl.abort(); });
 
+/* ---------- welcome (first run) ---------- */
+let welcomePick = null;
+function renderWelcome() {
+  const box = $('#welcome-cards'); box.textContent = '';
+  if (!welcomePick) welcomePick = S().persona || 'kohai';
+  for (const id of PRESET_ORDER) {
+    const card = personaCard(PRESETS[id], id, { compact: true, onPick: (pick) => { welcomePick = pick; S().persona = pick; renderIdentity(); applyLook().then(() => say('hello', {}, { toastNew: false })); renderWelcome(); } });
+    box.append(card);
+  }
+  $('#welcome-name').value = S().callName || '';
+}
+$('#welcome-start').addEventListener('click', () => {
+  S().callName = $('#welcome-name').value.trim();
+  S().onboarded = true;
+  Store.save();
+  closeSheets();
+  renderIdentity(); renderHome();
+  say('hello', {}, { toastNew: false });
+});
+
 /* =========================================================
    Boot
    ========================================================= */
 updateSky();
+applyTheme();
+applyBubble();
 applyI18n();
 setMode('home');
 const glOK = initGL();
-const storeReady = Store.init().then(() => { Voice.pick(); applyI18n(); });
+const storeReady = Store.init().then(() => { Voice.pick(); applyTheme(); applyBubble(); applyI18n(); checkMedals(false); });
 const settled = Promise.race([storeReady, new Promise((r) => setTimeout(r, 4000))]);
-const greet = () => settled.then(() => say(GREET_KEY[tod()]));
+const greet = () => settled.then(() => {
+  if (!S().onboarded && Store.state.drives.length === 0) { openSheet('#sheet-welcome'); return; }
+  say(specialGreeting() || GREET_KEY[tod()], specialVars, { silent: !S().greetOn, toastNew: false });
+});
+// Seasonal days and anniversaries replace the usual greeting once (never late at night, when safety comes first).
+const SEASON_DAYS = { '1-1': 'newyear', '2-14': 'valentine', '3-3': 'hina', '7-7': 'tanabata', '10-31': 'halloween', '12-24': 'xmasEve', '12-25': 'xmas', '12-31': 'nye' };
+let specialVars = {};
+function specialGreeting() {
+  specialVars = {};
+  if (tod() === 'late') return null;
+  const d = new Date(), key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  const ev = SEASON_DAYS[`${d.getMonth() + 1}-${d.getDate()}`];
+  if (ev && S().seasonSaid !== key) { S().seasonSaid = key; saveSoon(); specialVars = { event: T('events')[ev] }; return 'season'; }
+  const ds = Store.state.drives; if (!ds.length) return null;
+  const first = Math.min(...ds.map((x) => new Date(x.start).getTime()));
+  const days = Math.floor((Date.now() - first) / 86400000);
+  const mark = [365, 100, 30].find((m) => days >= m && days < m + 7 && !S().annivSaid.includes(m));
+  if (mark) { S().annivSaid.push(mark); saveSoon(); specialVars = { n: mark }; return 'anniv'; }
+  return null;
+}
 // The first load on a slow or freshly deployed site can fail, so try a few times before showing the stand-in.
-async function loadBundledWithRetry() {
+async function bootLook() {
   let lastErr;
   for (let i = 0; i < 3; i++) {
     try {
       $('#loading-bar').style.width = '0%';
-      return await loadModel(await fetchBundledModel((p) => { $('#loading-bar').style.width = `${Math.round(p * 100)}%`; }));
+      Char.modelKey = null;
+      await applyLook();
+      return;
     } catch (e) {
       lastErr = e; console.warn('model load failed', i + 1, e);
+      lookBusy = Promise.resolve();
+      Char.michiBuf = null;
       await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
     }
   }
@@ -1909,7 +3787,7 @@ async function loadBundledWithRetry() {
 }
 function bootModel(first) {
   $('#loading').hidden = false; $('#fallback').hidden = true; $('#model-retry').hidden = true;
-  loadBundledWithRetry()
+  settled.then(bootLook)
     .then(() => { $('#loading').hidden = true; if (first) greet(); })
     .catch((err) => {
       console.error(err);
@@ -1925,5 +3803,20 @@ if (glOK) {
   $('#fallback').hidden = false;
   greet();
 }
-if (/[?&]debug\b/.test(location.search)) window.__dbg = { Char, say, gesture, camera, Store, S, applyI18n, setPersona, answerStop, get drive() { return drive; } };
+// Weather at home: only when location permission was already given (never prompt on open).
+storeReady.then(async () => {
+  if (!S().weatherOn || IN_CLAUDE || !navigator.permissions) return;
+  try {
+    const st = await navigator.permissions.query({ name: 'geolocation' });
+    if (st.state !== 'granted') return;
+    const f = await getFix(10000, 10 * 60 * 1000);
+    if (f) Weather.check(f.lat, f.lon);
+  } catch {}
+});
+if (/[?&](fps|debug)\b/.test(location.search)) {
+  Quality.meter = document.createElement('div');
+  Quality.meter.style.cssText = 'position:absolute;left:8px;bottom:8px;z-index:5;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;font:12px/1.4 monospace;pointer-events:none';
+  stage.append(Quality.meter);
+}
+if (/[?&]debug\b/.test(location.search)) window.__dbg = { fetchRealStops, takePhoto, checkMedals, Safety, Pip, get now() { return clock ? clock.elapsedTime : 0; }, playMotion, Motion, parseVRMA, simulateMotion, Quality, Char, say, gesture, camera, Store, S, applyI18n, setPersona, answerStop, Weather, enterRest, grantItem, applyLook, setLook, get drive() { return drive; } };
 </script>

@@ -1,0 +1,21 @@
+// サンプルアバターの表示確認:立ち姿・手振り・傘
+import { createRequire } from 'module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+const look = process.argv[2];
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const ctx = await browser.newContext({ viewport: { width: 400, height: 860 }, locale: 'ja-JP', colorScheme: 'light' });
+await ctx.addInitScript((look) => localStorage.setItem('drive-buddy-state-v1', JSON.stringify({ v: 3, settings: { lang: 'ja', onboarded: true, greetOn: false, persona: 'kohai', looks: { kohai: look } }, drives: [] })), look);
+const page = await ctx.newPage();
+const errs = []; page.on('pageerror', (e) => errs.push(e.message));
+await page.route('https://fonts.**', (r) => r.abort());
+await page.goto('http://127.0.0.1:8766/?debug');
+await page.waitForFunction(() => document.querySelector('#loading').hidden && window.__dbg && __dbg.Char.vrm, null, { timeout: 90000 });
+await page.waitForTimeout(3000);
+const clip = { x: 0, y: 60, width: 400, height: 400 };
+await page.screenshot({ path: `shots/s-${look}-1.png`, clip });
+await page.evaluate(() => __dbg.gesture('wave')); await page.waitForTimeout(1000);
+await page.screenshot({ path: `shots/s-${look}-2.png`, clip });
+await page.evaluate(() => __dbg.Weather.set(true)); await page.waitForTimeout(3500);
+await page.screenshot({ path: `shots/s-${look}-3.png`, clip });
+console.log(look, 'flip', await page.evaluate(() => __dbg.Char.flip), errs.join(' | ') || 'エラーなし');
+await browser.close();

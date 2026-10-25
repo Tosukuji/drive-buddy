@@ -1,0 +1,28 @@
+// 5人目「ソラ」とキャラ別の初期の見た目を確認
+import { createRequire } from 'module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const ctx = await browser.newContext({ viewport: { width: 400, height: 860 }, locale: 'ja-JP', timezoneId: 'America/New_York', colorScheme: 'light' });
+const page = await ctx.newPage();
+const errs = []; page.on('pageerror', (e) => errs.push(e.message));
+await page.route('https://fonts.**', (r) => r.abort());
+await page.goto('http://127.0.0.1:8766/?debug');
+await page.waitForFunction(() => document.querySelector('#loading').hidden && window.__dbg && __dbg.Char.vrm, null, { timeout: 90000 });
+await page.waitForTimeout(800);
+console.log('はじめての画面のキャラ数:', await page.$$eval('#welcome-cards .pcard', (e) => e.length));
+await page.$eval('#welcome-cards', (e) => e.lastElementChild.scrollIntoView());
+await page.screenshot({ path: 'shots/sora-welcome.png' });
+await page.$$eval('#welcome-cards .pcard button.btn', (b) => b[b.length - 1].click());
+await page.waitForFunction(() => __dbg.S().persona === 'sora' && document.querySelector('#loading').hidden && __dbg.Char.vrm.meta.name !== undefined, null, { timeout: 60000 }).catch(() => {});
+await page.waitForTimeout(2500);
+await page.click('#welcome-start'); await page.waitForTimeout(1500);
+console.log('キャラ:', await page.$eval('#char-name', (e) => e.textContent), '| 見た目:', await page.evaluate(() => __dbg.Char.modelKey), '| セリフ:', await page.evaluate(() => document.querySelector('#line-sr').textContent));
+await page.screenshot({ path: 'shots/sora-home.png' });
+await page.evaluate(() => __dbg.setPersona('genki')); await page.waitForTimeout(3000);
+console.log('ヒナタの見た目:', await page.evaluate(() => __dbg.Char.modelKey));
+await page.screenshot({ path: 'shots/genki-home.png' });
+await page.evaluate(() => __dbg.setPersona('ottori')); await page.waitForTimeout(3000);
+console.log('ユズの見た目:', await page.evaluate(() => __dbg.Char.modelKey));
+await page.screenshot({ path: 'shots/ottori-home.png' });
+console.log(errs.join('\n') || 'エラーなし');
+await browser.close();

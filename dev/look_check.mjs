@@ -1,0 +1,23 @@
+// 見た目の確認:キャラ別の色、傘、手振り、暗い画面
+import { createRequire } from 'module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+const scheme = process.argv[2] || 'light';
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const ctx = await browser.newContext({ viewport: { width: 400, height: 860 }, locale: 'ja-JP', timezoneId: 'Asia/Tokyo', colorScheme: scheme });
+await ctx.addInitScript(() => localStorage.setItem('drive-buddy-state-v1', JSON.stringify({ v: 3, settings: { lang: 'ja', onboarded: true, greetOn: false, persona: 'genki' }, drives: [] })));
+const page = await ctx.newPage();
+const errs = []; page.on('pageerror', (e) => errs.push(e.message));
+await page.route('https://fonts.**', (r) => r.abort());
+await page.goto('http://127.0.0.1:8766/?debug');
+await page.waitForFunction(() => document.querySelector('#loading').hidden && window.__dbg && __dbg.Char.vrm, null, { timeout: 90000 });
+await page.waitForTimeout(1500);
+await page.screenshot({ path: `shots/look-${scheme}-genki.png` });
+await page.evaluate(() => __dbg.setPersona('ottori')); await page.waitForFunction(() => document.querySelector('#loading').hidden); await page.waitForTimeout(1500);
+await page.screenshot({ path: `shots/look-${scheme}-ottori.png` });
+await page.evaluate(() => __dbg.setPersona('kohai')); await page.waitForFunction(() => document.querySelector('#loading').hidden); await page.waitForTimeout(800);
+await page.evaluate(() => __dbg.gesture('wave')); await page.waitForTimeout(900);
+await page.screenshot({ path: `shots/look-${scheme}-wave.png` });
+await page.evaluate(() => __dbg.Weather.set(true)); await page.waitForTimeout(3000);
+await page.screenshot({ path: `shots/look-${scheme}-umbrella.png` });
+console.log(errs.join('\n') || 'エラーなし');
+await browser.close();

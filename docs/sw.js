@@ -1,5 +1,5 @@
 // Offline cache. The page itself is fetched fresh when online; everything else is served from the cache first.
-const CACHE = 'drive-buddy-0.2.0-mvnzw499';
+const CACHE = 'drive-buddy-0.3.0-mvo40hg6';
 const CORE = [
   "./",
   "./index.html",
@@ -10,7 +10,8 @@ const CORE = [
   "./vendor/three/three.core.js",
   "./vendor/three/addons/loaders/GLTFLoader.js",
   "./vendor/three/addons/utils/BufferGeometryUtils.js",
-  "./vendor/three-vrm/three-vrm.module.min.js"
+  "./vendor/three-vrm/three-vrm.module.min.js",
+  "./vendor/three-vrm/three-vrm-animation.module.min.js"
 ];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));

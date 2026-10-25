@@ -1,0 +1,14 @@
+import { createRequire } from 'module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const ctx = await browser.newContext({ viewport: { width: 400, height: 860 }, locale: 'ja-JP', colorScheme: 'light' });
+await ctx.addInitScript(() => localStorage.setItem('drive-buddy-state-v1', JSON.stringify({ v: 3, settings: { lang: 'ja', onboarded: true, greetOn: false, persona: 'onee' }, drives: [] })));
+const page = await ctx.newPage();
+await page.route('https://fonts.**', (r) => r.abort());
+await page.goto('http://127.0.0.1:8766/?debug');
+await page.waitForFunction(() => document.querySelector('#loading').hidden && window.__dbg && __dbg.Char.vrm, null, { timeout: 90000 });
+await page.evaluate(() => __dbg.Weather.set(true)); await page.waitForTimeout(3500);
+await page.screenshot({ path: 'shots/umb-1.png' });
+await page.evaluate(() => { __dbg.S().zoom = 0.7; }); await page.click('#zoom-in'); await page.click('#zoom-out'); await page.waitForTimeout(1500);
+await page.screenshot({ path: 'shots/umb-2.png' });
+await browser.close();

@@ -1,338 +1,397 @@
 {
-  "id": "onee",
-  "name": {
-    "ja": "レイ",
-    "zh": "玲",
-    "ko": "레이",
-    "en": "Rei"
+ "id": "onee",
+ "name": {
+  "ja": "レイ",
+  "zh": "玲",
+  "ko": "레이",
+  "en": "Rei"
+ },
+ "tagline": {
+  "ja": "クールで頼れる年上のお姉さん",
+  "zh": "冷静可靠的大姐姐",
+  "ko": "쿨하고 든든한 누나",
+  "en": "A cool, dependable older-sister type"
+ },
+ "call": {
+  "ja": "キミ",
+  "zh": "小家伙",
+  "ko": "꼬마",
+  "en": "kiddo"
+ },
+ "voice": {
+  "pitch": 0.95,
+  "rate": 0.98
+ },
+ "expr": 0.7,
+ "emoMap": {
+  "happy": "relaxed"
+ },
+ "gestMap": {
+  "hop": "nod"
+ },
+ "likes": [
+  "drink",
+  "seafood"
+ ],
+ "dislikes": [
+  "sweet"
+ ],
+ "lines": {
+  "ja": {
+   "greetDawn": [
+    "おはよう、{name}。朝の運転は眠気が残りやすいから、気をつけて。",
+    "早いのね。コーヒーでも飲んでから出たら?"
+   ],
+   "greetDay": [
+    "来たのね、{name}。今日はどこまで?",
+    "いい天気ね。…ちゃんと前は見なさいよ。"
+   ],
+   "greetDusk": [
+    "夕方は西日が目に入るわ。サンバイザー、下ろしておいて。",
+    "日が落ちる前後は事故が増える時間。ライトは早めにね。"
+   ],
+   "greetNight": [
+    "夜のドライブ、悪くないわね。付き合ってあげる。",
+    "暗いから、歩行者には気をつけて。"
+   ],
+   "greetLate": [
+    "こんな時間に?眠いなら、今日はやめておきなさい。",
+    "{name}、無理はしない約束でしょ。"
+   ],
+   "tap": [
+    "何?",
+    "…そんなに見つめられても困るんだけど。",
+    "ふふ、退屈なの?",
+    "水、持った?運転中は喉が渇くわよ。",
+    "キミの運転、嫌いじゃないわ。"
+   ],
+   "tapAnnoyed": "しつこい。…停まってる間だけよ、許すのは。",
+   "checkIntro": "出発前の確認、しておきましょうか。",
+   "checkBelt": "ベルト、よし。",
+   "checkMirror": "ミラーと座席も、問題なし。",
+   "checkLight": "ライト点灯、確認したわ。",
+   "checkRoute": "行き先もセット済みね。運転中にスマホは触らないこと。",
+   "checkDone": "準備完了。行きましょう。",
+   "depart": [
+    "出発ね。安全運転で。",
+    "じゃあ、行きましょうか。道案内は任せて。"
+   ],
+   "departSkip": "確認なしで行くの?…ベルトだけは締めなさいよ。",
+   "departLate": "深夜の運転よ。眠くなったら、すぐ停まること。いいわね?",
+   "hourly": "{h}時間経過。肩に力、入ってない?",
+   "chat": [
+    "この道、景色がいいわね。",
+    "音楽でもかける?運転に集中できる範囲でね。",
+    "順調ね。このペースでいきましょう。"
+   ],
+   "breakDue": "{t}運転したわ。次のサービスエリアかコンビニで休憩しましょう。",
+   "breakNag": "まだ休んでないわよね。次で停まって。これはお願いじゃなくて、指示。",
+   "breakTaken": [
+    "いい判断。ちゃんと休める人は、運転も上手よ。",
+    "少し体を伸ばしておきなさい。楽になるから。"
+   ],
+   "arriveShort": "到着。短い距離でも、お疲れさま。",
+   "arriveMid": "お疲れさま、{name}。無事に着いて何より。",
+   "arriveLong": "長かったわね。今日はよく頑張ったわ。",
+   "arriveVlong": "本当にお疲れさま。今日はもう、ゆっくり休みなさい。",
+   "arriveGoodBreak": "休憩の取り方も、満点よ。",
+   "arriveNoBreak": "でも休憩なしは感心しないわ。次はちゃんと停まること。",
+   "arriveLate": "遅くまでお疲れさま。早く寝なさいね。",
+   "saved": "記録しておいたわ。また呼んで。",
+   "discarded": "わかった、今回は記録しないでおくわね。",
+   "levelUp": "なかよし度が「{lv}」になったみたい。…悪くない響きね。",
+   "milestone": "これで{n}回目。キミとのドライブにも、慣れてきたわ。",
+   "newPlace": "{place}は初めてね。覚えておくわ。",
+   "demoStart": "デモ走行ね。時間を120倍で進めるわ。2時間がだいたい1分よ。",
+   "demoEnd": "デモはここまで。続きは本番で、ね。",
+   "voiceTest": "こんな声で話すわ。聞こえてる?",
+   "newModel": "…見た目が変わった?まあ、悪くないわね。",
+   "hello": "今日からキミの助手席担当、レイよ。よろしく。",
+   "stopAhead": "この先{dist}、{stop}。{info}寄っていく?",
+   "stopAheadBreak": "そろそろ休憩どきよ。この先{dist}に{stop}があるわ。{info}寄りましょう?",
+   "stopYes": "了解。{stop}に寄りましょう。",
+   "stopNo": "わかった、通過ね。",
+   "stopNoReply": "返事がないから、今回は通過にしておくわ。",
+   "stopReached": "{stop}に着いたわ。少し休んでいきましょう。",
+   "restStart": "休憩ね。{min}分は体を休めなさい。",
+   "itemGet": "{item}、手に入れたわ。どうするかはキミ次第。",
+   "giftLove": "{item}…私の好み、覚えてたのね。ありがとう。",
+   "giftLike": "{item}ね。悪くないわ、ありがとう。",
+   "giftNeutral": "{item}ね。ありがたくもらっておくわ。",
+   "giftDislike": "{item}…正直、苦手なのよ。次はもう少し考えてね。",
+   "rainStart": "雨ね。路面が滑るから、スピードは控えめに。",
+   "season": "今日は{event}ね。浮かれすぎない程度に、楽しみましょ。",
+   "anniv": "{name}と走り始めて、もう{n}日。…あっという間ね。これからもよろしく。",
+   "photo": "撮るの?…いいわよ、きれいに撮ってね。",
+   "medal": "「{medal}」達成ね。ちゃんと積み重ねてるじゃない。",
+   "arriveSmooth": "運転もなめらかで、いい乗り心地だったわ。"
   },
-  "tagline": {
-    "ja": "クールで頼れる年上のお姉さん",
-    "zh": "冷静可靠的大姐姐",
-    "ko": "쿨하고 든든한 누나",
-    "en": "A cool, dependable older-sister type"
+  "zh": {
+   "greetDawn": [
+    "早，{name}。早上容易犯困，开车小心。",
+    "起这么早？先喝杯咖啡再出门吧。"
+   ],
+   "greetDay": [
+    "来了啊，{name}。今天去哪儿？",
+    "天气不错。……但眼睛要看路。"
+   ],
+   "greetDusk": [
+    "傍晚阳光刺眼，把遮阳板放下来。",
+    "日落前后事故多。车灯早点开。"
+   ],
+   "greetNight": [
+    "夜里兜风，倒也不坏。我陪你。",
+    "天黑了，注意行人。"
+   ],
+   "greetLate": [
+    "这么晚还开车？困的话，今天就算了。",
+    "{name}，说好了不勉强的吧。"
+   ],
+   "tap": [
+    "干嘛？",
+    "……这么盯着我，我会困扰的。",
+    "呵，无聊了？",
+    "带水了吗？开车会口渴。",
+    "你开车的样子，我不讨厌。"
+   ],
+   "tapAnnoyed": "烦不烦。……只有停车的时候才允许。",
+   "checkIntro": "出发前，先确认一下吧。",
+   "checkBelt": "安全带，好。",
+   "checkMirror": "后视镜和座椅，没问题。",
+   "checkLight": "车灯，确认。",
+   "checkRoute": "目的地也设好了。开车时别碰手机。",
+   "checkDone": "准备完毕。走吧。",
+   "depart": [
+    "出发。安全驾驶。",
+    "那就走吧。带路交给我。"
+   ],
+   "departSkip": "不确认就走？……至少把安全带系上。",
+   "departLate": "是深夜驾驶。困了就立刻停车。听到了吗？",
+   "hourly": "已经{h}小时了。肩膀别太用力。",
+   "chat": [
+    "这条路风景不错。",
+    "要听点音乐吗？在不影响开车的范围内。",
+    "很顺利。保持这个节奏。"
+   ],
+   "breakDue": "已经开了{t}。在下一个服务区或便利店休息吧。",
+   "breakNag": "还没休息吧。下一个就停。这不是请求，是指示。",
+   "breakTaken": [
+    "判断得好。会休息的人，车也开得好。",
+    "伸展一下身体，会轻松些。"
+   ],
+   "arriveShort": "到了。路再短也辛苦了。",
+   "arriveMid": "辛苦了，{name}。平安到达就好。",
+   "arriveLong": "挺长的一段路。今天做得很好。",
+   "arriveVlong": "真的辛苦了。今天就好好休息吧。",
+   "arriveGoodBreak": "休息也安排得很好，满分。",
+   "arriveNoBreak": "不过一次都不休息，我可不赞成。下次记得停车。",
+   "arriveLate": "这么晚辛苦了。早点睡。",
+   "saved": "记下来了。下次再叫我。",
+   "discarded": "知道了，这次不记录。",
+   "levelUp": "亲密度好像变成「{lv}」了。……听起来不坏。",
+   "milestone": "这是第{n}次了。和你兜风，我也习惯了。",
+   "newPlace": "第一次来{place}。我记下了。",
+   "demoStart": "演示行驶。时间按120倍速走，2小时大约1分钟。",
+   "demoEnd": "演示到此为止。剩下的，正式上路再说。",
+   "voiceTest": "我就是这样说话的。听得到吗？",
+   "newModel": "……样子变了？嗯，还不错。",
+   "hello": "从今天起负责你的副驾驶，我是玲。请多指教。",
+   "stopAhead": "前方{dist}，{stop}。{info}要进去吗？",
+   "stopAheadBreak": "该休息了。前方{dist}有{stop}。{info}进去吧？",
+   "stopYes": "好。去{stop}。",
+   "stopNo": "知道了，直接通过。",
+   "stopNoReply": "没听到回答，这次就通过了。",
+   "stopReached": "到{stop}了。休息一下再走。",
+   "restStart": "休息吧。至少歇{min}分钟。",
+   "itemGet": "拿到了{item}。怎么处理随你。",
+   "giftLove": "{item}……你还记得我的喜好啊。谢谢。",
+   "giftLike": "{item}啊。还不错，谢谢。",
+   "giftNeutral": "{item}啊。那我就收下了。",
+   "giftDislike": "{item}……说实话，我不太喜欢。下次再多想想吧。",
+   "rainStart": "下雨了。路面湿滑，车速放慢点。",
+   "season": "今天是{event}呢。别太兴奋，适度地享受吧。",
+   "anniv": "和{name}一起出发已经{n}天了。……真快啊。以后也请多关照。",
+   "photo": "要拍吗？……好啊，拍漂亮点。",
+   "medal": "达成「{medal}」了。一点一点积累得不错嘛。",
+   "arriveSmooth": "车开得很稳，乘坐感不错。"
   },
-  "call": {
-    "ja": "キミ",
-    "zh": "小家伙",
-    "ko": "꼬마",
-    "en": "kiddo"
+  "ko": {
+   "greetDawn": [
+    "좋은 아침, {name}. 아침엔 졸음이 남기 쉬우니까 조심해.",
+    "일찍 일어났네. 커피라도 마시고 나가."
+   ],
+   "greetDay": [
+    "왔구나, {name}. 오늘은 어디까지?",
+    "날씨 좋네. …앞은 똑바로 보고."
+   ],
+   "greetDusk": [
+    "해 질 녘엔 햇빛이 눈에 들어와. 선바이저 내려 둬.",
+    "해 지기 전후엔 사고가 늘어. 라이트는 일찍 켜."
+   ],
+   "greetNight": [
+    "밤 드라이브, 나쁘지 않네. 같이 가 줄게.",
+    "어두우니까 보행자 조심해."
+   ],
+   "greetLate": [
+    "이 시간에? 졸리면 오늘은 그만둬.",
+    "{name}, 무리 안 하기로 했잖아."
+   ],
+   "tap": [
+    "왜?",
+    "…그렇게 쳐다보면 곤란한데.",
+    "후후, 심심해?",
+    "물 챙겼어? 운전하면 목말라.",
+    "네 운전, 싫지 않아."
+   ],
+   "tapAnnoyed": "끈질기네. …차 세워 있을 때만 봐줄게.",
+   "checkIntro": "출발 전에 확인부터 하자.",
+   "checkBelt": "벨트, 좋아.",
+   "checkMirror": "미러랑 좌석도 문제없어.",
+   "checkLight": "라이트, 확인했어.",
+   "checkRoute": "목적지도 설정됐네. 운전 중엔 폰 만지지 마.",
+   "checkDone": "준비 끝. 가자.",
+   "depart": [
+    "출발이네. 안전 운전해.",
+    "그럼 가 볼까. 길 안내는 맡겨."
+   ],
+   "departSkip": "확인 없이 가는 거야? …벨트만은 매.",
+   "departLate": "새벽 운전이야. 졸리면 바로 세워. 알았지?",
+   "hourly": "{h}시간 지났어. 어깨에 힘 들어가 있지 않아?",
+   "chat": [
+    "이 길, 경치 좋네.",
+    "음악이라도 틀까? 운전에 방해 안 되는 선에서.",
+    "순조로워. 이 페이스로 가자."
+   ],
+   "breakDue": "{t} 운전했어. 다음 휴게소나 편의점에서 쉬자.",
+   "breakNag": "아직 안 쉬었지? 다음에서 세워. 부탁 아니고 지시야.",
+   "breakTaken": [
+    "좋은 판단이야. 잘 쉬는 사람이 운전도 잘해.",
+    "몸 좀 펴 둬. 편해질 거야."
+   ],
+   "arriveShort": "도착. 짧은 거리라도 수고했어.",
+   "arriveMid": "수고했어, {name}. 무사히 도착해서 다행이야.",
+   "arriveLong": "길었네. 오늘 잘했어.",
+   "arriveVlong": "정말 수고했어. 오늘은 푹 쉬어.",
+   "arriveGoodBreak": "쉬는 타이밍도 만점이야.",
+   "arriveNoBreak": "근데 한 번도 안 쉰 건 별로야. 다음엔 꼭 세워.",
+   "arriveLate": "늦게까지 수고했어. 일찍 자.",
+   "saved": "기록해 뒀어. 또 불러.",
+   "discarded": "알았어, 이번엔 기록 안 할게.",
+   "levelUp": "친밀도가 「{lv}」래. …나쁘지 않은 울림이네.",
+   "milestone": "벌써 {n}번째네. 너랑 드라이브하는 것도 익숙해졌어.",
+   "newPlace": "{place}, 처음이네. 기억해 둘게.",
+   "demoStart": "데모 주행이네. 120배속으로 돌릴게. 2시간이 대략 1분이야.",
+   "demoEnd": "데모는 여기까지. 나머지는 진짜 드라이브에서.",
+   "voiceTest": "이런 목소리로 말해. 들려?",
+   "newModel": "…모습이 바뀌었어? 뭐, 나쁘지 않네.",
+   "hello": "오늘부터 네 조수석 담당, 레이야. 잘 부탁해.",
+   "stopAhead": "{dist} 앞, {stop}. {info}들렀다 갈래?",
+   "stopAheadBreak": "슬슬 쉴 때야. {dist} 앞에 {stop} 있어. {info}들르자.",
+   "stopYes": "알았어. {stop}에 들르자.",
+   "stopNo": "알았어, 통과.",
+   "stopNoReply": "대답이 없으니까 이번엔 통과할게.",
+   "stopReached": "{stop}에 도착했어. 좀 쉬었다 가자.",
+   "restStart": "휴식이네. {min}분은 몸을 쉬게 해.",
+   "itemGet": "{item}, 손에 넣었어. 어떻게 할지는 네 마음.",
+   "giftLove": "{item}… 내 취향, 기억하고 있었구나. 고마워.",
+   "giftLike": "{item}. 나쁘지 않네, 고마워.",
+   "giftNeutral": "{item}. 고맙게 받아 둘게.",
+   "giftDislike": "{item}… 솔직히 별로야. 다음엔 좀 더 생각해 줘.",
+   "rainStart": "비네. 노면이 미끄러우니까 속도는 줄여.",
+   "season": "오늘은 {event}. 너무 들뜨지 않을 정도로 즐기자.",
+   "anniv": "{name}, 같이 달리기 시작한 지 벌써 {n}일. …금방이네. 앞으로도 잘 부탁해.",
+   "photo": "찍을 거야? …좋아, 예쁘게 찍어 줘.",
+   "medal": "「{medal}」 달성이네. 착실하게 쌓아 가고 있잖아.",
+   "arriveSmooth": "운전도 부드러워서 승차감이 좋았어."
   },
-  "voice": {
-    "pitch": 0.95,
-    "rate": 0.98
-  },
-  "expr": 0.7,
-  "emoMap": {
-    "happy": "relaxed"
-  },
-  "gestMap": {
-    "hop": "nod"
-  },
-  "lines": {
-    "ja": {
-      "greetDawn": [
-        "おはよう、{name}。朝の運転は眠気が残りやすいから、気をつけて。",
-        "早いのね。コーヒーでも飲んでから出たら?"
-      ],
-      "greetDay": [
-        "来たのね、{name}。今日はどこまで?",
-        "いい天気ね。…ちゃんと前は見なさいよ。"
-      ],
-      "greetDusk": [
-        "夕方は西日が目に入るわ。サンバイザー、下ろしておいて。",
-        "日が落ちる前後は事故が増える時間。ライトは早めにね。"
-      ],
-      "greetNight": [
-        "夜のドライブ、悪くないわね。付き合ってあげる。",
-        "暗いから、歩行者には気をつけて。"
-      ],
-      "greetLate": [
-        "こんな時間に?眠いなら、今日はやめておきなさい。",
-        "{name}、無理はしない約束でしょ。"
-      ],
-      "tap": [
-        "何?",
-        "…そんなに見つめられても困るんだけど。",
-        "ふふ、退屈なの?",
-        "水、持った?運転中は喉が渇くわよ。",
-        "キミの運転、嫌いじゃないわ。"
-      ],
-      "tapAnnoyed": "しつこい。…停まってる間だけよ、許すのは。",
-      "checkIntro": "出発前の確認、しておきましょうか。",
-      "checkBelt": "ベルト、よし。",
-      "checkMirror": "ミラーと座席も、問題なし。",
-      "checkLight": "ライト点灯、確認したわ。",
-      "checkRoute": "行き先もセット済みね。運転中にスマホは触らないこと。",
-      "checkDone": "準備完了。行きましょう。",
-      "depart": [
-        "出発ね。安全運転で。",
-        "じゃあ、行きましょうか。道案内は任せて。"
-      ],
-      "departSkip": "確認なしで行くの?…ベルトだけは締めなさいよ。",
-      "departLate": "深夜の運転よ。眠くなったら、すぐ停まること。いいわね?",
-      "hourly": "{h}時間経過。肩に力、入ってない?",
-      "chat": [
-        "この道、景色がいいわね。",
-        "音楽でもかける?運転に集中できる範囲でね。",
-        "順調ね。このペースでいきましょう。"
-      ],
-      "breakDue": "{t}運転したわ。次のサービスエリアかコンビニで休憩しましょう。",
-      "breakNag": "まだ休んでないわよね。次で停まって。これはお願いじゃなくて、指示。",
-      "breakTaken": [
-        "いい判断。ちゃんと休める人は、運転も上手よ。",
-        "少し体を伸ばしておきなさい。楽になるから。"
-      ],
-      "arriveShort": "到着。短い距離でも、お疲れさま。",
-      "arriveMid": "お疲れさま、{name}。無事に着いて何より。",
-      "arriveLong": "長かったわね。今日はよく頑張ったわ。",
-      "arriveVlong": "本当にお疲れさま。今日はもう、ゆっくり休みなさい。",
-      "arriveGoodBreak": "休憩の取り方も、満点よ。",
-      "arriveNoBreak": "でも休憩なしは感心しないわ。次はちゃんと停まること。",
-      "arriveLate": "遅くまでお疲れさま。早く寝なさいね。",
-      "saved": "記録しておいたわ。また呼んで。",
-      "discarded": "わかった、今回は記録しないでおくわね。",
-      "levelUp": "なかよし度が「{lv}」になったみたい。…悪くない響きね。",
-      "milestone": "これで{n}回目。キミとのドライブにも、慣れてきたわ。",
-      "demoStart": "デモ走行ね。時間を120倍で進めるわ。2時間がだいたい1分よ。",
-      "demoEnd": "デモはここまで。続きは本番で、ね。",
-      "voiceTest": "こんな声で話すわ。聞こえてる?",
-      "newModel": "…見た目が変わった?まあ、悪くないわね。",
-      "hello": "今日からキミの助手席担当、レイよ。よろしく。",
-      "stopAhead": "この先{dist}、{stop}。{info}寄っていく?",
-      "stopAheadBreak": "そろそろ休憩どきよ。この先{dist}に{stop}があるわ。{info}寄りましょう?",
-      "stopYes": "了解。{stop}に寄りましょう。",
-      "stopNo": "わかった、通過ね。",
-      "stopNoReply": "返事がないから、今回は通過にしておくわ。",
-      "stopReached": "{stop}に着いたわ。少し休んでいきましょう。"
-    },
-    "zh": {
-      "greetDawn": [
-        "早，{name}。早上容易犯困，开车小心。",
-        "起这么早？先喝杯咖啡再出门吧。"
-      ],
-      "greetDay": [
-        "来了啊，{name}。今天去哪儿？",
-        "天气不错。……但眼睛要看路。"
-      ],
-      "greetDusk": [
-        "傍晚阳光刺眼，把遮阳板放下来。",
-        "日落前后事故多。车灯早点开。"
-      ],
-      "greetNight": [
-        "夜里兜风，倒也不坏。我陪你。",
-        "天黑了，注意行人。"
-      ],
-      "greetLate": [
-        "这么晚还开车？困的话，今天就算了。",
-        "{name}，说好了不勉强的吧。"
-      ],
-      "tap": [
-        "干嘛？",
-        "……这么盯着我，我会困扰的。",
-        "呵，无聊了？",
-        "带水了吗？开车会口渴。",
-        "你开车的样子，我不讨厌。"
-      ],
-      "tapAnnoyed": "烦不烦。……只有停车的时候才允许。",
-      "checkIntro": "出发前，先确认一下吧。",
-      "checkBelt": "安全带，好。",
-      "checkMirror": "后视镜和座椅，没问题。",
-      "checkLight": "车灯，确认。",
-      "checkRoute": "目的地也设好了。开车时别碰手机。",
-      "checkDone": "准备完毕。走吧。",
-      "depart": [
-        "出发。安全驾驶。",
-        "那就走吧。带路交给我。"
-      ],
-      "departSkip": "不确认就走？……至少把安全带系上。",
-      "departLate": "是深夜驾驶。困了就立刻停车。听到了吗？",
-      "hourly": "已经{h}小时了。肩膀别太用力。",
-      "chat": [
-        "这条路风景不错。",
-        "要听点音乐吗？在不影响开车的范围内。",
-        "很顺利。保持这个节奏。"
-      ],
-      "breakDue": "已经开了{t}。在下一个服务区或便利店休息吧。",
-      "breakNag": "还没休息吧。下一个就停。这不是请求，是指示。",
-      "breakTaken": [
-        "判断得好。会休息的人，车也开得好。",
-        "伸展一下身体，会轻松些。"
-      ],
-      "arriveShort": "到了。路再短也辛苦了。",
-      "arriveMid": "辛苦了，{name}。平安到达就好。",
-      "arriveLong": "挺长的一段路。今天做得很好。",
-      "arriveVlong": "真的辛苦了。今天就好好休息吧。",
-      "arriveGoodBreak": "休息也安排得很好，满分。",
-      "arriveNoBreak": "不过一次都不休息，我可不赞成。下次记得停车。",
-      "arriveLate": "这么晚辛苦了。早点睡。",
-      "saved": "记下来了。下次再叫我。",
-      "discarded": "知道了，这次不记录。",
-      "levelUp": "亲密度好像变成「{lv}」了。……听起来不坏。",
-      "milestone": "这是第{n}次了。和你兜风，我也习惯了。",
-      "demoStart": "演示行驶。时间按120倍速走，2小时大约1分钟。",
-      "demoEnd": "演示到此为止。剩下的，正式上路再说。",
-      "voiceTest": "我就是这样说话的。听得到吗？",
-      "newModel": "……样子变了？嗯，还不错。",
-      "hello": "从今天起负责你的副驾驶，我是玲。请多指教。",
-      "stopAhead": "前方{dist}，{stop}。{info}要进去吗？",
-      "stopAheadBreak": "该休息了。前方{dist}有{stop}。{info}进去吧？",
-      "stopYes": "好。去{stop}。",
-      "stopNo": "知道了，直接通过。",
-      "stopNoReply": "没听到回答，这次就通过了。",
-      "stopReached": "到{stop}了。休息一下再走。"
-    },
-    "ko": {
-      "greetDawn": [
-        "좋은 아침, {name}. 아침엔 졸음이 남기 쉬우니까 조심해.",
-        "일찍 일어났네. 커피라도 마시고 나가."
-      ],
-      "greetDay": [
-        "왔구나, {name}. 오늘은 어디까지?",
-        "날씨 좋네. …앞은 똑바로 보고."
-      ],
-      "greetDusk": [
-        "해 질 녘엔 햇빛이 눈에 들어와. 선바이저 내려 둬.",
-        "해 지기 전후엔 사고가 늘어. 라이트는 일찍 켜."
-      ],
-      "greetNight": [
-        "밤 드라이브, 나쁘지 않네. 같이 가 줄게.",
-        "어두우니까 보행자 조심해."
-      ],
-      "greetLate": [
-        "이 시간에? 졸리면 오늘은 그만둬.",
-        "{name}, 무리 안 하기로 했잖아."
-      ],
-      "tap": [
-        "왜?",
-        "…그렇게 쳐다보면 곤란한데.",
-        "후후, 심심해?",
-        "물 챙겼어? 운전하면 목말라.",
-        "네 운전, 싫지 않아."
-      ],
-      "tapAnnoyed": "끈질기네. …차 세워 있을 때만 봐줄게.",
-      "checkIntro": "출발 전에 확인부터 하자.",
-      "checkBelt": "벨트, 좋아.",
-      "checkMirror": "미러랑 좌석도 문제없어.",
-      "checkLight": "라이트, 확인했어.",
-      "checkRoute": "목적지도 설정됐네. 운전 중엔 폰 만지지 마.",
-      "checkDone": "준비 끝. 가자.",
-      "depart": [
-        "출발이네. 안전 운전해.",
-        "그럼 가 볼까. 길 안내는 맡겨."
-      ],
-      "departSkip": "확인 없이 가는 거야? …벨트만은 매.",
-      "departLate": "새벽 운전이야. 졸리면 바로 세워. 알았지?",
-      "hourly": "{h}시간 지났어. 어깨에 힘 들어가 있지 않아?",
-      "chat": [
-        "이 길, 경치 좋네.",
-        "음악이라도 틀까? 운전에 방해 안 되는 선에서.",
-        "순조로워. 이 페이스로 가자."
-      ],
-      "breakDue": "{t} 운전했어. 다음 휴게소나 편의점에서 쉬자.",
-      "breakNag": "아직 안 쉬었지? 다음에서 세워. 부탁 아니고 지시야.",
-      "breakTaken": [
-        "좋은 판단이야. 잘 쉬는 사람이 운전도 잘해.",
-        "몸 좀 펴 둬. 편해질 거야."
-      ],
-      "arriveShort": "도착. 짧은 거리라도 수고했어.",
-      "arriveMid": "수고했어, {name}. 무사히 도착해서 다행이야.",
-      "arriveLong": "길었네. 오늘 잘했어.",
-      "arriveVlong": "정말 수고했어. 오늘은 푹 쉬어.",
-      "arriveGoodBreak": "쉬는 타이밍도 만점이야.",
-      "arriveNoBreak": "근데 한 번도 안 쉰 건 별로야. 다음엔 꼭 세워.",
-      "arriveLate": "늦게까지 수고했어. 일찍 자.",
-      "saved": "기록해 뒀어. 또 불러.",
-      "discarded": "알았어, 이번엔 기록 안 할게.",
-      "levelUp": "친밀도가 「{lv}」래. …나쁘지 않은 울림이네.",
-      "milestone": "벌써 {n}번째네. 너랑 드라이브하는 것도 익숙해졌어.",
-      "demoStart": "데모 주행이네. 120배속으로 돌릴게. 2시간이 대략 1분이야.",
-      "demoEnd": "데모는 여기까지. 나머지는 진짜 드라이브에서.",
-      "voiceTest": "이런 목소리로 말해. 들려?",
-      "newModel": "…모습이 바뀌었어? 뭐, 나쁘지 않네.",
-      "hello": "오늘부터 네 조수석 담당, 레이야. 잘 부탁해.",
-      "stopAhead": "{dist} 앞, {stop}. {info}들렀다 갈래?",
-      "stopAheadBreak": "슬슬 쉴 때야. {dist} 앞에 {stop} 있어. {info}들르자.",
-      "stopYes": "알았어. {stop}에 들르자.",
-      "stopNo": "알았어, 통과.",
-      "stopNoReply": "대답이 없으니까 이번엔 통과할게.",
-      "stopReached": "{stop}에 도착했어. 좀 쉬었다 가자."
-    },
-    "en": {
-      "greetDawn": [
-        "Morning, {name}. Drowsiness lingers in the morning. Be careful.",
-        "You're up early. Grab a coffee before we go."
-      ],
-      "greetDay": [
-        "There you are, {name}. Where to today?",
-        "Nice weather. ...Eyes on the road, though."
-      ],
-      "greetDusk": [
-        "The low sun gets in your eyes. Put your visor down.",
-        "Accidents spike around sunset. Lights on early."
-      ],
-      "greetNight": [
-        "A night drive. Not bad. I'll keep you company.",
-        "It's dark. Watch for pedestrians."
-      ],
-      "greetLate": [
-        "At this hour? If you're sleepy, skip it tonight.",
-        "{name}, we agreed you wouldn't push it."
-      ],
-      "tap": [
-        "What?",
-        "...Staring at me like that is a bit much.",
-        "Heh. Bored?",
-        "Got water? Driving makes you thirsty.",
-        "I don't dislike the way you drive."
-      ],
-      "tapAnnoyed": "Persistent, aren't you. ...Only while we're parked.",
-      "checkIntro": "Let's do the checks before we go.",
-      "checkBelt": "Seatbelt. Good.",
-      "checkMirror": "Mirrors and seat. No problems.",
-      "checkLight": "Headlights. Confirmed.",
-      "checkRoute": "Destination's set. Hands off the phone while driving.",
-      "checkDone": "All set. Let's go.",
-      "depart": [
-        "We're off. Drive safe.",
-        "Let's go, then. Leave the directions to me."
-      ],
-      "departSkip": "Skipping the checks? ...At least buckle up.",
-      "departLate": "Late-night driving. If you get sleepy, pull over right away. Understood?",
-      "hourly": "Hour {h}. Relax your shoulders.",
-      "chat": [
-        "Nice view on this road.",
-        "Want some music? As long as it doesn't distract you.",
-        "Smooth so far. Keep this pace."
-      ],
-      "breakDue": "You've been driving for {t}. Rest at the next service area or convenience store.",
-      "breakNag": "You still haven't rested. Stop at the next one. That's not a request.",
-      "breakTaken": [
-        "Good call. People who rest well drive well.",
-        "Stretch a little. You'll feel better."
-      ],
-      "arriveShort": "Arrived. Short trip, but well done.",
-      "arriveMid": "Good work, {name}. Glad you made it safely.",
-      "arriveLong": "That was a long one. You did well today.",
-      "arriveVlong": "Really, good work. Get some proper rest tonight.",
-      "arriveGoodBreak": "Your breaks were perfect, too.",
-      "arriveNoBreak": "But no breaks at all? I don't approve. Stop next time.",
-      "arriveLate": "Thanks for driving so late. Get to bed early.",
-      "saved": "Logged it. Call me again.",
-      "discarded": "Fine. No log this time.",
-      "levelUp": "Looks like our bond is now \"{lv}\". ...Has a nice ring to it.",
-      "milestone": "That's drive number {n}. I'm getting used to riding with you.",
-      "demoStart": "Demo drive. Time runs at 120×, so two hours is about a minute.",
-      "demoEnd": "That's the demo. The rest, on a real drive.",
-      "voiceTest": "This is how I sound. Can you hear me?",
-      "newModel": "...Did my look change? Well, not bad.",
-      "hello": "I'm Rei. I'll be riding shotgun from today. Nice to meet you.",
-      "stopAhead": "{stop}, {dist} ahead. {info}Stopping?",
-      "stopAheadBreak": "Time for a break. {stop} is {dist} ahead. {info}Let's stop.",
-      "stopYes": "Okay. We'll stop at {stop}.",
-      "stopNo": "Got it. Passing.",
-      "stopNoReply": "No answer, so we'll pass this one.",
-      "stopReached": "We're at {stop}. Rest a bit before we go on."
-    }
+  "en": {
+   "greetDawn": [
+    "Morning, {name}. Drowsiness lingers in the morning. Be careful.",
+    "You're up early. Grab a coffee before we go."
+   ],
+   "greetDay": [
+    "There you are, {name}. Where to today?",
+    "Nice weather. ...Eyes on the road, though."
+   ],
+   "greetDusk": [
+    "The low sun gets in your eyes. Put your visor down.",
+    "Accidents spike around sunset. Lights on early."
+   ],
+   "greetNight": [
+    "A night drive. Not bad. I'll keep you company.",
+    "It's dark. Watch for pedestrians."
+   ],
+   "greetLate": [
+    "At this hour? If you're sleepy, skip it tonight.",
+    "{name}, we agreed you wouldn't push it."
+   ],
+   "tap": [
+    "What?",
+    "...Staring at me like that is a bit much.",
+    "Heh. Bored?",
+    "Got water? Driving makes you thirsty.",
+    "I don't dislike the way you drive."
+   ],
+   "tapAnnoyed": "Persistent, aren't you. ...Only while we're parked.",
+   "checkIntro": "Let's do the checks before we go.",
+   "checkBelt": "Seatbelt. Good.",
+   "checkMirror": "Mirrors and seat. No problems.",
+   "checkLight": "Headlights. Confirmed.",
+   "checkRoute": "Destination's set. Hands off the phone while driving.",
+   "checkDone": "All set. Let's go.",
+   "depart": [
+    "We're off. Drive safe.",
+    "Let's go, then. Leave the directions to me."
+   ],
+   "departSkip": "Skipping the checks? ...At least buckle up.",
+   "departLate": "Late-night driving. If you get sleepy, pull over right away. Understood?",
+   "hourly": "Hour {h}. Relax your shoulders.",
+   "chat": [
+    "Nice view on this road.",
+    "Want some music? As long as it doesn't distract you.",
+    "Smooth so far. Keep this pace."
+   ],
+   "breakDue": "You've been driving for {t}. Rest at the next service area or convenience store.",
+   "breakNag": "You still haven't rested. Stop at the next one. That's not a request.",
+   "breakTaken": [
+    "Good call. People who rest well drive well.",
+    "Stretch a little. You'll feel better."
+   ],
+   "arriveShort": "Arrived. Short trip, but well done.",
+   "arriveMid": "Good work, {name}. Glad you made it safely.",
+   "arriveLong": "That was a long one. You did well today.",
+   "arriveVlong": "Really, good work. Get some proper rest tonight.",
+   "arriveGoodBreak": "Your breaks were perfect, too.",
+   "arriveNoBreak": "But no breaks at all? I don't approve. Stop next time.",
+   "arriveLate": "Thanks for driving so late. Get to bed early.",
+   "saved": "Logged it. Call me again.",
+   "discarded": "Fine. No log this time.",
+   "levelUp": "Looks like our bond is now \"{lv}\". ...Has a nice ring to it.",
+   "milestone": "That's drive number {n}. I'm getting used to riding with you.",
+   "newPlace": "First time in {place}. I'll keep that in mind.",
+   "demoStart": "Demo drive. Time runs at 120×, so two hours is about a minute.",
+   "demoEnd": "That's the demo. The rest, on a real drive.",
+   "voiceTest": "This is how I sound. Can you hear me?",
+   "newModel": "...Did my look change? Well, not bad.",
+   "hello": "I'm Rei. I'll be riding shotgun from today. Nice to meet you.",
+   "stopAhead": "{stop}, {dist} ahead. {info}Stopping?",
+   "stopAheadBreak": "Time for a break. {stop} is {dist} ahead. {info}Let's stop.",
+   "stopYes": "Okay. We'll stop at {stop}.",
+   "stopNo": "Got it. Passing.",
+   "stopNoReply": "No answer, so we'll pass this one.",
+   "stopReached": "We're at {stop}. Rest a bit before we go on.",
+   "restStart": "Break time. Give yourself at least {min} minutes.",
+   "itemGet": "Got {item}. What you do with it is up to you.",
+   "giftLove": "{item}... You remembered what I like. Thank you.",
+   "giftLike": "{item}. Not bad at all. Thanks.",
+   "giftNeutral": "{item}. I'll gladly take it.",
+   "giftDislike": "{item}... Honestly, not my favorite. Think a little harder next time.",
+   "rainStart": "Rain. The road gets slippery, so ease off the speed.",
+   "season": "It's {event} today. Let's enjoy it, without getting carried away.",
+   "anniv": "{n} days since we started riding together, {name}. ...Time flies. Here's to more.",
+   "photo": "A photo? ...Fine. Make me look good.",
+   "medal": "{medal}, earned. You're building up a nice record.",
+   "arriveSmooth": "Your driving was smooth, too. A pleasant ride."
   }
+ }
 }

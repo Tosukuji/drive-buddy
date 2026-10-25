@@ -7,16 +7,17 @@ import path from 'path';
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const P = (...p) => path.join(root, ...p);
 const read = (p) => fs.readFileSync(P(p), 'utf8');
-const VERSION = '0.2.0';
+const VERSION = '0.3.0';
 
 const personas = {};
-for (const id of ['kohai', 'onee', 'genki', 'ottori']) personas[id] = JSON.parse(read(`web/src/personas/${id}.json`));
+for (const id of ['kohai', 'onee', 'genki', 'ottori', 'sora']) personas[id] = JSON.parse(read(`web/src/personas/${id}.json`));
 const i18n = JSON.parse(read('web/src/i18n.json'));
+const items = JSON.parse(read('web/src/items.json'));
 const esc = (o) => JSON.stringify(o).replace(/</g, '\\u003c');
 
 let app = read('web/src/app.html');
-if (!app.includes('__I18N__') || !app.includes('__PERSONAS__')) throw new Error('placeholders missing');
-app = app.replace('__I18N__', () => esc(i18n)).replace('__PERSONAS__', () => esc(personas));
+for (const ph of ['__I18N__', '__PERSONAS__', '__ITEMS__']) if (!app.includes(ph)) throw new Error('placeholder missing: ' + ph);
+app = app.replace('__I18N__', () => esc(i18n)).replace('__PERSONAS__', () => esc(personas)).replace('__ITEMS__', () => esc(items));
 
 const swap = (s, from, to) => {
   if (!s.includes(from)) throw new Error('not found: ' + from.slice(0, 60));
@@ -39,6 +40,7 @@ site = swap(site, 'const MODEL_BYTES = 7593724;', `const MODEL_BYTES = ${vrm.len
 site = swap(site, 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js', './vendor/three/three.module.js');
 site = swap(site, 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/', './vendor/three/addons/');
 site = swap(site, 'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.4.4/lib/three-vrm.module.min.js', './vendor/three-vrm/three-vrm.module.min.js');
+site = swap(site, 'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm-animation@3.4.4/lib/three-vrm-animation.module.min.js', './vendor/three-vrm/three-vrm-animation.module.min.js');
 // Fonts must never block the first paint (Google Fonts is unreachable in some regions).
 site = swap(site, '<link rel="stylesheet" href="https://fonts.googleapis.com/', '<link rel="stylesheet" media="print" onload="this.media=\'all\'" href="https://fonts.googleapis.com/');
 const cut = site.indexOf('<div id="app">');
@@ -76,6 +78,7 @@ const copies = [
   ['three/LICENSE', 'vendor/three/LICENSE'],
   ['@pixiv/three-vrm/lib/three-vrm.module.min.js', 'vendor/three-vrm/three-vrm.module.min.js'],
   ['@pixiv/three-vrm/LICENSE', 'vendor/three-vrm/LICENSE'],
+  ['@pixiv/three-vrm-animation/lib/three-vrm-animation.module.min.js', 'vendor/three-vrm/three-vrm-animation.module.min.js'],
 ];
 for (const [from, to] of copies) {
   fs.mkdirSync(path.dirname(P('docs', to)), { recursive: true });
