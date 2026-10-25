@@ -200,7 +200,14 @@
   ],
   "dateFmt": "{M}/{D}({W}) {hh}:{mm}",
   "listSep": "・",
-  "joinSuffix": ""
+  "joinSuffix": "",
+  "grpPlaces": "場所の記録",
+  "placesOn": "出発地と到着地を記録する(町名まで)",
+  "placesNote": "地名は OpenStreetMap で調べます。位置は約100m単位に丸めて保存し、ほかの人には見えません。",
+  "from": "出発",
+  "to": "到着",
+  "placeLooking": "場所を調べています…",
+  "placeUnknown": "場所不明"
  },
  "zh": {
   "langName": "中文",
@@ -399,7 +406,14 @@
   ],
   "dateFmt": "{M}/{D}(周{W}) {hh}:{mm}",
   "listSep": "・",
-  "joinSuffix": ""
+  "joinSuffix": "",
+  "grpPlaces": "地点记录",
+  "placesOn": "记录出发地和到达地(精确到街区)",
+  "placesNote": "地名通过 OpenStreetMap 查询。位置四舍五入到约100米后保存，别人看不到。",
+  "from": "出发",
+  "to": "到达",
+  "placeLooking": "正在查询地点…",
+  "placeUnknown": "地点不明"
  },
  "ko": {
   "langName": "한국어",
@@ -601,7 +615,14 @@
   ],
   "dateFmt": "{M}/{D}({W}) {hh}:{mm}",
   "listSep": " · ",
-  "joinSuffix": " "
+  "joinSuffix": " ",
+  "grpPlaces": "장소 기록",
+  "placesOn": "출발지와 도착지 기록(동네 단위까지)",
+  "placesNote": "지명은 OpenStreetMap에서 찾아요. 위치는 약 100m 단위로 반올림해 저장되며, 다른 사람은 볼 수 없어요.",
+  "from": "출발",
+  "to": "도착",
+  "placeLooking": "장소 확인 중…",
+  "placeUnknown": "장소 불명"
  },
  "en": {
   "langName": "English",
@@ -799,6 +820,13 @@
   ],
   "dateFmt": "{W} {M}/{D} {hh}:{mm}",
   "listSep": " · ",
-  "joinSuffix": " "
+  "joinSuffix": " ",
+  "grpPlaces": "Places",
+  "placesOn": "Record start and end places (neighborhood level)",
+  "placesNote": "Place names come from OpenStreetMap. Positions are rounded to about 100 m and kept only for you.",
+  "from": "From",
+  "to": "To",
+  "placeLooking": "Finding places…",
+  "placeUnknown": "Unknown place"
  }
 }
