@@ -1,5 +1,5 @@
 // Offline cache. The page itself is fetched fresh when online; everything else is served from the cache first.
-const CACHE = 'drive-buddy-0.2.0-mvnz94vt';
+const CACHE = 'drive-buddy-0.2.0-mvnzw499';
 const CORE = [
   "./",
   "./index.html",

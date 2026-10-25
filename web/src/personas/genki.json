@@ -60,6 +60,7 @@
       "checkIntro": "出発前チェック、いっくよー!",
       "checkBelt": "ベルトよし!",
       "checkMirror": "ミラーと座席もよし!",
+      "checkLight": "ライトもバッチリ!",
       "checkRoute": "行き先セット完了!運転中にスマホいじるのはナシね!",
       "checkDone": "準備バッチリ!しゅっぱーつ!",
       "depart": [
@@ -135,6 +136,7 @@
       "checkIntro": "出发前检查，开始咯！",
       "checkBelt": "安全带OK！",
       "checkMirror": "后视镜和座椅也OK！",
+      "checkLight": "车灯也OK！",
       "checkRoute": "目的地设好啦！开车时不许玩手机哦！",
       "checkDone": "准备完美！出发——！",
       "depart": [
@@ -210,6 +212,7 @@
       "checkIntro": "출발 전 체크, 간다~!",
       "checkBelt": "벨트 오케이!",
       "checkMirror": "미러랑 좌석도 오케이!",
+      "checkLight": "라이트도 완벽!",
       "checkRoute": "목적지 설정 완료! 운전 중에 폰은 금지야!",
       "checkDone": "준비 완벽! 출발~!",
       "depart": [
@@ -285,6 +288,7 @@
       "checkIntro": "Pre-drive check, here we go!",
       "checkBelt": "Seatbelt, check!",
       "checkMirror": "Mirrors and seat, check!",
+      "checkLight": "Headlights, check!",
       "checkRoute": "Destination set! No phone while driving!",
       "checkDone": "All good! Let's roll!",
       "depart": [

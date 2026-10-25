@@ -335,7 +335,15 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
 .group { display: flex; flex-direction: column; gap: 12px; padding: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
 .group h3 { margin: 0; font-size: var(--fs-sm); color: var(--muted); letter-spacing: 0.06em; }
 .hist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.hist li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; padding: 10px 2px; border-bottom: 1px solid var(--line); }
+.hist li { display: flex; align-items: flex-start; gap: 10px; padding: 10px 2px; border-bottom: 1px solid var(--line); }
+.hist li.picked { background: var(--accent-soft); }
+.hist .sel { flex: none; width: 22px; height: 22px; margin-top: 2px; accent-color: var(--accent); }
+.hist .hc { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; }
+.hist-tools { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.sel-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 12px; background: var(--panel); }
+.btn.danger { background: var(--warn); color: #fff; border-color: transparent; }
+.model-retry { position: absolute; left: 50%; top: calc(18% + 150px); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; width: min(90%, 320px); text-align: center; }
+.model-retry p { margin: 0; padding: 6px 10px; border-radius: 8px; background: var(--bubble); font-size: var(--fs-xs); }
 .hist .d { font-weight: 700; }
 .hist .m { color: var(--muted); font-size: var(--fs-xs); }
 .hist .t { font-family: var(--font-meter); font-variant-numeric: tabular-nums; text-align: right; font-weight: 700; }
@@ -384,6 +392,7 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
     <canvas id="c" role="img" aria-label=""></canvas>
     <div class="loading" id="loading"><div><span id="loading-text" data-i18n="loading">キャラを呼んでいます…</span><div class="meter"><i id="loading-bar"></i></div></div></div>
     <div class="fallback-face" id="fallback" hidden>ミ</div>
+    <div class="model-retry" id="model-retry" hidden><p data-i18n="modelFail"></p><button class="btn small" id="model-retry-btn" data-i18n="modelRetry"></button></div>
     <div class="bubble"><span class="who" id="bubble-who">ミチ</span><p id="line" aria-hidden="true"></p></div>
     <div class="sr-only" aria-live="polite" id="line-sr"></div>
   </section>
@@ -413,6 +422,7 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
       <div class="checks">
         <button class="check" data-k="belt" aria-pressed="false"><span class="box" aria-hidden="true"></span><span data-i18n="checkBelt"></span></button>
         <button class="check" data-k="mirror" aria-pressed="false"><span class="box" aria-hidden="true"></span><span data-i18n="checkMirror"></span></button>
+        <button class="check" data-k="light" id="check-light" aria-pressed="false" hidden><span class="box" aria-hidden="true"></span><span data-i18n="checkLight"></span></button>
         <button class="check" data-k="route" aria-pressed="false"><span class="box" aria-hidden="true"></span><span data-i18n="checkRoute"></span></button>
       </div>
       <button class="btn primary" id="depart" disabled data-i18n="depart">出発する</button>
@@ -497,6 +507,11 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
         <div><span class="lab">ODO</span><b id="h-km">0</b><span class="unit">km</span></div>
         <div><span class="lab">DRIVES</span><b id="h-n">0</b></div>
         <div><span class="lab">TIME</span><b id="h-h">0:00</b></div>
+      </div>
+      <div class="hist-tools" id="hist-tools"><span></span><button class="link" id="sel-start" data-i18n="selectDelete">選んで消す</button></div>
+      <div class="sel-bar" id="sel-bar" hidden>
+        <span id="sel-main"><button class="btn small danger" id="sel-delete" disabled></button> <button class="link" id="sel-cancel" data-i18n="clearNo">やめる</button></span>
+        <span id="sel-confirm" hidden><span id="sel-confirm-text"></span> <button class="link danger" id="sel-yes" data-i18n="clearYes">消す</button> <button class="link" id="sel-no" data-i18n="clearNo">やめる</button></span>
       </div>
       <ol class="hist" id="hist-list"></ol>
       <p class="note" id="hist-empty" data-i18n="histEmpty"></p>
@@ -606,7 +621,7 @@ const META = {
   greetLate: [['sad', 'down'], ['sad', 'tilt']],
   tap: [['surprised', 'tilt'], ['angry', 'shake'], ['happy', 'nod'], ['relaxed', 'tilt'], ['happy', 'nod']],
   tapAnnoyed: ['angry', 'shake'],
-  checkIntro: ['relaxed', 'nod'], checkBelt: ['happy', 'nod'], checkMirror: ['happy', 'nod'], checkRoute: ['relaxed', 'tilt'], checkDone: ['happy', 'hop'],
+  checkIntro: ['relaxed', 'nod'], checkBelt: ['happy', 'nod'], checkMirror: ['happy', 'nod'], checkLight: ['happy', 'nod'], checkRoute: ['relaxed', 'tilt'], checkDone: ['happy', 'hop'],
   depart: [['happy', 'hop'], ['relaxed', 'nod']], departSkip: ['sad', 'tilt'], departLate: ['sad', 'down'],
   hourly: ['relaxed', 'nod'], chat: [['happy', 'tilt'], ['relaxed', 'nod'], ['happy', 'nod']],
   breakDue: ['neutral', 'nod'], breakNag: ['angry', 'shake'], breakTaken: [['happy', 'hop'], ['relaxed', 'nod']],
@@ -617,7 +632,7 @@ const META = {
   stopNoReply: ['neutral', 'tilt'], stopReached: ['relaxed', 'nod'],
 };
 // In "guidance only" mode these lines still show in the bubble but are not spoken.
-const QUIET_IN_GUIDE = new Set(['checkIntro', 'checkBelt', 'checkMirror', 'checkRoute', 'checkDone', 'hourly', 'chat', 'breakTaken', 'saved', 'discarded', 'levelUp', 'milestone', 'newModel']);
+const QUIET_IN_GUIDE = new Set(['checkIntro', 'checkBelt', 'checkMirror', 'checkLight', 'checkRoute', 'checkDone', 'hourly', 'chat', 'breakTaken', 'saved', 'discarded', 'levelUp', 'milestone', 'newModel']);
 const LINE_KEYS = Object.keys(PRESETS.kohai.lines.ja);
 
 // Rest stops for the demo route (Tokyo → Mt. Fuji on the Tomei Expressway). Sample data, not live.
@@ -653,7 +668,7 @@ const defaultSettings = () => ({
   lang: defaultLang(), persona: 'kohai', callName: '', voice: true, pitchAdj: 0, breakMin: 120,
   verbosity: 'normal', stopsOn: true, stopsInfo: true, voiceReply: true, placesOn: true,
 });
-const defaultState = () => ({ v: 2, settings: defaultSettings(), points: 0, drives: [], custom: null });
+const defaultState = () => ({ v: 2, settings: defaultSettings(), drives: [], custom: null });
 function normalize(d) {
   const base = defaultState();
   if (!d || typeof d !== 'object') return base;
@@ -666,7 +681,6 @@ function normalize(d) {
   delete s.pitch;
   return {
     v: 2, settings: s,
-    points: Number(d.points) || 0,
     drives: Array.isArray(d.drives) ? d.drives.slice(0, 500) : [],
     custom: d.custom && typeof d.custom === 'object' && d.custom.lines ? d.custom : null,
   };
@@ -1097,9 +1111,16 @@ function fmtHours(h) {
    Affinity + home/history rendering
    ========================================================= */
 const LEVEL_PTS = [0, 30, 80, 160, 300, 500];
+// Bond points come from the drive log itself, so deleting a drive also takes back its points.
+// Per drive: 10 + 1 per 10 minutes (max 12) + 5 for the pre-drive check + 5 for taking a break on a 90-minute+ drive.
+function drivePts(d) {
+  const min = Number(d.min) || 0;
+  return 10 + Math.min(12, Math.floor(min / 10)) + (d.checked ? 5 : 0) + (min >= 90 && d.breaks > 0 ? 5 : 0);
+}
+const totalPts = () => Store.state.drives.reduce((a, d) => a + drivePts(d), 0);
 function levelOf(pts) { let i = 0; LEVEL_PTS.forEach((min, k) => { if (pts >= min) i = k; }); return i; }
 function renderAffinity() {
-  const pts = Store.state.points, i = levelOf(pts), names = T('levels');
+  const pts = totalPts(), i = levelOf(pts), names = T('levels');
   const min = LEVEL_PTS[i], next = LEVEL_PTS[i + 1];
   $('#chip-lv').textContent = i + 1;
   $('#chip-name').textContent = names[i];
@@ -1131,17 +1152,34 @@ function renderHistory() {
   $('#h-h').textContent = hm(t.min);
   const list = $('#hist-list');
   list.textContent = '';
+  const has = Store.state.drives.length > 0;
+  $('#hist-tools').hidden = !has || histSel.on;
+  $('#sel-bar').hidden = !histSel.on;
   for (const d of Store.state.drives) {
     const li = document.createElement('li');
+    const hc = document.createElement('div'); hc.className = 'hc';
+    if (histSel.on) {
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'sel';
+      cb.checked = histSel.ids.has(d.id); cb.setAttribute('aria-label', fmtDate(d.start));
+      li.classList.toggle('picked', cb.checked);
+      cb.addEventListener('change', () => {
+        if (cb.checked) histSel.ids.add(d.id); else histSel.ids.delete(d.id);
+        li.classList.toggle('picked', cb.checked);
+        renderSelBar();
+      });
+      li.append(cb);
+    }
+    li.append(hc);
     const a = document.createElement('span'); a.className = 'd'; a.textContent = fmtDate(d.start);
     const b = document.createElement('span'); b.className = 't'; b.textContent = hm(d.min);
     const c = document.createElement('span'); c.className = 'm';
     c.textContent = [d.checked ? T('checked') : T('unchecked'), T('breaksN', { n: d.breaks || 0 })].join(T('listSep'));
     const e = document.createElement('span'); e.className = 'k'; e.textContent = typeof d.km === 'number' ? `${fmtKm(d.km)} km` : '— km';
-    li.append(a, b, c, e);
-    if (d.from || d.to) { const pl = document.createElement('span'); pl.className = 'pl'; placeLine(pl, d.from, d.to); li.append(pl); }
+    hc.append(a, b, c, e);
+    if (d.from || d.to) { const pl = document.createElement('span'); pl.className = 'pl'; placeLine(pl, d.from, d.to); hc.append(pl); }
     list.append(li);
   }
+  renderSelBar();
   $('#hist-empty').hidden = Store.state.drives.length > 0;
   $('#store-note').textContent = T({ cloud: 'storeCloud', local: 'storeLocal', memory: 'storeMemory' }[Store.kind]);
 }
@@ -1181,10 +1219,14 @@ function setMode(m) {
 }
 
 /* ---------- check ---------- */
-const checks = { belt: false, mirror: false, route: false };
-const CHECK_KEY = { belt: 'checkBelt', mirror: 'checkMirror', route: 'checkRoute' };
+const checks = {};
+const CHECK_KEY = { belt: 'checkBelt', mirror: 'checkMirror', light: 'checkLight', route: 'checkRoute' };
 $('#go-check').addEventListener('click', () => {
-  for (const k in checks) checks[k] = false;
+  // The headlight check only appears from dusk until morning.
+  const night = ['dusk', 'night', 'late'].includes(tod());
+  $('#check-light').hidden = !night;
+  for (const k of Object.keys(checks)) delete checks[k];
+  for (const k of ['belt', 'mirror', 'route'].concat(night ? ['light'] : [])) checks[k] = false;
   $$('.check').forEach((b) => b.setAttribute('aria-pressed', 'false'));
   $('#depart').disabled = true;
   setMode('check');
@@ -1520,7 +1562,7 @@ function arrive() {
   hideStopCard();
   const km = d.gps === 'on' || d.demo ? d.km : null;
   const long = min >= 90;
-  const pts = d.demo ? 0 : 10 + Math.min(12, Math.floor(min / 10)) + (d.checked ? 5 : 0) + (long && d.breaks > 0 ? 5 : 0);
+  const pts = d.demo ? 0 : drivePts({ min: Math.max(1, Math.round(min)), checked: d.checked, breaks: d.breaks });
   pending = { start: new Date(d.startedAt).toISOString(), min: Math.max(1, Math.round(min)), rawMin: min, km, breaks: d.breaks, checked: d.checked, demo: d.demo, pts };
   if (!d.demo && S().placesOn && (d.startFix || d.lastFix || d.gps !== 'off')) {
     const p = pending;
@@ -1575,13 +1617,12 @@ $('#save-drive').addEventListener('click', () => {
       Store.save(); renderHome(); if (!$('#sheet-history').hidden) renderHistory();
     });
   }
-  const beforeLv = levelOf(Store.state.points);
+  const beforeLv = levelOf(totalPts());
   Store.state.drives = [rec, ...Store.state.drives].slice(0, 500);
-  Store.state.points += p.pts;
   Store.save();
   setMode('home');
   renderHome();
-  const n = Store.state.drives.length, afterLv = levelOf(Store.state.points);
+  const n = Store.state.drives.length, afterLv = levelOf(totalPts());
   if (afterLv > beforeLv) say('levelUp', { lv: T('levels')[afterLv] });
   else if ([5, 10, 20, 30, 50, 100, 200].includes(n)) say('milestone', { n });
   else say('saved');
@@ -1610,6 +1651,7 @@ function openSheet(id) {
 function closeSheets() {
   $$('.sheet').forEach((s) => { s.hidden = true; });
   $('#clear-confirm').hidden = true; $('#clear-start').hidden = false;
+  histSel.on = false; histSel.ids.clear(); $('#sel-main').hidden = false; $('#sel-confirm').hidden = true;
   if (lastFocus && lastFocus.focus) lastFocus.focus();
 }
 $('#open-history').addEventListener('click', () => openSheet('#sheet-history'));
@@ -1618,10 +1660,29 @@ $('#open-persona').addEventListener('click', () => openSheet('#sheet-persona'));
 $$('[data-close]').forEach((b) => b.addEventListener('click', closeSheets));
 addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheets(); });
 
+/* select drives to delete */
+const histSel = { on: false, ids: new Set() };
+function renderSelBar() {
+  const n = histSel.ids.size;
+  $('#sel-delete').textContent = T('deleteSelected', { n });
+  $('#sel-delete').disabled = n === 0;
+  $('#sel-confirm-text').textContent = T('deleteConfirmN', { n });
+}
+function endSelect() { histSel.on = false; histSel.ids.clear(); $('#sel-main').hidden = false; $('#sel-confirm').hidden = true; renderHistory(); }
+$('#sel-start').addEventListener('click', () => { histSel.on = true; histSel.ids.clear(); $('#clear-confirm').hidden = true; $('#clear-start').hidden = false; renderHistory(); });
+$('#sel-cancel').addEventListener('click', endSelect);
+$('#sel-delete').addEventListener('click', () => { if (!histSel.ids.size) return; $('#sel-main').hidden = true; $('#sel-confirm').hidden = false; });
+$('#sel-no').addEventListener('click', () => { $('#sel-main').hidden = false; $('#sel-confirm').hidden = true; });
+$('#sel-yes').addEventListener('click', () => {
+  Store.state.drives = Store.state.drives.filter((d) => !histSel.ids.has(d.id));
+  Store.save();
+  endSelect();
+  renderHome();
+});
 $('#clear-start').addEventListener('click', () => { $('#clear-start').hidden = true; $('#clear-confirm').hidden = false; });
 $('#clear-no').addEventListener('click', () => { $('#clear-start').hidden = false; $('#clear-confirm').hidden = true; });
 $('#clear-yes').addEventListener('click', () => {
-  Store.state.drives = []; Store.state.points = 0; Store.save();
+  Store.state.drives = []; Store.save();
   $('#clear-start').hidden = false; $('#clear-confirm').hidden = true;
   renderHistory(); renderHome();
 });
@@ -1832,11 +1893,33 @@ const glOK = initGL();
 const storeReady = Store.init().then(() => { Voice.pick(); applyI18n(); });
 const settled = Promise.race([storeReady, new Promise((r) => setTimeout(r, 4000))]);
 const greet = () => settled.then(() => say(GREET_KEY[tod()]));
+// The first load on a slow or freshly deployed site can fail, so try a few times before showing the stand-in.
+async function loadBundledWithRetry() {
+  let lastErr;
+  for (let i = 0; i < 3; i++) {
+    try {
+      $('#loading-bar').style.width = '0%';
+      return await loadModel(await fetchBundledModel((p) => { $('#loading-bar').style.width = `${Math.round(p * 100)}%`; }));
+    } catch (e) {
+      lastErr = e; console.warn('model load failed', i + 1, e);
+      await new Promise((r) => setTimeout(r, 1500 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+function bootModel(first) {
+  $('#loading').hidden = false; $('#fallback').hidden = true; $('#model-retry').hidden = true;
+  loadBundledWithRetry()
+    .then(() => { $('#loading').hidden = true; if (first) greet(); })
+    .catch((err) => {
+      console.error(err);
+      $('#loading').hidden = true; $('#fallback').hidden = false; $('#model-retry').hidden = false;
+      if (first) greet();
+    });
+}
+$('#model-retry-btn').addEventListener('click', () => bootModel(false));
 if (glOK) {
-  fetchBundledModel((p) => { $('#loading-bar').style.width = `${Math.round(p * 100)}%`; })
-    .then((buf) => loadModel(buf))
-    .then(() => { $('#loading').hidden = true; greet(); })
-    .catch((err) => { console.error(err); $('#loading').hidden = true; $('#fallback').hidden = false; greet(); });
+  bootModel(true);
 } else {
   $('#loading').hidden = true;
   $('#fallback').hidden = false;

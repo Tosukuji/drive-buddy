@@ -58,6 +58,7 @@
       "checkIntro": "じゃあ出発前のチェック、いきますよ。",
       "checkBelt": "ベルト、カチッといきましたね。よし!",
       "checkMirror": "ミラーと座席もオッケーっと。",
+      "checkLight": "ライトもオン。夜は早めの点灯が大事ですからね。",
       "checkRoute": "行き先セット完了。運転中にスマホいじるのはナシですからね?",
       "checkDone": "準備オッケーですね。じゃ、行きましょう!",
       "depart": [
@@ -133,6 +134,7 @@
       "checkIntro": "那我们来做出发前检查吧。",
       "checkBelt": "安全带系好了。很好！",
       "checkMirror": "后视镜和座椅也OK。",
+      "checkLight": "车灯也开了。晚上早点开灯很重要哦。",
       "checkRoute": "目的地设好了。开车时可不许玩手机哦？",
       "checkDone": "准备完毕！那我们出发吧！",
       "depart": [
@@ -208,6 +210,7 @@
       "checkIntro": "그럼 출발 전 체크, 해 볼게요.",
       "checkBelt": "안전벨트 딸깍. 좋아요!",
       "checkMirror": "미러랑 좌석도 오케이.",
+      "checkLight": "라이트도 켰네요. 밤엔 일찍 켜는 게 중요해요.",
       "checkRoute": "목적지 설정 완료. 운전 중에 폰 만지는 건 안 돼요?",
       "checkDone": "준비 완료네요. 자, 가요!",
       "depart": [
@@ -283,6 +286,7 @@
       "checkIntro": "Let's run the pre-drive check.",
       "checkBelt": "Seatbelt, click. Good!",
       "checkMirror": "Mirrors and seat, okay.",
+      "checkLight": "Headlights on too. Turning them on early really matters at night.",
       "checkRoute": "Destination set. No phone while driving, got it?",
       "checkDone": "All set. Let's go!",
       "depart": [

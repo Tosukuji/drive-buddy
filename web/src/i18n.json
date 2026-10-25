@@ -207,7 +207,13 @@
   "from": "出発",
   "to": "到着",
   "placeLooking": "場所を調べています…",
-  "placeUnknown": "場所不明"
+  "placeUnknown": "場所不明",
+  "checkLight": "ライトをつけた(オートライトも確認)",
+  "selectDelete": "選んで消す",
+  "deleteSelected": "選んだ{n}件を消す",
+  "deleteConfirmN": "{n}件の記録を消しますか?",
+  "modelFail": "キャラの3Dモデルを読み込めませんでした。",
+  "modelRetry": "もう一度読み込む"
  },
  "zh": {
   "langName": "中文",
@@ -413,7 +419,13 @@
   "from": "出发",
   "to": "到达",
   "placeLooking": "正在查询地点…",
-  "placeUnknown": "地点不明"
+  "placeUnknown": "地点不明",
+  "checkLight": "已打开车灯(也确认自动大灯)",
+  "selectDelete": "选择删除",
+  "deleteSelected": "删除所选的{n}条",
+  "deleteConfirmN": "要删除{n}条记录吗？",
+  "modelFail": "无法加载角色的3D模型。",
+  "modelRetry": "重新加载"
  },
  "ko": {
   "langName": "한국어",
@@ -622,7 +634,13 @@
   "from": "출발",
   "to": "도착",
   "placeLooking": "장소 확인 중…",
-  "placeUnknown": "장소 불명"
+  "placeUnknown": "장소 불명",
+  "checkLight": "라이트를 켰다(오토 라이트도 확인)",
+  "selectDelete": "골라서 삭제",
+  "deleteSelected": "선택한 {n}개 삭제",
+  "deleteConfirmN": "{n}개의 기록을 삭제할까요?",
+  "modelFail": "캐릭터 3D 모델을 불러오지 못했어요.",
+  "modelRetry": "다시 불러오기"
  },
  "en": {
   "langName": "English",
@@ -827,6 +845,12 @@
   "from": "From",
   "to": "To",
   "placeLooking": "Finding places…",
-  "placeUnknown": "Unknown place"
+  "placeUnknown": "Unknown place",
+  "checkLight": "Headlights on (check auto lights too)",
+  "selectDelete": "Select to delete",
+  "deleteSelected": "Delete {n} selected",
+  "deleteConfirmN": "Delete {n} drive(s)?",
+  "modelFail": "Couldn't load the character's 3D model.",
+  "modelRetry": "Try again"
  }
 }
