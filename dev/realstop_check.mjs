@@ -32,6 +32,13 @@ await page.waitForTimeout(1500);
 console.log('セリフ:', await page.evaluate(() => document.querySelector('#line-sr').textContent));
 await page.screenshot({ path: 'shots/real-stop.png' });
 await page.click('#stop-yes'); await page.waitForTimeout(800);
+// 近づく:約1.9km → 0.9km → 0.55km(それぞれ数秒走る)
+const heard = [];
+for (const off of [0.0215, 0.0211, 0.0105, 0.0101, 0.0062, 0.0058]) {
+  await ctx.setGeolocation({ latitude: 35.45, longitude: 139.42 + off, accuracy: 10 }); await page.waitForTimeout(1600);
+  heard.push(await page.evaluate(() => document.querySelector('#line-sr').textContent));
+}
+console.log('近づくときの案内:', [...new Set(heard)].join(' / '));
 // SAに到着(近くで減速)
 for (const lo of [139.4215, 139.4205, 139.4201]) { await ctx.setGeolocation({ latitude: 35.4496, longitude: lo, accuracy: 10 }); await page.waitForTimeout(1200); }
 await page.waitForTimeout(1500);

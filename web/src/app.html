@@ -463,6 +463,8 @@ details.tips p { margin: 8px 0 0; font-size: var(--fs-xs); color: var(--muted); 
 .week { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
 .week b { color: var(--ink); }
 .lcd.sum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pcard .plv { display: inline-block; white-space: nowrap; margin-left: 8px; font-family: var(--font-ui); font-size: var(--fs-xs); font-weight: 700; color: var(--accent); }
+.hist .who { font-size: var(--fs-xs); color: var(--muted); }
 .medal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
 .medal { display: flex; gap: 8px; align-items: flex-start; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: var(--fs-xs); color: var(--muted); }
 .medal i { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 700; background: var(--line); color: var(--muted); }
@@ -816,6 +818,7 @@ label.btn { display: flex; justify-content: center; align-items: center; cursor:
         <label class="toggle"><input type="checkbox" id="set-stops"><span data-i18n="stopsOn"></span></label>
         <label class="toggle"><input type="checkbox" id="set-stops-info"><span data-i18n="stopsInfo"></span></label>
         <label class="toggle"><input type="checkbox" id="set-voice-reply"><span data-i18n="voiceReply"></span></label>
+        <label class="toggle"><input type="checkbox" id="set-stop-cues"><span data-i18n="stopCuesOn"></span></label>
         <p class="note" data-i18n="stopsNote"></p>
         <p class="note" id="mic-note"></p>
       </div>
@@ -920,13 +923,14 @@ const META = {
   demoStart: ['relaxed', 'nod'], demoEnd: ['happy', 'wave'], voiceTest: ['happy', 'wave'], newModel: ['surprised', 'tilt'], hello: ['happy', 'wave'],
   stopAhead: ['neutral', 'tilt'], stopAheadBreak: ['neutral', 'nod'], stopYes: ['happy', 'nod'], stopNo: ['neutral', 'nod'],
   stopNoReply: ['neutral', 'tilt'], stopReached: ['relaxed', 'nod'],
-  restStart: ['relaxed', 'nod'], itemGet: ['happy', 'hop'],
+  restStart: ['relaxed', 'nod'], itemGet: ['happy', 'hop'], restReco: ['happy', 'nod'], restLocal: ['happy', 'tilt'],
+  stopCue: ['neutral', 'nod'], stopCueNow: ['neutral', 'nod'],
   giftLove: ['happy', 'hop'], giftLike: ['happy', 'nod'], giftNeutral: ['relaxed', 'nod'], giftDislike: ['sad', 'shake'],
   rainStart: ['neutral', 'tilt'],
   season: ['happy', 'wave'], anniv: ['happy', 'hop'], photo: ['happy', 'nod'], medal: ['happy', 'hop'], arriveSmooth: ['happy', 'nod'], arriveRough: ['neutral', 'nod'],
 };
 // In "guidance only" mode these lines still show in the bubble but are not spoken.
-const QUIET_IN_GUIDE = new Set(['checkIntro', 'checkBelt', 'checkMirror', 'checkLight', 'checkRoute', 'checkDone', 'hourly', 'chat', 'breakTaken', 'saved', 'discarded', 'levelUp', 'milestone', 'newModel', 'newPlace', 'itemGet', 'medal', 'photo']);
+const QUIET_IN_GUIDE = new Set(['checkIntro', 'checkBelt', 'checkMirror', 'checkLight', 'checkRoute', 'checkDone', 'hourly', 'chat', 'breakTaken', 'saved', 'discarded', 'levelUp', 'milestone', 'newModel', 'newPlace', 'itemGet', 'medal', 'photo', 'restReco', 'restLocal']);
 const LINE_KEYS = Object.keys(PRESETS.kohai.lines.ja);
 // Keys that are only ever appended to another line.
 const SUFFIX_KEYS = new Set(['arriveGoodBreak', 'arriveNoBreak', 'arriveLate', 'arriveSmooth', 'arriveRough']);
@@ -934,7 +938,7 @@ function keyGroup(k) {
   if (k.startsWith('greet') || k === 'hello' || k === 'season' || k === 'anniv') return 'greet';
   if (k.startsWith('check')) return 'check';
   if (['depart', 'departSkip', 'departLate', 'hourly', 'chat', 'demoStart', 'rainStart'].includes(k)) return 'drive';
-  if (k.startsWith('break') || k.startsWith('stop') || k === 'restStart' || k === 'itemGet') return 'rest';
+  if (k.startsWith('break') || k.startsWith('stop') || k.startsWith('rest') || k === 'itemGet') return 'rest';
   if (k.startsWith('arrive') || ['saved', 'discarded', 'levelUp', 'milestone', 'newPlace', 'demoEnd'].includes(k)) return 'arrive';
   return 'other';
 }
@@ -942,13 +946,23 @@ const GROUP_ORDER = ['greet', 'check', 'drive', 'rest', 'arrive', 'other'];
 
 // Rest stops for the demo route (Tokyo → Mt. Fuji on the Tomei Expressway). Sample data, not live.
 const DEMO_STOPS = [
-  { at: 26, km: 4, kind: 'SA', pref: 'JP-14', hours: '24h', crowd: 2, name: { ja: '海老名サービスエリア', zh: '海老名服务区', ko: '에비나 휴게소', en: 'Ebina Service Area' }, short: { ja: '海老名SA(下り)', zh: '海老名服务区(下行)', ko: '에비나 휴게소(하행)', en: 'Ebina SA (westbound)' } },
-  { at: 58, km: 3, kind: 'PA', pref: 'JP-22', hours: '24h', crowd: 0, name: { ja: '鮎沢パーキングエリア', zh: '鲇泽停车区', ko: '아유자와 주차구역', en: 'Ayuzawa Parking Area' }, short: { ja: '鮎沢PA(下り)', zh: '鲇泽停车区(下行)', ko: '아유자와 PA(하행)', en: 'Ayuzawa PA (westbound)' } },
-  { at: 106, km: 6, kind: 'SA', pref: 'JP-22', hours: '24h', crowd: 1, name: { ja: '足柄サービスエリア', zh: '足柄服务区', ko: '아시가라 휴게소', en: 'Ashigara Service Area' }, short: { ja: '足柄SA(下り)', zh: '足柄服务区(下行)', ko: '아시가라 휴게소(하행)', en: 'Ashigara SA (westbound)' } },
+  { at: 26, km: 4, kind: 'SA', pref: 'JP-14', reco: { ja: '海老名メロンパン', zh: '海老名菠萝包', ko: '에비나 멜론빵', en: 'Ebina melon bread' }, hours: '24h', crowd: 2, name: { ja: '海老名サービスエリア', zh: '海老名服务区', ko: '에비나 휴게소', en: 'Ebina Service Area' }, short: { ja: '海老名SA(下り)', zh: '海老名服务区(下行)', ko: '에비나 휴게소(하행)', en: 'Ebina SA (westbound)' } },
+  { at: 58, km: 3, kind: 'PA', pref: 'JP-22', reco: { ja: '丹沢あんぱん', zh: '丹泽红豆面包', ko: '단자와 단팥빵', en: 'Tanzawa anpan' }, hours: '24h', crowd: 0, name: { ja: '鮎沢パーキングエリア', zh: '鲇泽停车区', ko: '아유자와 주차구역', en: 'Ayuzawa Parking Area' }, short: { ja: '鮎沢PA(下り)', zh: '鲇泽停车区(下行)', ko: '아유자와 PA(하행)', en: 'Ayuzawa PA (westbound)' } },
+  { at: 106, km: 6, kind: 'SA', pref: 'JP-22', reco: { ja: '富士山メロンパン', zh: '富士山菠萝包', ko: '후지산 멜론빵', en: 'Mt. Fuji melon bread' }, hours: '24h', crowd: 1, name: { ja: '足柄サービスエリア', zh: '足柄服务区', ko: '아시가라 휴게소', en: 'Ashigara Service Area' }, short: { ja: '足柄SA(下り)', zh: '足柄服务区(下行)', ko: '아시가라 휴게소(하행)', en: 'Ashigara SA (westbound)' } },
   { at: 150, km: 2, kind: 'michi', pref: 'JP-22', hours: [8, 18], crowd: 0, name: { ja: '道の駅すばしり', zh: '公路休息站「须走」', ko: '미치노에키 스바시리', en: 'Michi-no-Eki Subashiri' }, short: { ja: '道の駅 すばしり', zh: '公路休息站 须走', ko: '미치노에키 스바시리', en: 'Roadside Station Subashiri' } },
 ];
+// What some service areas are known for (from travel guides), matched by name on real drives too.
+const SA_RECO = [
+  [/海老名/, { ja: '海老名メロンパン', zh: '海老名菠萝包', ko: '에비나 멜론빵', en: 'Ebina melon bread' }],
+  [/足柄/, { ja: '富士山メロンパン', zh: '富士山菠萝包', ko: '후지산 멜론빵', en: 'Mt. Fuji melon bread' }],
+  [/鮎沢/, { ja: '丹沢あんぱん', zh: '丹泽红豆面包', ko: '단자와 단팥빵', en: 'Tanzawa anpan' }],
+  [/富士川/, { ja: '富士宮やきそば', zh: '富士宫炒面', ko: '후지노미야 야키소바', en: 'Fujinomiya yakisoba' }],
+  [/浜名湖/, { ja: '三ケ日みかんのソフトクリーム', zh: '三日町橘子冰淇淋', ko: '미카비 귤 소프트아이스크림', en: 'Mikkabi mandarin soft serve' }],
+  [/上郷/, { ja: '名古屋コーチンの親子丼', zh: '名古屋交趾鸡亲子丼', ko: '나고야 코친 오야코동', en: 'Nagoya Cochin oyakodon' }],
+];
+const recoFor = (st) => st && (st.reco || (SA_RECO.find(([re]) => re.test(st.name.ja || '')) || [])[1]) || null;
 const DEMO_KMH = 80;
-const REST_SEC = 120; // a 2-minute rest earns a souvenir
+const REST_SEC = 120; // a 2-minute rest earns a souvenir (shown on the card; not said aloud)
 
 // Trait combinations for the custom builder.
 const TRAITS = {
@@ -1012,7 +1026,7 @@ const defaultSettings = () => ({
   verbosity: 'normal', stopsOn: true, stopsInfo: true, voiceReply: true, placesOn: true,
   voiceNames: {}, rateMul: 1, volume: 1, greetOn: true,
   theme: 'auto', zoom: 1, motion: 'mid', driveChar: 'dim', haptics: true, bubbleOp: 1, bubbleFade: false,
-  weatherOn: true, looks: {}, onboarded: false, motionSlots: {}, safetyOn: false, voicePack: true, seasonSaid: '', annivSaid: [],
+  weatherOn: true, looks: {}, onboarded: false, motionSlots: {}, safetyOn: false, voicePack: true, stopCues: true, seasonSaid: '', annivSaid: [],
 });
 const defaultState = () => ({ v: 3, settings: defaultSettings(), drives: [], custom: null, heard: {}, bag: {}, got: {}, gifts: [], prefs: {}, medals: {}, photos: 0 });
 const isObj = (o) => o && typeof o === 'object' && !Array.isArray(o);
@@ -1029,9 +1043,10 @@ function normalize(d) {
   for (const k of ['voiceNames', 'looks', 'motionSlots']) if (!isObj(s[k])) s[k] = {};
   delete s.pitch;
   if (!Array.isArray(s.annivSaid)) s.annivSaid = [];
+  const legacyPid = s.persona || 'kohai';
   return {
     v: 3, settings: s,
-    drives: Array.isArray(d.drives) ? d.drives.slice(0, 500) : [],
+    drives: Array.isArray(d.drives) ? d.drives.slice(0, 500).map((x) => (isObj(x) && !x.p ? { ...x, p: legacyPid } : x)) : [],
     custom: isObj(d.custom) && d.custom.lines ? d.custom : null,
     heard: isObj(d.heard) ? d.heard : {},
     bag: isObj(d.bag) ? d.bag : {},
@@ -2036,7 +2051,7 @@ function medalCtx() {
     goodRest: ds.filter((d) => d.min >= 90 && d.breaks > 0).length, smooth: ds.filter((d) => (d.smooth ?? (d.harsh === 0 && d.min >= 10 ? 4 : 0)) >= 3).length,
     morning: ds.filter((d) => { const h = new Date(d.start).getHours(); return h >= 5 && h < 9; }).length,
     prefs: Object.keys(st.prefs).length, items: Object.keys(st.got).length, rare: Object.keys(st.got).filter((id) => rarityOf(id) === 3).length,
-    gifts: st.gifts.length, linesPct: total ? Object.keys(heard).length / total : 0, lv: levelOf(totalPts()), photos: st.photos || 0,
+    gifts: st.gifts.length, linesPct: total ? Object.keys(heard).length / total : 0, lv: Math.max(...[...PRESET_ORDER, 'custom'].map((id) => levelOf(bondPts(id)))), photos: st.photos || 0,
   };
 }
 const medalName = (id) => (T('medals')[id] || [id])[0];
@@ -2499,7 +2514,12 @@ function drivePts(d) {
   const grade = d.smooth ?? (d.harsh === 0 && min >= 10 ? 4 : null);
   return 10 + Math.min(12, Math.floor(min / 10)) + (d.checked ? 5 : 0) + (min >= 90 && d.breaks > 0 ? 5 : 0) + (grade ? SMOOTH_PTS[grade] : 0);
 }
-const totalPts = () => Math.max(0, Store.state.drives.reduce((a, d) => a + drivePts(d), 0) + Store.state.gifts.reduce((a, g) => a + (Number(g.d) || 0), 0));
+// Bond is kept per character: the drives that character rode along on, plus the souvenirs given to them.
+function bondPts(pid = personaIdOf(persona())) {
+  const st = Store.state;
+  return Math.max(0, st.drives.reduce((a, d) => a + (d.p === pid ? drivePts(d) : 0), 0) + st.gifts.reduce((a, g) => a + (g.p === pid ? Number(g.d) || 0 : 0), 0));
+}
+const totalPts = () => bondPts();
 function levelOf(pts) { let i = 0; LEVEL_PTS.forEach((min, k) => { if (pts >= min) i = k; }); return i; }
 function renderAffinity() {
   const pts = totalPts(), i = levelOf(pts), names = T('levels');
@@ -2555,6 +2575,8 @@ function renderHistory() {
     }
     li.append(hc);
     const a = document.createElement('span'); a.className = 'd'; a.textContent = fmtDate(d.start);
+    const rider = d.p === 'custom' ? Store.state.custom : PRESETS[d.p];
+    if (rider) { const w = document.createElement('span'); w.className = 'who'; w.textContent = ` ${nameOf(rider)}`; a.append(w); }
     const b = document.createElement('span'); b.className = 't'; b.textContent = hm(d.min);
     const c = document.createElement('span'); c.className = 'm';
     c.textContent = [d.checked ? T('checked') : T('unchecked'), T('breaksN', { n: d.breaks || 0 })].join(T('listSep'));
@@ -2687,7 +2709,7 @@ function curSpeed() {
   if (drive.rest) return 20;
   const st = drive.stop;
   if (st && st.state === 'asking') return 2;
-  if (st && st.state === 'going') return 30;
+  if (st && st.state === 'going') return (st.reachAt - drive.sim / 60) * (DEMO_KMH / 60) > 2.3 ? 30 : 6;
   return 120;
 }
 function elapsedSec() {
@@ -2764,15 +2786,26 @@ function enterRest({ stop = null, pref = null, quiet = false }) {
   $('#break-btn').hidden = true;
   renderRestCard();
   buzz(20);
-  if (!quiet) say('restStart', { min: Math.round(REST_SEC / 60) });
-  // where are we resting? (prefecture decides the local souvenir)
+  const r = drive.rest;
+  if (!quiet) { if (pref || recoFor(stop)) restTalk(r); else say('restStart'); }
+  // where are we resting? (prefecture decides the local souvenir, and what the character talks about)
   if (!drive.demo && !pref) {
-    const r = drive.rest;
     const fixP = drive.lastFix && Date.now() - drive.lastFix.t < 120000 ? Promise.resolve(drive.lastFix) : getFix(8000);
     fixP.then((f) => (f ? placeInfo(f.lat, f.lon) : null)).then((info) => {
-      if (info && info.prefCode) { r.pref = info.prefCode; markPref(info.prefCode, info.prefName); }
+      if (!info || !info.prefCode) return;
+      r.pref = info.prefCode; markPref(info.prefCode, info.prefName);
+      if (!quiet && !r.talked && drive && drive.rest === r) restTalk(r);
     });
   }
+}
+// Talk about the place: what this service area is known for, else the prefecture's speciality.
+function restTalk(r) {
+  if (!r || r.talked) return Promise.resolve();
+  const st = r.stop, reco = recoFor(st);
+  if (reco) { r.talked = true; return say('restReco', { stop: st.name[lang()] || st.name.ja, reco: reco[lang()] || reco.ja }); }
+  const local = r.pref && ITEMS.prefs[r.pref];
+  if (local) { r.talked = true; return say('restLocal', { place: prefLabel(r.pref), item: itemName(local) }); }
+  return Promise.resolve();
 }
 function updateRest(s) {
   const r = drive.rest;
@@ -2857,9 +2890,11 @@ function updateStops(m) {
     if (st.state === 'going' && m >= st.reachAt) {
       drive.stop = null; hideStopCard();
       enterRest({ stop: st, pref: st.pref, quiet: true });
-      say('stopReached', { stop: st.name[lang()] || st.name.ja });
+      const r = drive.rest;
+      say('stopReached', { stop: st.name[lang()] || st.name.ja }).then(() => { if (drive && drive.rest === r) restTalk(r); });
       return;
     }
+    if (st.state === 'going') stopCues(st, Math.max(0, (st.reachAt - m) * (DEMO_KMH / 60)));
     if (st.state === 'passed' && m >= st.reachAt) { drive.stop = null; hideStopCard(); return; }
     renderStopCard();
     return;
@@ -2881,6 +2916,16 @@ async function announceStop(st, m) {
   if (finished) startListening(st);
   clearTimeout(listenTimer);
   listenTimer = setTimeout(() => { if (drive && drive.stop === st && st.state === 'asking') answerStop(null); }, 12000);
+}
+// After "yes", say how far the entrance is, like the signs on the expressway: 2 km, 1 km, then "soon, on the left".
+function stopCues(st, left) {
+  if (!S().stopCues) return;
+  st.cued = st.cued || {};
+  const name = st.name[lang()] || st.name.ja;
+  for (const km of [2, 1]) {
+    if (left <= km && left > km - 0.4 && !st.cued[km]) { st.cued[km] = true; say('stopCue', { dist: T('distSpeak', { n: km }), stop: name }); return; }
+  }
+  if (left <= 0.6 && !st.cued.now) { st.cued.now = true; say('stopCueNow', { stop: name }); }
 }
 function setListenNote(text, on = false) {
   const el = $('#stop-listen'); el.textContent = text; el.classList.toggle('on', on);
@@ -2966,9 +3011,11 @@ function updateRealStops(m) {
     if (st.state === 'going' && (st.dist < 0.25 || (st.dist < 0.6 && r.speedKmh < 20))) {
       drive.stop = null; hideStopCard();
       enterRest({ stop: st, quiet: true });
-      say('stopReached', { stop: st.name[lang()] || st.name.ja });
+      const rest = drive.rest;
+      say('stopReached', { stop: st.name[lang()] || st.name.ja }).then(() => setTimeout(() => { if (drive && drive.rest === rest) restTalk(rest); }, 1500));
       return;
     }
+    if (st.state === 'going' && r.speedKmh > 20) stopCues(st, st.dist);
     if (st.dist > st.minDist + 1.5 || (st.state === 'passed' && Date.now() - (st.decidedAt || 0) > 120000)) { drive.stop = null; hideStopCard(); return; }
     renderStopCard();
     return;
@@ -3202,7 +3249,7 @@ $('#save-drive').addEventListener('click', () => {
   const rec = {
     id: Math.random().toString(36).slice(2, 10), start: p.start, min: p.min,
     km: p.km != null ? Math.round(p.km * 10) / 10 : (Number.isFinite(kmIn) && kmIn > 0 ? Math.round(kmIn * 10) / 10 : null),
-    breaks: p.breaks, checked: p.checked,
+    breaks: p.breaks, checked: p.checked, p: personaIdOf(persona()),
   };
   if (p.sharp) { rec.sharpLight = p.sharp.light; rec.sharpStrong = p.sharp.strong; if (p.smooth) rec.smooth = p.smooth; }
   if (p.from) rec.from = p.from;
@@ -3475,6 +3522,7 @@ function renderSettings() {
   $('#set-stops').checked = !!S().stopsOn;
   $('#set-stops-info').checked = !!S().stopsInfo;
   $('#set-voice-reply').checked = !!S().voiceReply;
+  $('#set-stop-cues').checked = !!S().stopCues;
   $('#set-places').checked = !!S().placesOn;
   $('#set-weather').checked = !!S().weatherOn;
   $('#set-safety').checked = !!S().safetyOn;
@@ -3512,6 +3560,7 @@ bindToggle('#set-haptics', 'haptics', () => buzz(30));
 bindToggle('#set-stops', 'stopsOn');
 bindToggle('#set-stops-info', 'stopsInfo');
 bindToggle('#set-voice-reply', 'voiceReply');
+bindToggle('#set-stop-cues', 'stopCues');
 bindToggle('#set-places', 'placesOn');
 bindToggle('#set-weather', 'weatherOn', updateRainFX);
 $('#set-safety').addEventListener('change', async (e) => {
@@ -3793,6 +3842,7 @@ function setPersona(id) {
   Voice.pick();
   VoicePack.load(id);
   renderIdentity();
+  renderHome();
   renderPersonaSheet();
   closeSheets();
   applyLook().then(() => say('hello'));
@@ -3801,6 +3851,9 @@ function personaCard(p, id, { onPick, compact = false } = {}) {
   const on = S().persona === id;
   const card = document.createElement('div'); card.className = 'pcard' + (on ? ' on' : '');
   const n = document.createElement('div'); n.className = 'pn'; n.textContent = nameOf(p);
+  const lvI = levelOf(bondPts(id));
+  const lvEl = document.createElement('span'); lvEl.className = 'plv'; lvEl.textContent = `Lv${lvI + 1} ${T('levels')[lvI]}`;
+  n.append(lvEl);
   const t = document.createElement('div'); t.className = 'pt'; t.textContent = taglineOf(p);
   let actionEl;
   if (on) { actionEl = document.createElement('span'); actionEl.className = 'badge pb'; actionEl.textContent = T('inUse'); }
@@ -3863,7 +3916,7 @@ function buildPrompt(traits, L, base) {
     'Rules:',
     '- Driving safety comes first. Never encourage speeding, using the phone while driving, or driving while sleepy. Advice about breaks and sleep stays sincere even when the character teases.',
     '- Friendly only: no romantic or sexual content.',
-    '- Keep each {placeholder} wherever the reference line for the same key uses it, spelled exactly the same. {name} = how the character addresses the driver, {h} = a number of hours, {t} = an elapsed-time phrase, {n} = a count, {lv} = a bond level name, {dist} = a distance phrase, {stop} = a rest-stop name, {info} = a short sentence about opening hours and crowding (it may be empty, so the line must still read well without it), {min} = a number of minutes, {item} = a souvenir name, {place} = a prefecture name, {event} = a seasonal day such as Christmas, {medal} = an achievement name.',
+    '- Keep each {placeholder} wherever the reference line for the same key uses it, spelled exactly the same. {name} = how the character addresses the driver, {h} = a number of hours, {t} = an elapsed-time phrase, {n} = a count, {lv} = a bond level name, {dist} = a distance phrase, {stop} = a rest-stop name, {info} = a short sentence about opening hours and crowding (it may be empty, so the line must still read well without it), {min} = a number of minutes, {item} = a souvenir name, {place} = a prefecture name, {event} = a seasonal day such as Christmas, {medal} = an achievement name, {reco} = a food a rest stop is known for.',
     '- giftLove / giftLike / giftNeutral / giftDislike are reactions when the driver gives the character a souvenir it loves / likes / feels neutral about / dislikes.',
     '- When the reference value for a key is a list, return a list with the same number of items.',
     '- arriveGoodBreak, arriveNoBreak and arriveLate are short add-on sentences appended right after an arrival line.',
@@ -3882,7 +3935,7 @@ function validateCustom(raw, base, L) {
   let used = 0;
   for (const k of LINE_KEYS) {
     const ref = refLines[k], got = raw.lines[k];
-    const need = new Set((JSON.stringify(ref).match(/\{(h|t|n|lv|dist|stop|info|min|item|place|event|medal)\}/g) || []));
+    const need = new Set((JSON.stringify(ref).match(/\{(h|t|n|lv|dist|stop|info|min|item|place|event|medal|reco)\}/g) || []));
     const okStr = (s) => typeof s === 'string' && s.trim() && s.length <= 220 && [...need].every((ph) => s.includes(ph));
     if (Array.isArray(ref)) {
       const arr = Array.isArray(got) ? got.filter((s) => typeof s === 'string' && s.trim() && s.length <= 220) : [];
@@ -4034,5 +4087,5 @@ if (/[?&](fps|debug)\b/.test(location.search)) {
   Quality.meter.style.cssText = 'position:absolute;left:8px;bottom:8px;z-index:5;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;font:12px/1.4 monospace;pointer-events:none';
   stage.append(Quality.meter);
 }
-if (/[?&]debug\b/.test(location.search)) window.__dbg = { VoicePack, clipsFor, vcHash, smoothGrade, HAND, posePreview, renderNow: () => renderer.render(scene, camera), fetchRealStops, takePhoto, checkMedals, Safety, Pip, get now() { return clock ? clock.elapsedTime : 0; }, playMotion, Motion, parseVRMA, simulateMotion, Quality, Char, say, gesture, camera, Store, S, applyI18n, setPersona, answerStop, Weather, enterRest, grantItem, applyLook, setLook, get drive() { return drive; } };
+if (/[?&]debug\b/.test(location.search)) window.__dbg = { bondPts, VoicePack, clipsFor, vcHash, smoothGrade, HAND, posePreview, renderNow: () => renderer.render(scene, camera), fetchRealStops, takePhoto, checkMedals, Safety, Pip, get now() { return clock ? clock.elapsedTime : 0; }, playMotion, Motion, parseVRMA, simulateMotion, Quality, Char, say, gesture, camera, Store, S, applyI18n, setPersona, answerStop, Weather, enterRest, grantItem, applyLook, setLook, get drive() { return drive; } };
 </script>

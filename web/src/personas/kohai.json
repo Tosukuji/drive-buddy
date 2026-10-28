@@ -109,7 +109,7 @@
    "stopNo": "了解、通過しますね。",
    "stopNoReply": "返事がなかったので、今回は通過にしときますね。",
    "stopReached": "{stop}に到着です。ちょっと休んでいきましょ。",
-   "restStart": "休憩スタートですね。{min}分ゆっくりしたら、何かいいことあるかもですよ。",
+   "restStart": "休憩ですね。肩、ちゃんと回しておいてください。",
    "itemGet": "あ、{item}を見つけました!あとで私にもくださいね?",
    "giftLove": "えっ、{item}!?私に?…ほんとに嬉しいです。大事にしますね。",
    "giftLike": "{item}、好きなんですよね。ありがとうございます!",
@@ -121,7 +121,11 @@
    "photo": "はい、撮りますよ。…ちゃんと可愛く写ってます?",
    "medal": "実績「{medal}」、達成です。…ふふ、やるじゃないですか。",
    "arriveSmooth": "運転もなめらかで、乗り心地よかったです。",
-   "arriveRough": "ただ、ブレーキがちょっと急なときがありました。車間距離、少し多めでいきましょう。"
+   "arriveRough": "ただ、ブレーキがちょっと急なときがありました。車間距離、少し多めでいきましょう。",
+   "restReco": "{stop}といえば{reco}らしいですよ。…ちょっと食べてみたいです。",
+   "restLocal": "{place}の名物は{item}ですよ。せっかくだし、探してみません?",
+   "stopCue": "{dist}先、{stop}です。左車線に寄っておきましょう。",
+   "stopCueNow": "もうすぐ左側が入口です。"
   },
   "zh": {
    "greetDawn": [
@@ -199,7 +203,7 @@
    "stopNo": "收到，直接通过。",
    "stopNoReply": "没有听到回答，这次就直接通过吧。",
    "stopReached": "到{stop}了。稍微休息一下吧。",
-   "restStart": "开始休息啦。好好歇{min}分钟，说不定会有好事哦。",
+   "restStart": "休息时间。肩膀记得活动一下哦。",
    "itemGet": "啊，发现了{item}！待会儿也分我一点吧？",
    "giftLove": "诶，{item}！？给我的？……真的好开心。我会珍惜的。",
    "giftLike": "{item}，我正好喜欢。谢谢！",
@@ -211,7 +215,11 @@
    "photo": "要拍了哦。……我拍得可爱吗？",
    "medal": "达成成就「{medal}」。……嘿嘿，还挺厉害的嘛。",
    "arriveSmooth": "开得也很平稳，坐着很舒服。",
-   "arriveRough": "不过有几次刹车有点急。跟车距离再拉开一点吧。"
+   "arriveRough": "不过有几次刹车有点急。跟车距离再拉开一点吧。",
+   "restReco": "说到{stop}，听说{reco}很有名哦。……我有点想尝尝。",
+   "restLocal": "{place}的特产是{item}哦。难得来一趟，要不要找找看？",
+   "stopCue": "前方{dist}是{stop}。先靠到左侧车道吧。",
+   "stopCueNow": "马上就是左侧的入口了。"
   },
   "ko": {
    "greetDawn": [
@@ -289,7 +297,7 @@
    "stopNo": "알겠어요, 지나갈게요.",
    "stopNoReply": "대답이 없어서 이번엔 그냥 지나갈게요.",
    "stopReached": "{stop} 도착이에요. 잠깐 쉬었다 가요.",
-   "restStart": "휴식 시작이네요. {min}분 푹 쉬면 좋은 일이 있을지도요.",
+   "restStart": "휴식이네요. 어깨 꼭 돌려 두세요.",
    "itemGet": "아, {item} 발견! 나중에 저도 줘요?",
    "giftLove": "엣, {item}!? 저한테요? …진짜 기뻐요. 소중히 할게요.",
    "giftLike": "{item}, 좋아하거든요. 고마워요!",
@@ -301,7 +309,11 @@
    "photo": "찍을게요. …저 귀엽게 나왔어요?",
    "medal": "업적 「{medal}」 달성이에요. …후후, 제법인데요?",
    "arriveSmooth": "운전도 부드러워서 승차감 좋았어요.",
-   "arriveRough": "다만 브레이크가 조금 급할 때가 있었어요. 차간 거리는 조금 더 넉넉하게 가요."
+   "arriveRough": "다만 브레이크가 조금 급할 때가 있었어요. 차간 거리는 조금 더 넉넉하게 가요.",
+   "restReco": "{stop} 명물은 {reco}! …저도 좀 먹어 보고 싶어요.",
+   "restLocal": "{place} 명물은 {item}! 모처럼인데 찾아볼래요?",
+   "stopCue": "{dist} 앞, {stop}. 왼쪽 차선으로 붙어 둬요.",
+   "stopCueNow": "곧 왼쪽이 입구예요."
   },
   "en": {
    "greetDawn": [
@@ -379,7 +391,7 @@
    "stopNo": "Okay, passing by.",
    "stopNoReply": "No answer, so we'll pass this one.",
    "stopReached": "We're at {stop}. Let's take a breather.",
-   "restStart": "Break time. Rest for {min} minutes and something nice might happen.",
+   "restStart": "Break time. Make sure you roll your shoulders.",
    "itemGet": "Oh, I found {item}! Share some with me later?",
    "giftLove": "Wait, {item}? For me? ...I'm really happy. I'll treasure it.",
    "giftLike": "{item}! I really like these. Thanks!",
@@ -391,7 +403,11 @@
    "photo": "Okay, taking it. ...Do I look cute?",
    "medal": "Medal earned: {medal}. ...Heh, not bad.",
    "arriveSmooth": "Smooth driving, too. Comfy ride.",
-   "arriveRough": "Though the braking was a bit sudden a few times. Let's leave more room ahead."
+   "arriveRough": "Though the braking was a bit sudden a few times. Let's leave more room ahead.",
+   "restReco": "{stop} is known for {reco}. ...I kind of want to try it.",
+   "restLocal": "{place} is famous for {item}. Want to look for some while we're here?",
+   "stopCue": "{stop} in {dist}. Move over to the left lane.",
+   "stopCueNow": "The entrance is coming up on the left."
   }
  }
 }

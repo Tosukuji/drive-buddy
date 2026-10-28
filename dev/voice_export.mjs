@@ -35,7 +35,9 @@ const VARS = {
   newPlace: prefNames.map((place) => ({ place })),
   season: Object.values(i18n.events).map((event) => ({ event })),
   medal: medalNames.map((medal) => ({ medal })),
-  restStart: [{ min: 2 }],
+  restReco: demoStops.filter((st) => st.reco).map((st) => ({ stop: st.name.ja, reco: st.reco.ja })),
+  restLocal: Object.values(items.prefs).map((it) => ({ place: it.pref.ja, item: it.ja })),
+  stopCue: demoStops.flatMap((st) => [2, 1].map((n) => ({ stop: st.name.ja, dist: fill(i18n.distSpeak, { n }) }))),
   stopAhead: stopVars, stopAheadBreak: stopVars,
   stopYes: stopOnly, stopNo: stopOnly, stopNoReply: stopOnly, stopReached: stopOnly,
 };

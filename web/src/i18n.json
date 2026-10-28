@@ -465,7 +465,8 @@
   "voicePackHas": "このキャラの声:{credit}",
   "voicePackNone": "このキャラのキャラボイスはまだありません(端末の声で話します)。",
   "voicePackJaOnly": "キャラボイスは日本語のときだけ使えます。",
-  "voiceCredits": "キャラボイス:{list}"
+  "voiceCredits": "キャラボイス:{list}",
+  "stopCuesOn": "寄るときに入口までの距離を知らせる(2km・1km・まもなく)"
  },
  "zh": {
   "langName": "中文",
@@ -929,7 +930,8 @@
   "voicePackHas": "该角色的声音：{credit}",
   "voicePackNone": "该角色还没有角色语音(使用设备的声音)。",
   "voicePackJaOnly": "角色语音仅在日语时可用。",
-  "voiceCredits": "角色语音：{list}"
+  "voiceCredits": "角色语音：{list}",
+  "stopCuesOn": "进去时提示到入口的距离(2km・1km・即将)"
  },
  "ko": {
   "langName": "한국어",
@@ -1396,7 +1398,8 @@
   "voicePackHas": "이 캐릭터의 목소리: {credit}",
   "voicePackNone": "이 캐릭터의 캐릭터 보이스는 아직 없어요(기기 목소리로 말해요).",
   "voicePackJaOnly": "캐릭터 보이스는 일본어일 때만 쓸 수 있어요.",
-  "voiceCredits": "캐릭터 보이스: {list}"
+  "voiceCredits": "캐릭터 보이스: {list}",
+  "stopCuesOn": "들를 때 입구까지 거리 알려 주기(2km・1km・곧)"
  },
  "en": {
   "langName": "English",
@@ -1859,6 +1862,7 @@
   "voicePackHas": "This character's voice: {credit}",
   "voicePackNone": "No character voice for this character yet (uses the device voice).",
   "voicePackJaOnly": "Character voices are available in Japanese only.",
-  "voiceCredits": "Character voices: {list}"
+  "voiceCredits": "Character voices: {list}",
+  "stopCuesOn": "When stopping, call out the distance to the entrance (2 km, 1 km, soon)"
  }
 }
