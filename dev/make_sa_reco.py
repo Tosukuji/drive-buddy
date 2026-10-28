@@ -179,4 +179,22 @@ used = sorted({s for e in out for s in e['s']}, key=lambda s: (len(s), s))
 root = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
 with open(os.path.join(root, 'web/src/sa_reco.json'), 'w', encoding='utf-8') as f:
     json.dump({'src': {s: SRC[s] for s in used}, 'list': out}, f, ensure_ascii=False, separators=(',', ':'))
+# 人が読む一覧(Markdown)も同じデータから作る
+GROUPS = [('北海道', 3), ('東北', 11), ('関東', 17), ('中部', 27), ('近畿', 15), ('中国', 9), ('四国', 7), ('九州', 11)]
+assert sum(c for _, c in GROUPS) == len(out)
+rows, i = [], 0
+for g, c in GROUPS:
+    for e in out[i:i + c]:
+        if 'all' in e: item = e['all']['ja'] + '(上下とも)'
+        else: item = ' / '.join(('下り:' if d == 'dn' else '上り:') + e[d]['ja'] for d in e if d in ('dn', 'up'))
+        rows.append(f"| {len(rows) + 1} | {g} | {e['n']}{e['k']}({e['r']}) | {item} |")
+    i += c
+md = ('# 有名SA・PA 100選と名物\n\n'
+      '休憩に寄ったとき、キャラが「ここは〇〇がおすすめらしいぞ」と話す元データ(`web/src/sa_reco.json`、このファイルと同じく `dev/make_sa_reco.py` で生成)。\n'
+      'メニューや商品は変わることがあるため、セリフは「〜らしい」と控えめにしている。上り・下りで名物が違うところは別々に収録し、'
+      '施設名に上り/下りがない場合は先に書いた方を使う。\n\n'
+      '| # | 地域 | SA・PA(路線) | 名物・おすすめ |\n|---|---|---|---|\n' + '\n'.join(rows) + '\n\n## 出典\n'
+      + '\n'.join(f'- [{SRC[s][0]}]({SRC[s][1]})' for s in used) + '\n')
+with open(os.path.join(root, 'web/src/sa_reco.md'), 'w', encoding='utf-8') as f:
+    f.write(md)
 print(len(out), '件,', sum(1 for e in out for d in ('all', 'up', 'dn') if d in e), '品,', len(used), '出典')
