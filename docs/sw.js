@@ -1,6 +1,6 @@
 // Offline cache. The page itself is fetched fresh when online; everything else is served from the cache first.
 // 3D models live in their own cache that survives app updates (their addresses carry a fingerprint, ?v=...).
-const CACHE = 'drive-buddy-0.3.0-mvs73490';
+const CACHE = 'drive-buddy-0.3.0-mvs8mxcb';
 const MODELS = 'drive-buddy-models-1';
 const CORE = [
   "./",

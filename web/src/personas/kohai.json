@@ -122,7 +122,7 @@
    "medal": "実績「{medal}」、達成です。…ふふ、やるじゃないですか。",
    "arriveSmooth": "運転もなめらかで、乗り心地よかったです。",
    "arriveRough": "ただ、ブレーキがちょっと急なときがありました。車間距離、少し多めでいきましょう。",
-   "restReco": "{stop}といえば{reco}らしいですよ。…ちょっと食べてみたいです。",
+   "restReco": "ここは{reco}がおすすめらしいですよ。…ちょっと食べてみたいです。",
    "restLocal": "{place}の名物は{item}ですよ。せっかくだし、探してみません?",
    "stopCue": "{dist}先、{stop}です。左車線に寄っておきましょう。",
    "stopCueNow": "もうすぐ左側が入口です。"
@@ -216,7 +216,7 @@
    "medal": "达成成就「{medal}」。……嘿嘿，还挺厉害的嘛。",
    "arriveSmooth": "开得也很平稳，坐着很舒服。",
    "arriveRough": "不过有几次刹车有点急。跟车距离再拉开一点吧。",
-   "restReco": "说到{stop}，听说{reco}很有名哦。……我有点想尝尝。",
+   "restReco": "听说这里推荐{reco}哦。……我有点想尝尝。",
    "restLocal": "{place}的特产是{item}哦。难得来一趟，要不要找找看？",
    "stopCue": "前方{dist}是{stop}。先靠到左侧车道吧。",
    "stopCueNow": "马上就是左侧的入口了。"
@@ -310,7 +310,7 @@
    "medal": "업적 「{medal}」 달성이에요. …후후, 제법인데요?",
    "arriveSmooth": "운전도 부드러워서 승차감 좋았어요.",
    "arriveRough": "다만 브레이크가 조금 급할 때가 있었어요. 차간 거리는 조금 더 넉넉하게 가요.",
-   "restReco": "{stop} 명물은 {reco}! …저도 좀 먹어 보고 싶어요.",
+   "restReco": "여기 추천은 {reco}. …저도 좀 먹어 보고 싶어요.",
    "restLocal": "{place} 명물은 {item}! 모처럼인데 찾아볼래요?",
    "stopCue": "{dist} 앞, {stop}. 왼쪽 차선으로 붙어 둬요.",
    "stopCueNow": "곧 왼쪽이 입구예요."
@@ -404,7 +404,7 @@
    "medal": "Medal earned: {medal}. ...Heh, not bad.",
    "arriveSmooth": "Smooth driving, too. Comfy ride.",
    "arriveRough": "Though the braking was a bit sudden a few times. Let's leave more room ahead.",
-   "restReco": "{stop} is known for {reco}. ...I kind of want to try it.",
+   "restReco": "Word is, the {reco} here is the thing to try. ...I kind of want some.",
    "restLocal": "{place} is famous for {item}. Want to look for some while we're here?",
    "stopCue": "{stop} in {dist}. Move over to the left lane.",
    "stopCueNow": "The entrance is coming up on the left."

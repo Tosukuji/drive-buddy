@@ -125,7 +125,7 @@
    "medal": "実績「{medal}」ゲット!やったね!",
    "arriveSmooth": "運転もなめらかで、すっごく快適だった!",
    "arriveRough": "あ、でもブレーキがちょっと急だったかも!車間、少し多めにね!",
-   "restReco": "{stop}って{reco}が有名なんだって!食べたい食べたい!",
+   "restReco": "ここって{reco}がおすすめなんだって!食べたい食べたい!",
    "restLocal": "{place}の名物って{item}なんだって!見に行こ!",
    "stopCue": "あと{dist}で{stop}だよ!左に寄っとこ!",
    "stopCueNow": "もうすぐ左が入口!"
@@ -219,7 +219,7 @@
    "medal": "拿到成就「{medal}」！太好了！",
    "arriveSmooth": "开得也很平稳，超舒服的！",
    "arriveRough": "啊，不过刹车好像有点急！车距要留多一点哦！",
-   "restReco": "听说{stop}的{reco}很有名！好想吃好想吃！",
+   "restReco": "听说这里超推荐{reco}！好想吃好想吃！",
    "restLocal": "{place}的特产是{item}哦！去看看吧！",
    "stopCue": "再{dist}就到{stop}啦！靠左边吧！",
    "stopCueNow": "马上左边就是入口！"
@@ -313,7 +313,7 @@
    "medal": "업적 「{medal}」 획득! 야호!",
    "arriveSmooth": "운전도 부드러워서 완전 편했어!",
    "arriveRough": "아, 근데 브레이크가 좀 급했던 것 같아! 차간 거리 넉넉하게!",
-   "restReco": "{stop} 명물은 {reco}! 먹고 싶어 먹고 싶어!",
+   "restReco": "여기 추천은 {reco}! 먹고 싶어 먹고 싶어!",
    "restLocal": "{place} 명물은 {item}! 보러 가자!",
    "stopCue": "{dist}만 더 가면 {stop}! 왼쪽으로 붙자!",
    "stopCueNow": "곧 왼쪽이 입구야!"
@@ -407,7 +407,7 @@
    "medal": "Got the {medal} medal! Woohoo!",
    "arriveSmooth": "Your driving was super smooth, too. So comfy!",
    "arriveRough": "Oh, but the brakes were a bit sudden! Leave more room ahead, okay?",
-   "restReco": "{stop} is famous for {reco}! I want some, I want some!",
+   "restReco": "They say you've gotta try the {reco} here! I want some, I want some!",
    "restLocal": "{place}'s specialty is {item}! Let's go see!",
    "stopCue": "{stop} in {dist}! Get over to the left!",
    "stopCueNow": "The entrance is coming up on the left!"

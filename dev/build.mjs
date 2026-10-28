@@ -15,11 +15,14 @@ const personas = {};
 for (const id of ['kohai', 'onee', 'genki', 'ottori', 'sora']) personas[id] = JSON.parse(read(`web/src/personas/${id}.json`));
 const i18n = JSON.parse(read('web/src/i18n.json'));
 const items = JSON.parse(read('web/src/items.json'));
+// famous service areas: only what the app needs (name, kind, prefecture, the speciality per side, in the file's order —
+// the first side listed is used when the direction is unknown); the sources stay in the file
+const saReco = JSON.parse(read('web/src/sa_reco.json')).list.map((e) => Object.fromEntries(Object.entries(e).filter(([k]) => k !== 's' && k !== 'r')));
 const esc = (o) => JSON.stringify(o).replace(/</g, '\\u003c');
 
 let app = read('web/src/app.html');
-for (const ph of ['__I18N__', '__PERSONAS__', '__ITEMS__']) if (!app.includes(ph)) throw new Error('placeholder missing: ' + ph);
-app = app.replace('__I18N__', () => esc(i18n)).replace('__PERSONAS__', () => esc(personas)).replace('__ITEMS__', () => esc(items));
+for (const ph of ['__I18N__', '__PERSONAS__', '__ITEMS__', '__SARECO__']) if (!app.includes(ph)) throw new Error('placeholder missing: ' + ph);
+app = app.replace('__I18N__', () => esc(i18n)).replace('__PERSONAS__', () => esc(personas)).replace('__ITEMS__', () => esc(items)).replace('__SARECO__', () => esc(saReco));
 if (!app.includes('__VOICECLIPS__')) throw new Error('placeholder missing: __VOICECLIPS__');
 app = app.replace('__VOICECLIPS__', () => read('web/src/voiceclips.js'));
 

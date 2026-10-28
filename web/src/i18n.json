@@ -101,7 +101,7 @@
   "vrmLoaded": "読み込みました{n}。モデルの利用条件は配布元の規約を確認してください。",
   "vrmFail": "読み込めませんでした。VRM形式のファイルか確認してください。",
   "vrmBack": "最初の見た目に戻しました。",
-  "credits": "3Dモデル:VRM1_Constraint_Twist_Sample © 2022 pixiv Inc.(VRM Public License 1.0/商用利用・改変可)/サンプルアバターA・B・C © pixiv Inc. VRoid Project(商用利用・改変・再配布可)/地図データ © OpenStreetMap contributors(ODbL)/天気 Open-Meteo.com(CC BY 4.0)/描画:three.js、@pixiv/three-vrm(MIT)/このページは試作版です。運転中は画面を操作しないでください。",
+  "credits": "3Dモデル:VRM1_Constraint_Twist_Sample © 2022 pixiv Inc.(VRM Public License 1.0/商用利用・改変可)/サンプルアバターA・B・C © pixiv Inc. VRoid Project(商用利用・改変・再配布可)/地図データ © OpenStreetMap contributors(ODbL)/天気 Open-Meteo.com(CC BY 4.0)/SA・PAの名物:「るるぶKids」ほかのガイド記事より(メニューは変わることがあります)/描画:three.js、@pixiv/three-vrm(MIT)/このページは試作版です。運転中は画面を操作しないでください。",
   "personaTitle": "キャラを選ぶ",
   "personaAria": "キャラを選ぶ",
   "presets": "プリセット",
@@ -466,7 +466,8 @@
   "voicePackNone": "このキャラのキャラボイスはまだありません(端末の声で話します)。",
   "voicePackJaOnly": "キャラボイスは日本語のときだけ使えます。",
   "voiceCredits": "キャラボイス:{list}",
-  "stopCuesOn": "寄るときに入口までの距離を知らせる(2km・1km・まもなく)"
+  "stopCuesOn": "寄るときに入口までの距離を知らせる(2km・1km・まもなく)",
+  "recoTag": "おすすめ:{r}"
  },
  "zh": {
   "langName": "中文",
@@ -570,7 +571,7 @@
   "vrmLoaded": "已读取{n}。模型的使用条件请确认发布方的规定。",
   "vrmFail": "无法读取。请确认是VRM格式的文件。",
   "vrmBack": "已恢复初始外观。",
-  "credits": "3D模型：VRM1_Constraint_Twist_Sample © 2022 pixiv Inc.(VRM Public License 1.0/可商用・可修改)/示例头像A・B・C © pixiv Inc. VRoid Project(可商用・可修改・可再分发)/地图数据 © OpenStreetMap contributors(ODbL)/天气 Open-Meteo.com(CC BY 4.0)/渲染：three.js、@pixiv/three-vrm(MIT)/本页面为试用版。驾驶时请不要操作屏幕。",
+  "credits": "3D模型：VRM1_Constraint_Twist_Sample © 2022 pixiv Inc.(VRM Public License 1.0/可商用・可修改)/示例头像A・B・C © pixiv Inc. VRoid Project(可商用・可修改・可再分发)/地图数据 © OpenStreetMap contributors(ODbL)/天气 Open-Meteo.com(CC BY 4.0)/服务区特色美食：参考「るるぶKids」等旅游指南(菜单可能会有变动)/渲染：three.js、@pixiv/three-vrm(MIT)/本页面为试用版。驾驶时请不要操作屏幕。",
   "personaTitle": "选择角色",
   "personaAria": "选择角色",
   "presets": "预设",
@@ -931,7 +932,8 @@
   "voicePackNone": "该角色还没有角色语音(使用设备的声音)。",
   "voicePackJaOnly": "角色语音仅在日语时可用。",
   "voiceCredits": "角色语音：{list}",
-  "stopCuesOn": "进去时提示到入口的距离(2km・1km・即将)"
+  "stopCuesOn": "进去时提示到入口的距离(2km・1km・即将)",
+  "recoTag": "推荐：{r}"
  },
  "ko": {
   "langName": "한국어",
@@ -1035,7 +1037,7 @@
   "vrmLoaded": "불러왔어요{n}. 모델 이용 조건은 배포처 규약을 확인해 주세요.",
   "vrmFail": "불러오지 못했어요. VRM 형식 파일인지 확인해 주세요.",
   "vrmBack": "처음 외형으로 되돌렸어요.",
-  "credits": "3D 모델: VRM1_Constraint_Twist_Sample © 2022 pixiv Inc.(VRM Public License 1.0/상업 이용・수정 가능)/샘플 아바타 A・B・C © pixiv Inc. VRoid Project(상업 이용・수정・재배포 가능)/지도 데이터 © OpenStreetMap contributors(ODbL)/날씨 Open-Meteo.com(CC BY 4.0)/렌더링: three.js, @pixiv/three-vrm(MIT)/이 페이지는 시제품이에요. 운전 중에는 화면을 조작하지 마세요.",
+  "credits": "3D 모델: VRM1_Constraint_Twist_Sample © 2022 pixiv Inc.(VRM Public License 1.0/상업 이용・수정 가능)/샘플 아바타 A・B・C © pixiv Inc. VRoid Project(상업 이용・수정・재배포 가능)/지도 데이터 © OpenStreetMap contributors(ODbL)/날씨 Open-Meteo.com(CC BY 4.0)/휴게소 명물: 「るるぶKids」 등 가이드 기사 참고(메뉴는 바뀔 수 있어요)/렌더링: three.js, @pixiv/three-vrm(MIT)/이 페이지는 시제품이에요. 운전 중에는 화면을 조작하지 마세요.",
   "personaTitle": "캐릭터 고르기",
   "personaAria": "캐릭터 고르기",
   "presets": "프리셋",
@@ -1399,7 +1401,8 @@
   "voicePackNone": "이 캐릭터의 캐릭터 보이스는 아직 없어요(기기 목소리로 말해요).",
   "voicePackJaOnly": "캐릭터 보이스는 일본어일 때만 쓸 수 있어요.",
   "voiceCredits": "캐릭터 보이스: {list}",
-  "stopCuesOn": "들를 때 입구까지 거리 알려 주기(2km・1km・곧)"
+  "stopCuesOn": "들를 때 입구까지 거리 알려 주기(2km・1km・곧)",
+  "recoTag": "추천: {r}"
  },
  "en": {
   "langName": "English",
@@ -1503,7 +1506,7 @@
   "vrmLoaded": "Loaded{n}. Check the model's terms of use on its download page.",
   "vrmFail": "Couldn't load it. Make sure it's a VRM file.",
   "vrmBack": "Original look restored.",
-  "credits": "3D model: VRM1_Constraint_Twist_Sample © 2022 pixiv Inc. (VRM Public License 1.0; commercial use and edits allowed) / Sample avatars A, B, C © pixiv Inc. VRoid Project (commercial use, edits and redistribution allowed) / Map data © OpenStreetMap contributors (ODbL) / Weather by Open-Meteo.com (CC BY 4.0) / Rendering: three.js, @pixiv/three-vrm (MIT) / This is a prototype. Don't operate the screen while driving.",
+  "credits": "3D model: VRM1_Constraint_Twist_Sample © 2022 pixiv Inc. (VRM Public License 1.0; commercial use and edits allowed) / Sample avatars A, B, C © pixiv Inc. VRoid Project (commercial use, edits and redistribution allowed) / Map data © OpenStreetMap contributors (ODbL) / Weather by Open-Meteo.com (CC BY 4.0) / Service-area specialties from travel guides such as rurubu Kids (menus may change) / Rendering: three.js, @pixiv/three-vrm (MIT) / This is a prototype. Don't operate the screen while driving.",
   "personaTitle": "Choose a buddy",
   "personaAria": "Choose a buddy",
   "presets": "Presets",
@@ -1863,6 +1866,7 @@
   "voicePackNone": "No character voice for this character yet (uses the device voice).",
   "voicePackJaOnly": "Character voices are available in Japanese only.",
   "voiceCredits": "Character voices: {list}",
-  "stopCuesOn": "When stopping, call out the distance to the entrance (2 km, 1 km, soon)"
+  "stopCuesOn": "When stopping, call out the distance to the entrance (2 km, 1 km, soon)",
+  "recoTag": "Try: {r}"
  }
 }

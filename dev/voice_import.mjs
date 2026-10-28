@@ -28,7 +28,8 @@ const out = P(`docs/voice/${pid}`);
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 const done = [];
-for (const c of exp.clips) {
+const clips = exp.clips.filter((c) => !c.unused); // lines the app no longer says (kept only so the numbers stay put)
+for (const c of clips) {
   const f = byNum.get(c.n);
   if (!f) { missing.push(c.n); continue; }
   // VOICEVOX puts the start of the text in the file name; check the order did not slip
@@ -42,6 +43,6 @@ for (const c of exp.clips) {
 const v = crypto.createHash('sha1').update(done.join(',') + credit).digest('hex').slice(0, 10);
 fs.writeFileSync(path.join(out, 'index.json'), JSON.stringify({ character: exp.character, credit, v, clips: done }));
 const size = fs.readdirSync(out).reduce((a, f) => a + fs.statSync(path.join(out, f)).size, 0);
-console.log(`${exp.character}: ${done.length}/${exp.clips.length} 本を変換(合計 ${(size / 1048576).toFixed(1)}MB)`);
+console.log(`${exp.character}: ${done.length}/${clips.length} 本を変換(合計 ${(size / 1048576).toFixed(1)}MB)`);
 if (missing.length) console.log(`  見つからない番号: ${missing.slice(0, 20).join(', ')}${missing.length > 20 ? ' …' : ''}(その行は端末の声で話します)`);
 if (suspicious.length) console.log(`  順番がずれている可能性: \n   ${suspicious.slice(0, 10).join('\n   ')}`);

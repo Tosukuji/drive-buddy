@@ -285,6 +285,7 @@ body[data-mode="drive"] #c, body[data-mode="drive"] .sky { filter: brightness(0.
 .tag.c0 { border-color: var(--ok); color: var(--ok); }
 .tag.c1 { border-color: var(--accent); color: var(--accent); }
 .tag.c2 { border-color: var(--warn); color: var(--warn); }
+.tag.reco { border-color: var(--sign-green); background: color-mix(in srgb, var(--sign-green) 12%, transparent); font-weight: 700; }
 .listen { display: flex; align-items: center; gap: 8px; margin: 0; font-size: var(--fs-xs); color: var(--muted); }
 .listen.on::before { content: ""; flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--warn); animation: pulse 1.1s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: 0.25; } }
@@ -946,21 +947,38 @@ const GROUP_ORDER = ['greet', 'check', 'drive', 'rest', 'arrive', 'other'];
 
 // Rest stops for the demo route (Tokyo → Mt. Fuji on the Tomei Expressway). Sample data, not live.
 const DEMO_STOPS = [
-  { at: 26, km: 4, kind: 'SA', pref: 'JP-14', reco: { ja: '海老名メロンパン', zh: '海老名菠萝包', ko: '에비나 멜론빵', en: 'Ebina melon bread' }, hours: '24h', crowd: 2, name: { ja: '海老名サービスエリア', zh: '海老名服务区', ko: '에비나 휴게소', en: 'Ebina Service Area' }, short: { ja: '海老名SA(下り)', zh: '海老名服务区(下行)', ko: '에비나 휴게소(하행)', en: 'Ebina SA (westbound)' } },
-  { at: 58, km: 3, kind: 'PA', pref: 'JP-22', reco: { ja: '丹沢あんぱん', zh: '丹泽红豆面包', ko: '단자와 단팥빵', en: 'Tanzawa anpan' }, hours: '24h', crowd: 0, name: { ja: '鮎沢パーキングエリア', zh: '鲇泽停车区', ko: '아유자와 주차구역', en: 'Ayuzawa Parking Area' }, short: { ja: '鮎沢PA(下り)', zh: '鲇泽停车区(下行)', ko: '아유자와 PA(하행)', en: 'Ayuzawa PA (westbound)' } },
-  { at: 106, km: 6, kind: 'SA', pref: 'JP-22', reco: { ja: '富士山メロンパン', zh: '富士山菠萝包', ko: '후지산 멜론빵', en: 'Mt. Fuji melon bread' }, hours: '24h', crowd: 1, name: { ja: '足柄サービスエリア', zh: '足柄服务区', ko: '아시가라 휴게소', en: 'Ashigara Service Area' }, short: { ja: '足柄SA(下り)', zh: '足柄服务区(下行)', ko: '아시가라 휴게소(하행)', en: 'Ashigara SA (westbound)' } },
+  { at: 26, km: 4, kind: 'SA', pref: 'JP-14', dir: 'dn', hours: '24h', crowd: 2, name: { ja: '海老名サービスエリア', zh: '海老名服务区', ko: '에비나 휴게소', en: 'Ebina Service Area' }, short: { ja: '海老名SA(下り)', zh: '海老名服务区(下行)', ko: '에비나 휴게소(하행)', en: 'Ebina SA (westbound)' } },
+  { at: 58, km: 3, kind: 'PA', pref: 'JP-22', dir: 'dn', hours: '24h', crowd: 0, name: { ja: '鮎沢パーキングエリア', zh: '鲇泽停车区', ko: '아유자와 주차구역', en: 'Ayuzawa Parking Area' }, short: { ja: '鮎沢PA(下り)', zh: '鲇泽停车区(下行)', ko: '아유자와 PA(하행)', en: 'Ayuzawa PA (westbound)' } },
+  { at: 106, km: 6, kind: 'SA', pref: 'JP-22', dir: 'dn', hours: '24h', crowd: 1, name: { ja: '足柄サービスエリア', zh: '足柄服务区', ko: '아시가라 휴게소', en: 'Ashigara Service Area' }, short: { ja: '足柄SA(下り)', zh: '足柄服务区(下行)', ko: '아시가라 휴게소(하행)', en: 'Ashigara SA (westbound)' } },
   { at: 150, km: 2, kind: 'michi', pref: 'JP-22', hours: [8, 18], crowd: 0, name: { ja: '道の駅すばしり', zh: '公路休息站「须走」', ko: '미치노에키 스바시리', en: 'Michi-no-Eki Subashiri' }, short: { ja: '道の駅 すばしり', zh: '公路休息站 须走', ko: '미치노에키 스바시리', en: 'Roadside Station Subashiri' } },
 ];
-// What some service areas are known for (from travel guides), matched by name on real drives too.
-const SA_RECO = [
-  [/海老名/, { ja: '海老名メロンパン', zh: '海老名菠萝包', ko: '에비나 멜론빵', en: 'Ebina melon bread' }],
-  [/足柄/, { ja: '富士山メロンパン', zh: '富士山菠萝包', ko: '후지산 멜론빵', en: 'Mt. Fuji melon bread' }],
-  [/鮎沢/, { ja: '丹沢あんぱん', zh: '丹泽红豆面包', ko: '단자와 단팥빵', en: 'Tanzawa anpan' }],
-  [/富士川/, { ja: '富士宮やきそば', zh: '富士宫炒面', ko: '후지노미야 야키소바', en: 'Fujinomiya yakisoba' }],
-  [/浜名湖/, { ja: '三ケ日みかんのソフトクリーム', zh: '三日町橘子冰淇淋', ko: '미카비 귤 소프트아이스크림', en: 'Mikkabi mandarin soft serve' }],
-  [/上郷/, { ja: '名古屋コーチンの親子丼', zh: '名古屋交趾鸡亲子丼', ko: '나고야 코친 오야코동', en: 'Nagoya Cochin oyakodon' }],
-];
-const recoFor = (st) => st && (st.reco || (SA_RECO.find(([re]) => re.test(st.name.ja || '')) || [])[1]) || null;
+// What 100 well-known service areas are known for (from travel guides; see web/src/sa_reco.json for the sources).
+// Matched by name on real drives; "上り/下り" in the name picks that side's speciality.
+const SA_RECO = new Map(__SARECO__.map((e) => [e.n, e]));
+const saBrand = /^(EXPASA|NEOPASA|Pasar)\s*/i; // brand names of the operators (their letters are not the SA/PA kind)
+const saBase = (nm) => String(nm || '').normalize('NFKC')
+  .replace(/\([^)]*\)/g, '').replace(/上り線?|下り線?|内回り|外回り/g, '')
+  .replace(saBrand, '').replace(/\s+/g, '')
+  .replace(/(サービスエリア|パーキングエリア|ハイウェイオアシス|SA|PA)$/i, '');
+function saEntry(st) {
+  if (!st || st.kind === 'michi' || !st.name) return null;
+  const nm = String(st.name.ja || '').normalize('NFKC');
+  const e = SA_RECO.get(saBase(nm));
+  if (!e) return null;
+  const plain = nm.replace(saBrand, '');
+  const said = /PA|パーキング/.test(plain) ? 'PA' : /SA|サービス/.test(plain) ? 'SA' : null;
+  return said && said !== e.k ? null : e; // 高坂SA (Saitama) is not 高坂PA (Hiroshima)
+}
+function recoFor(st, pref = null) {
+  if (!st) return null;
+  if (st.reco) return st.reco;
+  const e = saEntry(st);
+  if (!e || (pref && e.p && pref !== e.p)) return null;
+  const nm = `${st.name.ja || ''} ${(st.short && st.short.ja) || ''}`;
+  const dir = st.dir || (/下り/.test(nm) ? 'dn' : /上り/.test(nm) ? 'up' : null);
+  if (dir) return e[dir] || e.all || null;
+  return e.all || e[Object.keys(e).find((k) => k === 'dn' || k === 'up')] || null;
+}
 const DEMO_KMH = 80;
 const REST_SEC = 120; // a 2-minute rest earns a souvenir (shown on the card; not said aloud)
 
@@ -2787,7 +2805,7 @@ function enterRest({ stop = null, pref = null, quiet = false }) {
   renderRestCard();
   buzz(20);
   const r = drive.rest;
-  if (!quiet) { if (pref || recoFor(stop)) restTalk(r); else say('restStart'); }
+  if (!quiet) { if (pref || recoFor(stop, pref)) restTalk(r); else say('restStart'); }
   // where are we resting? (prefecture decides the local souvenir, and what the character talks about)
   if (!drive.demo && !pref) {
     const fixP = drive.lastFix && Date.now() - drive.lastFix.t < 120000 ? Promise.resolve(drive.lastFix) : getFix(8000);
@@ -2801,7 +2819,7 @@ function enterRest({ stop = null, pref = null, quiet = false }) {
 // Talk about the place: what this service area is known for, else the prefecture's speciality.
 function restTalk(r) {
   if (!r || r.talked) return Promise.resolve();
-  const st = r.stop, reco = recoFor(st);
+  const st = r.stop, reco = recoFor(st, r.pref);
   if (reco) { r.talked = true; return say('restReco', { stop: st.name[lang()] || st.name.ja, reco: reco[lang()] || reco.ja }); }
   const local = r.pref && ITEMS.prefs[r.pref];
   if (local) { r.talked = true; return say('restLocal', { place: prefLabel(r.pref), item: itemName(local) }); }
@@ -2851,6 +2869,8 @@ let listenTimer = 0, recog = null, micBlocked = false;
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 function stopTags(st) {
   const box = $('#stop-tags'); box.textContent = '';
+  const reco = recoFor(st);
+  if (reco) { const t = document.createElement('span'); t.className = 'tag reco'; t.textContent = T('recoTag', { r: reco[lang()] || reco.ja }); box.append(t); }
   if (st.real) {
     const o = document.createElement('span'); o.className = 'tag'; o.textContent = 'OpenStreetMap'; box.append(o);
     if (st.hoursRaw) { const h = document.createElement('span'); h.className = 'tag'; h.textContent = st.hoursRaw === '24h' ? fmtHours('24h') : st.hoursRaw; box.append(h); }
@@ -4087,5 +4107,5 @@ if (/[?&](fps|debug)\b/.test(location.search)) {
   Quality.meter.style.cssText = 'position:absolute;left:8px;bottom:8px;z-index:5;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;font:12px/1.4 monospace;pointer-events:none';
   stage.append(Quality.meter);
 }
-if (/[?&]debug\b/.test(location.search)) window.__dbg = { bondPts, VoicePack, clipsFor, vcHash, smoothGrade, HAND, posePreview, renderNow: () => renderer.render(scene, camera), fetchRealStops, takePhoto, checkMedals, Safety, Pip, get now() { return clock ? clock.elapsedTime : 0; }, playMotion, Motion, parseVRMA, simulateMotion, Quality, Char, say, gesture, camera, Store, S, applyI18n, setPersona, answerStop, Weather, enterRest, grantItem, applyLook, setLook, get drive() { return drive; } };
+if (/[?&]debug\b/.test(location.search)) window.__dbg = { recoFor, SA_RECO, bondPts, VoicePack, clipsFor, vcHash, smoothGrade, HAND, posePreview, renderNow: () => renderer.render(scene, camera), fetchRealStops, takePhoto, checkMedals, Safety, Pip, get now() { return clock ? clock.elapsedTime : 0; }, playMotion, Motion, parseVRMA, simulateMotion, Quality, Char, say, gesture, camera, Store, S, applyI18n, setPersona, answerStop, Weather, enterRest, grantItem, applyLook, setLook, get drive() { return drive; } };
 </script>

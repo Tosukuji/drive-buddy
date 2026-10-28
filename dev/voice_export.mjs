@@ -10,6 +10,7 @@ const { vcClips, vcHash } = new Function(read('web/src/voiceclips.js') + '; retu
 
 const i18n = JSON.parse(read('web/src/i18n.json')).ja;
 const items = JSON.parse(read('web/src/items.json'));
+const saReco = JSON.parse(read('web/src/sa_reco.json')).list;
 const app = read('web/src/app.html');
 const demoStops = new Function('return ' + app.match(/const DEMO_STOPS = (\[[\s\S]*?\n\]);/)[1])();
 const fill = (s, v) => s.replace(/\{(\w+)\}/g, (_, k) => v[k] ?? '');
@@ -35,7 +36,7 @@ const VARS = {
   newPlace: prefNames.map((place) => ({ place })),
   season: Object.values(i18n.events).map((event) => ({ event })),
   medal: medalNames.map((medal) => ({ medal })),
-  restReco: demoStops.filter((st) => st.reco).map((st) => ({ stop: st.name.ja, reco: st.reco.ja })),
+  restReco: [...new Set(saReco.flatMap((e) => ['all', 'up', 'dn'].filter((d) => e[d]).map((d) => e[d].ja)))].map((reco) => ({ reco })),
   restLocal: Object.values(items.prefs).map((it) => ({ place: it.pref.ja, item: it.ja })),
   stopCue: demoStops.flatMap((st) => [2, 1].map((n) => ({ stop: st.name.ja, dist: fill(i18n.distSpeak, { n }) }))),
   stopAhead: stopVars, stopAheadBreak: stopVars,
@@ -57,9 +58,16 @@ for (const pid of ['kohai', 'onee', 'genki', 'ottori', 'sora']) {
       for (const v of sets) for (const t of vcClips(tpl, v, call, call) || []) if (!texts.has(t)) texts.set(t, key);
     }
   }
-  const list = [...texts.keys()].map((text, i) => ({ n: i + 1, text, hash: vcHash(text) }));
-  fs.writeFileSync(P(`voice-export/${pid}.txt`), list.map((x) => x.text).join('\n') + '\n');
+  // Keep the numbers of an earlier export, so audio already made with it still lines up:
+  // lines that are no longer used keep their number (marked unused), new lines go at the end.
+  const prevFile = P(`voice-export/${pid}.json`);
+  const prev = fs.existsSync(prevFile) ? JSON.parse(fs.readFileSync(prevFile, 'utf8')).clips : [];
+  const list = prev.map((c) => ({ n: c.n, text: c.text, hash: vcHash(c.text), ...(texts.has(c.text) ? {} : { unused: true }) }));
+  const known = new Set(prev.map((c) => c.text));
+  for (const text of texts.keys()) if (!known.has(text)) list.push({ n: list.length + 1, text, hash: vcHash(text) });
+  fs.writeFileSync(P(`voice-export/${pid}.txt`), list.map((x) => (x.unused ? '' : x.text)).join('\n') + '\n'); // blank lines are skipped
   fs.writeFileSync(P(`voice-export/${pid}.json`), JSON.stringify({ character: p.name.ja, call, clips: list }, null, 1));
-  summary.push(`${p.name.ja}(${pid}): ${list.length}行`);
+  const unused = list.filter((c) => c.unused).length, added = list.length - prev.length;
+  summary.push(`${p.name.ja}(${pid}): ${list.length}行${prev.length ? `(新しく${added}行${unused ? `、使わなくなった${unused}行` : ''})` : ''}`);
 }
 console.log(summary.join('\n'));

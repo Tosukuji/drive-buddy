@@ -125,7 +125,7 @@
    "medal": "実績「{medal}」、達成。やるじゃん。",
    "arriveSmooth": "運転もなめらかで、乗りやすかった。",
    "arriveRough": "ただ、ブレーキ急なとこ何回かあったぞ。車間、もうちょい空けよう。",
-   "restReco": "{stop}は{reco}が有名らしいぞ。せっかくだし見てこいよ。",
+   "restReco": "ここは{reco}がおすすめらしいぞ。せっかくだし見てこいよ。",
    "restLocal": "{place}の名物は{item}だってさ。売店、のぞいてみれば?",
    "stopCue": "{dist}先、{stop}。左に寄っとけ。",
    "stopCueNow": "そろそろ左が入口だ。"
@@ -219,7 +219,7 @@
    "medal": "成就「{medal}」达成。可以啊。",
    "arriveSmooth": "开得也很平稳，坐着很舒服。",
    "arriveRough": "不过有几次刹车挺急的。车距再拉开点。",
-   "restReco": "听说{stop}的{reco}很有名。难得来，去看看吧。",
+   "restReco": "听说这里推荐{reco}。难得来，去看看吧。",
    "restLocal": "{place}的特产好像是{item}。去小卖部瞧瞧？",
    "stopCue": "前方{dist}，{stop}。靠左。",
    "stopCueNow": "左边快到入口了。"
@@ -313,7 +313,7 @@
    "medal": "업적 「{medal}」 달성. 제법인데.",
    "arriveSmooth": "운전도 부드러워서 타기 편했어.",
    "arriveRough": "근데 브레이크 급한 데 몇 번 있었어. 차간 거리 좀 더 둬.",
-   "restReco": "{stop} 명물은 {reco}. 모처럼인데 보고 와.",
+   "restReco": "여기 추천은 {reco}. 모처럼인데 보고 와.",
    "restLocal": "{place} 명물은 {item}, 그렇대. 매점 한번 들여다봐.",
    "stopCue": "{dist} 앞, {stop}. 왼쪽으로 붙어.",
    "stopCueNow": "슬슬 왼쪽이 입구야."
@@ -407,7 +407,7 @@
    "medal": "Medal earned: {medal}. Not bad.",
    "arriveSmooth": "Smooth driving, too. Easy ride.",
    "arriveRough": "Though you braked hard a few times. Leave a bit more space ahead.",
-   "restReco": "{stop} is known for {reco}. Go take a look.",
+   "restReco": "Heard the {reco} here is worth trying. Go take a look.",
    "restLocal": "{place}'s thing is {item}, apparently. Check the shop?",
    "stopCue": "{stop} in {dist}. Get to the left.",
    "stopCueNow": "Entrance on the left, coming up."
