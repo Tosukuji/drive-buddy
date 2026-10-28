@@ -1,8 +1,10 @@
 // Builds two targets from web/src:
-//   1. web/index.html  — single page for the claude.ai artifact (model as base64 text, libraries from the CDN)
-//   2. docs/           — the own-site version for GitHub Pages (plain .vrm, bundled libraries, PWA files)
+//   1. web/index.html  — single page for the claude.ai artifact (models as gzip+base64 text, libraries from the CDN)
+//   2. docs/           — the own-site version for GitHub Pages (models as .vrm.gz, bundled libraries, PWA files)
 import fs from 'fs';
 import path from 'path';
+import zlib from 'zlib';
+import crypto from 'crypto';
 
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const P = (...p) => path.join(root, ...p);
@@ -18,6 +20,24 @@ const esc = (o) => JSON.stringify(o).replace(/</g, '\\u003c');
 let app = read('web/src/app.html');
 for (const ph of ['__I18N__', '__PERSONAS__', '__ITEMS__']) if (!app.includes(ph)) throw new Error('placeholder missing: ' + ph);
 app = app.replace('__I18N__', () => esc(i18n)).replace('__PERSONAS__', () => esc(personas)).replace('__ITEMS__', () => esc(items));
+if (!app.includes('__VOICECLIPS__')) throw new Error('placeholder missing: __VOICECLIPS__');
+app = app.replace('__VOICECLIPS__', () => read('web/src/voiceclips.js'));
+
+// Built-in models: docs/models/<name>.vrm is the source. Each is also written gzip-compressed, with a fingerprint
+// so browsers fetch it again only when it changed.
+const MODELS = ['michi', 'sample-a', 'sample-b', 'sample-c'];
+const modelVer = {};
+fs.mkdirSync(P('web/models'), { recursive: true });
+for (const name of MODELS) {
+  const raw = fs.readFileSync(P(`docs/models/${name}.vrm`));
+  const gz = zlib.gzipSync(raw, { level: 9 });
+  fs.writeFileSync(P(`docs/models/${name}.vrm.gz`), gz);
+  fs.writeFileSync(P(`web/models/${name}.vrm.gz.b64.txt`), gz.toString('base64'));
+  modelVer[name] = { v: crypto.createHash('sha1').update(gz).digest('hex').slice(0, 10), size: gz.length };
+}
+for (const f of fs.readdirSync(P('web/models'))) if (/\.vrm\.b64\.txt$/.test(f)) fs.unlinkSync(P('web/models', f)); // old uncompressed copies
+if (!app.includes('__MODEL_VER__')) throw new Error('placeholder missing: __MODEL_VER__');
+app = app.replace('__MODEL_VER__', () => JSON.stringify(modelVer));
 
 const swap = (s, from, to) => {
   if (!s.includes(from)) throw new Error('not found: ' + from.slice(0, 60));
@@ -25,23 +45,15 @@ const swap = (s, from, to) => {
 };
 
 // ---------- 1. claude.ai artifact ----------
-const vrm = fs.readFileSync(P('docs/models/michi.vrm'));
-const b64 = vrm.toString('base64');
-fs.mkdirSync(P('web/models'), { recursive: true });
-fs.writeFileSync(P('web/models/michi.vrm.b64.txt'), b64);
-// sample avatars and their thumbnails (claude.ai only serves web file types, so the models go as base64 text)
-for (const id of ['sample-a', 'sample-b', 'sample-c']) {
-  fs.writeFileSync(P(`web/models/${id}.vrm.b64.txt`), fs.readFileSync(P(`docs/models/${id}.vrm`)).toString('base64'));
-  fs.copyFileSync(P(`docs/models/${id}.jpg`), P(`web/models/${id}.jpg`));
-}
-let artifact = swap(app, 'const MODEL_BYTES = 7593724;', `const MODEL_BYTES = ${b64.length};`);
+// thumbnails for the sample avatars (the models themselves were written above)
+for (const id of ['sample-a', 'sample-b', 'sample-c']) fs.copyFileSync(P(`docs/models/${id}.jpg`), P(`web/models/${id}.jpg`));
+const artifact = app;
 fs.writeFileSync(P('web/index.html'), artifact);
-console.log('artifact: web/index.html', artifact.length, 'bytes');
+console.log('artifact: web/index.html', artifact.length, 'bytes; models', JSON.stringify(modelVer));
 
 // ---------- 2. own site (GitHub Pages) ----------
 let site = app;
-site = swap(site, "const MODEL_URL = 'models/michi.vrm.b64.txt';", "const MODEL_URL = 'models/michi.vrm';");
-site = swap(site, 'const MODEL_BYTES = 7593724;', `const MODEL_BYTES = ${vrm.length};`);
+site = swap(site, "const MODEL_EXT = '.vrm.gz.b64.txt';", "const MODEL_EXT = '.vrm.gz';");
 site = swap(site, 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js', './vendor/three/three.module.js');
 site = swap(site, 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/', './vendor/three/addons/');
 site = swap(site, 'https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.4.4/lib/three-vrm.module.min.js', './vendor/three-vrm/three-vrm.module.min.js');
@@ -110,22 +122,39 @@ fs.writeFileSync(P('docs/manifest.webmanifest'), JSON.stringify({
 const core = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png',
   ...copies.filter(([, to]) => to.endsWith('.js')).map(([, to]) => './' + to)];
 fs.writeFileSync(P('docs/sw.js'), `// Offline cache. The page itself is fetched fresh when online; everything else is served from the cache first.
+// 3D models live in their own cache that survives app updates (their addresses carry a fingerprint, ?v=...).
 const CACHE = 'drive-buddy-${VERSION}-${Date.now().toString(36)}';
+const MODELS = 'drive-buddy-models-1';
 const CORE = ${JSON.stringify(core, null, 2)};
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(CORE)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== MODELS).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 self.addEventListener('fetch', (e) => {
   const req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== location.origin) return;
   if (req.mode === 'navigate') {
     e.respondWith(fetch(req).then((res) => {
       const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./index.html', copy));
       return res;
     }).catch(() => caches.match('./index.html')));
+    return;
+  }
+  if (url.pathname.includes('/models/') || (url.pathname.includes('/voice/') && url.pathname.endsWith('.m4a'))) {
+    e.respondWith(caches.open(MODELS).then(async (c) => {
+      const hit = await c.match(req);
+      if (hit) return hit;
+      const res = await fetch(req);
+      if (res.ok) {
+        // drop older versions of the same file, then keep this one
+        for (const k of await c.keys()) { const u = new URL(k.url); if (u.pathname === url.pathname && u.search !== url.search) c.delete(k); }
+        c.put(req, res.clone());
+      }
+      return res;
+    }));
     return;
   }
   e.respondWith(caches.match(req).then((hit) => hit || fetch(req).then((res) => {

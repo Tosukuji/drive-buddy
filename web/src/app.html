@@ -457,6 +457,9 @@ details.tips summary { cursor: pointer; font-size: var(--fs-sm); color: var(--in
 details.tips p { margin: 8px 0 0; font-size: var(--fs-xs); color: var(--muted); line-height: 1.7; }
 .zoom-ctl #photo-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
 .photo-img { width: 100%; max-width: 420px; align-self: center; border-radius: 12px; box-shadow: var(--shadow); background: var(--line); aspect-ratio: 4 / 5; object-fit: cover; }
+.sum-wide { grid-column: 1 / -1; }
+.sum-wide .sub { display: block; font-size: var(--fs-xs); color: var(--lcd-dim); }
+.hist .sm { color: var(--accent); font-size: var(--fs-xs); letter-spacing: 0.05em; }
 .week { margin: 0; font-size: var(--fs-sm); color: var(--muted); }
 .week b { color: var(--ink); }
 .lcd.sum { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -597,7 +600,7 @@ label.btn { display: flex; justify-content: center; align-items: center; cursor:
         <div><span class="lab jp" data-i18n="sumDist">距離</span><b id="sum-km">—</b></div>
         <div><span class="lab jp" data-i18n="sumBreaks">休憩</span><b id="sum-breaks">0</b></div>
         <div><span class="lab jp" data-i18n="sumBond">なかよし</span><b id="sum-pts">+0</b></div>
-        <div id="sum-harsh-box" hidden><span class="lab jp" data-i18n="sumHarsh">急な操作</span><b id="sum-harsh">0</b></div>
+        <div id="sum-harsh-box" class="sum-wide" hidden><span class="lab jp" data-i18n="sumHarsh">なめらかさ</span><b id="sum-harsh"></b><span class="sub" id="sum-harsh-detail"></span></div>
       </div>
       <p class="places" id="sum-places" hidden></p>
       <label class="field" id="km-field"><span data-i18n="kmField">トリップメーターの距離(任意)</span>
@@ -774,6 +777,8 @@ label.btn { display: flex; justify-content: center; align-items: center; cursor:
       <div class="group">
         <h3 data-i18n="grpVoice">声</h3>
         <label class="toggle"><input type="checkbox" id="set-voice"><span data-i18n="voiceOn">声で話す</span></label>
+        <label class="toggle"><input type="checkbox" id="set-voicepack"><span data-i18n="voicePackOn">キャラボイス(VOICEVOX)を使う</span></label>
+        <p class="note" id="voicepack-note"></p>
         <label class="field"><span data-i18n="voiceSel">声の種類</span><select id="set-voice-name"></select></label>
         <label class="field"><span data-i18n="pitchLabel">声の高さ</span><input type="range" id="set-pitch" min="-0.4" max="0.4" step="0.05"></label>
         <label class="field"><span data-i18n="rateLabel">話す速さ</span><input type="range" id="set-rate" min="0.7" max="1.5" step="0.05"></label>
@@ -853,6 +858,7 @@ label.btn { display: flex; justify-content: center; align-items: center; cursor:
         <div class="inline-confirm" id="reset-confirm" hidden><span data-i18n="resetConfirm"></span><button class="btn small danger" id="reset-yes" data-i18n="resetYes"></button><button class="link" id="reset-no" data-i18n="cancel"></button></div>
       </div>
       <div class="credits" data-i18n="credits"></div>
+      <div class="credits" id="voice-credits"></div>
     </div>
   </div>
 </div>
@@ -879,8 +885,11 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Inside the claude.ai viewer some features (downloads, outside data) are not available.
 const IN_CLAUDE = !!(window.claude && typeof window.claude.use === 'function');
 // On claude.ai the model ships as base64 text (that host only serves web file types); the own-site build serves the .vrm directly.
-const MODEL_URL = 'models/michi.vrm.b64.txt';
-const MODEL_BYTES = 7593724;
+// Built-in models are sent gzip-compressed (about a third of the size) and unpacked in the browser.
+// claude.ai only serves web file types, so there they also travel as base64 text; the own-site build uses '.vrm.gz'.
+const MODEL_EXT = '.vrm.gz.b64.txt';
+// Content fingerprints: a model is downloaded again only when it actually changed (the site keeps it cached across updates).
+const MODEL_VER = __MODEL_VER__;
 const LS_KEY = 'drive-buddy-state-v1';
 const PHOTO_KEY = 'drive-buddy-photos-v1';
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
@@ -914,13 +923,13 @@ const META = {
   restStart: ['relaxed', 'nod'], itemGet: ['happy', 'hop'],
   giftLove: ['happy', 'hop'], giftLike: ['happy', 'nod'], giftNeutral: ['relaxed', 'nod'], giftDislike: ['sad', 'shake'],
   rainStart: ['neutral', 'tilt'],
-  season: ['happy', 'wave'], anniv: ['happy', 'hop'], photo: ['happy', 'nod'], medal: ['happy', 'hop'], arriveSmooth: ['happy', 'nod'],
+  season: ['happy', 'wave'], anniv: ['happy', 'hop'], photo: ['happy', 'nod'], medal: ['happy', 'hop'], arriveSmooth: ['happy', 'nod'], arriveRough: ['neutral', 'nod'],
 };
 // In "guidance only" mode these lines still show in the bubble but are not spoken.
 const QUIET_IN_GUIDE = new Set(['checkIntro', 'checkBelt', 'checkMirror', 'checkLight', 'checkRoute', 'checkDone', 'hourly', 'chat', 'breakTaken', 'saved', 'discarded', 'levelUp', 'milestone', 'newModel', 'newPlace', 'itemGet', 'medal', 'photo']);
 const LINE_KEYS = Object.keys(PRESETS.kohai.lines.ja);
 // Keys that are only ever appended to another line.
-const SUFFIX_KEYS = new Set(['arriveGoodBreak', 'arriveNoBreak', 'arriveLate', 'arriveSmooth']);
+const SUFFIX_KEYS = new Set(['arriveGoodBreak', 'arriveNoBreak', 'arriveLate', 'arriveSmooth', 'arriveRough']);
 function keyGroup(k) {
   if (k.startsWith('greet') || k === 'hello' || k === 'season' || k === 'anniv') return 'greet';
   if (k.startsWith('check')) return 'check';
@@ -1003,7 +1012,7 @@ const defaultSettings = () => ({
   verbosity: 'normal', stopsOn: true, stopsInfo: true, voiceReply: true, placesOn: true,
   voiceNames: {}, rateMul: 1, volume: 1, greetOn: true,
   theme: 'auto', zoom: 1, motion: 'mid', driveChar: 'dim', haptics: true, bubbleOp: 1, bubbleFade: false,
-  weatherOn: true, looks: {}, onboarded: false, motionSlots: {}, safetyOn: false, seasonSaid: '', annivSaid: [],
+  weatherOn: true, looks: {}, onboarded: false, motionSlots: {}, safetyOn: false, voicePack: true, seasonSaid: '', annivSaid: [],
 });
 const defaultState = () => ({ v: 3, settings: defaultSettings(), drives: [], custom: null, heard: {}, bag: {}, got: {}, gifts: [], prefs: {}, medals: {}, photos: 0 });
 const isObj = (o) => o && typeof o === 'object' && !Array.isArray(o);
@@ -1255,10 +1264,21 @@ function frame() {
   camera.lookAt(0, ty, 0);
 }
 
-async function fetchBundledModel(onProgress, url = MODEL_URL) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`model fetch failed (${res.status})`);
-  const total = Number(res.headers.get('content-length')) || MODEL_BYTES;
+async function fetchBundledModel(name, onProgress) {
+  const gz = typeof DecompressionStream === 'function';
+  let ext = MODEL_EXT;
+  if (!gz) { if (ext.endsWith('.b64.txt')) throw new Error('this browser cannot unpack the model'); ext = '.vrm'; }
+  const info = MODEL_VER[name] || {};
+  const url = `models/${name}${ext}?v=${info.v || ''}`;
+  // the same store the offline worker uses, so the very first visit downloads the model only once
+  let store = null, res = null;
+  try { store = await caches.open('drive-buddy-models-1'); res = await store.match(url); } catch { store = null; }
+  if (!res) {
+    res = await fetch(url);
+    if (!res.ok) throw new Error(`model fetch failed (${res.status})`);
+    if (store) { try { await store.put(url, res.clone()); } catch {} }
+  }
+  const total = Number(res.headers.get('content-length')) || (ext.endsWith('.b64.txt') ? info.size * 1.34 : info.size) || 4e6;
   let bytes;
   if (res.body && res.body.getReader) {
     const reader = res.body.getReader(); const parts = []; let got = 0;
@@ -1271,11 +1291,13 @@ async function fetchBundledModel(onProgress, url = MODEL_URL) {
     bytes = new Uint8Array(got); let o = 0;
     for (const p of parts) { bytes.set(p, o); o += p.length; }
   } else bytes = new Uint8Array(await res.arrayBuffer());
-  if (!url.endsWith('.b64.txt')) return bytes.buffer;
-  const bin = atob(new TextDecoder().decode(bytes).trim());
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out.buffer;
+  if (ext.endsWith('.b64.txt')) {
+    const bin = atob(new TextDecoder().decode(bytes).trim());
+    bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  }
+  if (ext.includes('.gz')) bytes = new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+  return bytes.buffer;
 }
 async function loadModel(source) {
   const gltf = source instanceof ArrayBuffer ? await loader.parseAsync(source, '') : await loader.loadAsync(source);
@@ -1370,7 +1392,7 @@ const bone = (n) => Char.vrm.humanoid.getNormalizedBoneNode(n);
 const lerp = THREE.MathUtils.lerp;
 // Each joint follows its target pose through a critically damped spring ("smooth damp"), so a motion that
 // interrupts another never makes a joint jump, and speeds change gradually. Smaller numbers follow faster.
-const SMOOTH = { hips: 0.14, spine: 0.16, chest: 0.14, neck: 0.09, head: 0.07, leftUpperArm: 0.11, rightUpperArm: 0.11, leftLowerArm: 0.09, rightLowerArm: 0.075, leftHand: 0.12, rightHand: 0.12 };
+const SMOOTH = { hips: 0.14, spine: 0.16, chest: 0.14, neck: 0.09, head: 0.07, leftUpperArm: 0.11, rightUpperArm: 0.11, leftLowerArm: 0.09, rightLowerArm: 0.1, leftHand: 0.12, rightHand: 0.12 };
 function smoothDamp(cur, target, velArr, i, smoothTime, dt) {
   const omega = 2 / smoothTime, x = omega * dt;
   const ex = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x);
@@ -1412,8 +1434,31 @@ function gestureDelta(kind, p, t, amp, dir) {
   else if (kind === 'stretch') { const e = envAHR(p, 0.3, 0.7); d.lu = 0.3 * e; d.ru = -0.3 * e; d.hx = -0.14 * e * amp; d.cx = -0.05 * e; }
   else if (kind === 'hop') { const e = envAHR(p, 0.15, 0.6); d.hip = 0.035 * Math.sin(p * Math.PI * 2) ** 2 * amp; d.lu = 0.35 * e; d.ru = -0.35 * e; d.hz = 0.08 * e * amp; }
   else if (kind === 'surprised') { const e = envAHR(p, 0.12, 0.6); d.hx = -0.12 * e * amp; d.lu = 0.25 * e; d.ru = -0.25 * e; }
-  else if (kind === 'wave') { const e = envAHR(p, 0.18, 0.78); d.wave = e; d.hz = 0.1 * e * amp; }
+  else if (kind === 'wave') { const e = envAHR(p, 0.3, 0.72); d.wave = e; d.hz = 0.1 * e * amp; }
   return d;
+}
+// Hands: fingers rest softly curled, open up for a wave and close around an umbrella.
+// Curl 0 = straight, 1 = fist. The wave turns the palm toward the viewer.
+const HAND = {
+  relaxed: 0.3, grip: 0.92, waveTwist: -1.45, waveBack: 0.22, umbTwist: -1.4, umbBend: 0,
+  // thumb [metacarpal, proximal, distal] as [x, y, z] at curl 0 and at curl 1 (wraps over the fingers)
+  thumbOpen: [[0, 0.16, 0], [0, 0, 0], [0, 0, 0]],
+  thumbGrip: [[0, -0.3, 0.3], [0, -0.5, 0], [0, -0.6, 0]],
+};
+const FINGERS = ['Index', 'Middle', 'Ring', 'Little'];
+function poseHand(side, curl, spread) {
+  const s = side === 'left' ? -1 : 1; // direction that bends the fingers toward the palm
+  FINGERS.forEach((f, i) => {
+    const fan = (i - 1.3) * 0.07 * spread * -s;
+    rot(`${side}${f}Proximal`, 0, fan, s * curl * 1.1);
+    rot(`${side}${f}Intermediate`, 0, 0, s * curl * 1.3);
+    rot(`${side}${f}Distal`, 0, 0, s * curl * 0.85);
+  });
+  // the thumb tucks toward the palm a little, and wraps over the fingers when gripping
+  ['Metacarpal', 'Proximal', 'Distal'].forEach((j, k) => {
+    const a = HAND.thumbOpen[k], b = HAND.thumbGrip[k];
+    rot(`${side}Thumb${j}`, lerp(a[0], b[0], curl), s * lerp(a[1], b[1], curl), s * lerp(a[2], b[2], curl));
+  });
 }
 function applyPose(t, dt) {
   poseDt = clamp(dt, 1 / 240, 0.12);
@@ -1423,6 +1468,7 @@ function applyPose(t, dt) {
 
   let lUz = -1.22 + br * 0.015, rUz = 1.22 - br * 0.015;
   let lLy = -0.32, rLy = 0.32, rLz = 0, rUy = 0;
+  let rHx = 0, rHz = 0.1, curlL = HAND.relaxed, curlR = HAND.relaxed, spreadR = 0;
   let headX = drift(t * 0.8, 2) * 0.014 * mm, headY = drift(t * 0.55, 1) * 0.05 * mm, headZ = drift(t * 0.45, 3) * 0.03 * mm;
   // slow weight shift between the feet
   const shift = Math.sin(t * 0.33) * mm;
@@ -1447,10 +1493,17 @@ function applyPose(t, dt) {
   // waving needs the right hand, so it gives way to an umbrella
   wave *= 1 - sstep(0.15, 0.6, Char.umb);
   if (wave > 0) {
-    rUz = lerp(rUz, 0.42, wave);
-    rUy = lerp(0, 0.3, wave);
-    rLz = lerp(0, -1.75, wave) + (reduceMotion ? 0 : Math.sin(t * 10) * 0.3 * wave);
-    rLy = lerp(rLy, 0, wave);
+    // the elbow bends first so the hand comes up, instead of the straight arm pointing sideways
+    const wE = sstep(0, 0.85, wave);
+    const sway = reduceMotion ? 0 : Math.sin(t * 9);
+    rUz = lerp(rUz, 0.5, wave);
+    rUy = lerp(0, 0.25, wave);
+    rLz = lerp(0, -1.95, wE) + sway * 0.22 * wE;
+    rLy = lerp(rLy, 0, wE);
+    // palm toward the viewer, wrist tipped back a little and following the sway
+    rHx = HAND.waveTwist * wE;
+    rHz = lerp(rHz, HAND.waveBack, wE) + (reduceMotion ? 0 : Math.sin(t * 9 - 0.7) * 0.18 * wE);
+    curlR = lerp(curlR, 0.06, wE); spreadR = wE;
   }
   // head follows a tap on the screen for a moment
   if (t < Char.lookUntil) {
@@ -1461,6 +1514,7 @@ function applyPose(t, dt) {
   const u = Char.umb;
   if (u > 0.001) {
     rUz = lerp(rUz, 1.0, u); rUy = lerp(rUy, 0.6, u); rLy = lerp(rLy, 1.55, u); rLz = lerp(rLz, -0.15, u);
+    curlR = lerp(curlR, HAND.grip, u); rHx = lerp(rHx, HAND.umbTwist, u); rHz = lerp(rHz, HAND.umbBend, u);
   }
 
   rot('hips', 0, 0, hipsZ);
@@ -1469,7 +1523,9 @@ function applyPose(t, dt) {
   rot('leftLowerArm', 0, lLy, 0);
   rot('rightLowerArm', 0, rLy, rLz);
   rot('leftHand', 0, 0, -0.1);
-  rot('rightHand', 0, 0, 0.1);
+  rot('rightHand', rHx, 0, rHz);
+  poseHand('left', curlL, 0);
+  poseHand('right', curlR, spreadR);
   rot('spine', br * 0.008, 0, spineZ);
   rot('chest', chestX, 0, 0);
   rot('neck', 0, headY * 0.4, 0);
@@ -1510,8 +1566,9 @@ function placeUmbrella() {
   if (!umbrella || !Char.vrm) return;
   umbrella.visible = Char.umb > 0.55;
   if (!umbrella.visible) return;
-  const hand = Char.vrm.humanoid.getRawBoneNode('rightHand');
-  const head = Char.vrm.humanoid.getRawBoneNode('head');
+  const hum = Char.vrm.humanoid;
+  const hand = hum.getRawBoneNode('rightMiddleProximal') || hum.getRawBoneNode('rightHand');
+  const head = hum.getRawBoneNode('head');
   if (!hand || !head) { umbrella.visible = false; return; }
   hand.getWorldPosition(handPos); head.getWorldPosition(headPos);
   umbrella.position.copy(handPos);
@@ -1548,8 +1605,10 @@ function updateFace(dt, t) {
       Char.mouthNext = t + 0.07 + Math.random() * 0.09;
     }
   } else Char.mouthTarget = null;
+  // with a recorded voice the mouth opens as wide as the sound is loud, and closes in the pauses
+  const amp = VoicePack.active() ? VoicePack.level() : 1;
   for (const v of vowels) {
-    const target = Char.mouthTarget === v ? (v === 'aa' ? 0.75 : 0.6) : 0;
+    const target = Char.mouthTarget === v ? (v === 'aa' ? 0.75 : 0.6) * amp : 0;
     Char.mouth[v] = damp(Char.mouth[v], target, 22, dt);
     em.setValue(v, Char.mouth[v]);
   }
@@ -1569,6 +1628,7 @@ function trackQuality(rawDt) {
 }
 let frameSkip = 0;
 function loop() {
+  if (Char.freeze) return;
   const raw = clock.getDelta();
   const dt = Math.min(raw, 0.1);
   trackQuality(raw);
@@ -1592,6 +1652,19 @@ function loop() {
   if (Pip.on) drawPip();
 }
 
+// Debug only: shows one gesture at a given progress, without smoothing, and stops the animation there.
+function posePreview(kind, p = 0.5, umb = 0) {
+  if (!Char.vrm) return;
+  const t = clock.elapsedTime;
+  Char.freeze = true; Char.fading = null; Char.umb = umb; Char.speaking = false; Char.lookUntil = 0;
+  Char.gesture = kind ? { kind, t0: t - p * (GEST_DUR[kind] || 1.2), dur: GEST_DUR[kind] || 1.2, dir: 1 } : null;
+  poseSnap = true;
+  applyPose(t, 1 / 60);
+  Char.vrm.update(1 / 60);
+  placeUmbrella();
+  renderer.render(scene, camera);
+}
+
 // Debug only: replays a fixed script of gestures at a fixed frame rate and records the bone rotations,
 // so motion smoothness can be measured (see dev/motion_check.mjs).
 function simulateMotion({ seconds = 20, fps = 60, events = [] } = {}) {
@@ -1599,6 +1672,7 @@ function simulateMotion({ seconds = 20, fps = 60, events = [] } = {}) {
   const dt = 1 / fps, frames = [];
   let umbWant = 0;
   Char.gesture = null; Char.fading = null; Char.umb = 0; Char.umbVel[0] = 0; Char.idleDir = 1; Char.lookUntil = 0; Char.speaking = false;
+  poseSnap = true; // start from a clean pose, not whatever the live animation was doing
   const t0 = 1000;
   const q = new THREE.Quaternion();
   for (let i = 0; i < Math.round(seconds * fps); i++) {
@@ -1687,7 +1761,8 @@ $('#zoom-out').addEventListener('click', () => setZoom(zoomLevel() - 0.15));
 const animLoader = new GLTFLoader();
 animLoader.register((parser) => new VRMAnimationLoaderPlugin(parser));
 const MOT_SLOTS = ['wave', 'hop', 'nod', 'idle'];
-const POSE_BONES = new Set(['hips', 'spine', 'chest', 'neck', 'head', 'leftUpperArm', 'rightUpperArm', 'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand']);
+const POSE_BONES = new Set(['hips', 'spine', 'chest', 'neck', 'head', 'leftUpperArm', 'rightUpperArm', 'leftLowerArm', 'rightLowerArm', 'leftHand', 'rightHand',
+  ...['left', 'right'].flatMap((sd) => [...['Index', 'Middle', 'Ring', 'Little'].flatMap((f) => ['Proximal', 'Intermediate', 'Distal'].map((j) => sd + f + j)), sd + 'ThumbMetacarpal', sd + 'ThumbProximal', sd + 'ThumbDistal'])]);
 const Motion = { anims: new Map(), clips: new WeakMap(), mixer: null, playing: null, ready: false };
 async function parseVRMA(bytes) {
   const gltf = await animLoader.parseAsync(bytes.slice(0), '');
@@ -1743,11 +1818,15 @@ function blendMotion(t, dt) {
 }
 
 /* =========================================================
-   Smooth driving (experimental): counts sharp braking / starts from
-   the phone's motion sensor. Sustained force over ~0.36 g for 0.45 s.
+   Smooth driving (experimental), from the phone's motion sensor.
+   The direction of gravity is tracked so that bumps (up and down) are ignored; only
+   forward/backward/sideways force counts (braking, starting off, steering).
+   A push that lasts at least 0.4 s counts once: light from ~0.25 g, strong from ~0.35 g.
+   Each drive gets one of four grades from how often that happened per hour.
    ========================================================= */
+const G0 = 9.81, LIGHT = 0.25 * G0, STRONG = 0.35 * G0;
 const Safety = {
-  on: false, count: 0, above: 0, last: 0, grav: null,
+  on: false, light: 0, strong: 0, above: 0, peak: 0, last: 0, grav: null,
   async permit() {
     if (typeof DeviceMotionEvent === 'undefined') return false;
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
@@ -1757,30 +1836,52 @@ const Safety = {
   },
   start() {
     if (typeof DeviceMotionEvent === 'undefined') return false;
-    this.count = 0; this.above = 0; this.last = 0; this.grav = null; this.on = true;
+    Object.assign(this, { light: 0, strong: 0, above: 0, peak: 0, last: 0, grav: null, on: true });
     addEventListener('devicemotion', onDeviceMotion);
     return true;
   },
-  stop() { removeEventListener('devicemotion', onDeviceMotion); this.on = false; return this.count; },
+  stop() { removeEventListener('devicemotion', onDeviceMotion); this.on = false; return { light: this.light, strong: this.strong }; },
 };
 function onDeviceMotion(e) {
   if (!Safety.on) return;
-  let x, y, z;
-  const a = e.acceleration;
-  if (a && a.x != null) { x = a.x; y = a.y; z = a.z; }
-  else {
-    const g = e.accelerationIncludingGravity; if (!g || g.x == null) return;
-    // estimate gravity with a slow filter and take it away
-    if (!Safety.grav) Safety.grav = { x: g.x, y: g.y, z: g.z };
-    const G = Safety.grav; G.x += (g.x - G.x) * 0.02; G.y += (g.y - G.y) * 0.02; G.z += (g.z - G.z) * 0.02;
-    x = g.x - G.x; y = g.y - G.y; z = g.z - G.z;
-  }
   const dt = clamp((e.interval || 16) / 1000, 0.005, 0.2);
-  const m = Math.hypot(x, y, z);
-  Safety.above = m > 3.5 ? Safety.above + dt : Math.max(0, Safety.above - dt * 2);
-  const now = Date.now();
-  if (Safety.above > 0.45 && now - Safety.last > 4000) { Safety.count += 1; Safety.last = now; Safety.above = 0; }
+  const g = e.accelerationIncludingGravity, a = e.acceleration;
+  const hasG = g && g.x != null, hasA = a && a.x != null;
+  if (!hasG && !hasA) return;
+  // slow average of the raw reading = direction of gravity relative to the phone
+  if (hasG) {
+    if (!Safety.grav) Safety.grav = { x: g.x, y: g.y, z: g.z };
+    const k = 1 - Math.exp(-dt / 3), G = Safety.grav;
+    G.x += (g.x - G.x) * k; G.y += (g.y - G.y) * k; G.z += (g.z - G.z) * k;
+  }
+  let x, y, z;
+  if (hasA) { x = a.x; y = a.y; z = a.z; } else { x = g.x - Safety.grav.x; y = g.y - Safety.grav.y; z = g.z - Safety.grav.z; }
+  let m = Math.hypot(x, y, z);
+  const G = Safety.grav;
+  if (G) {
+    const gn = Math.hypot(G.x, G.y, G.z) || 1;
+    const up = (x * G.x + y * G.y + z * G.z) / gn; // the up/down part (bumps)
+    m = Math.sqrt(Math.max(0, m * m - up * up));
+  }
+  if (m > LIGHT) { Safety.above += dt; Safety.peak = Math.max(Safety.peak, m); return; }
+  // the push is over: count it if it lasted long enough
+  if (Safety.above >= 0.4 && Date.now() - Safety.last > 3000) {
+    if (Safety.peak >= STRONG) Safety.strong += 1; else Safety.light += 1;
+    Safety.last = Date.now();
+  }
+  Safety.above = 0; Safety.peak = 0;
 }
+// 4 = very smooth, 3 = smooth, 2 = average, 1 = a bit sharp; null for drives under 5 minutes
+function smoothGrade(min, light, strong) {
+  if (light == null || min < 5) return null;
+  const perHour = (light + 3 * strong) / Math.max(min / 60, 0.25);
+  if (strong === 0 && perHour <= 1) return 4;
+  if (perHour <= 3) return 3;
+  if (perHour <= 6) return 2;
+  return 1;
+}
+const SMOOTH_PTS = [0, 0, 1, 2, 3];
+const stars = (n) => '★'.repeat(n) + '☆'.repeat(4 - n);
 
 /* =========================================================
    Picture-in-picture (experimental): the character in a small floating
@@ -1932,7 +2033,7 @@ function medalCtx() {
   let total = 0; for (const v of Object.values(lines)) total += Array.isArray(v) ? v.length : 1;
   return {
     drives: ds.length, min: t.min, km: t.km, checked: ds.filter((d) => d.checked).length,
-    goodRest: ds.filter((d) => d.min >= 90 && d.breaks > 0).length, smooth: ds.filter((d) => d.harsh === 0 && d.min >= 10).length,
+    goodRest: ds.filter((d) => d.min >= 90 && d.breaks > 0).length, smooth: ds.filter((d) => (d.smooth ?? (d.harsh === 0 && d.min >= 10 ? 4 : 0)) >= 3).length,
     morning: ds.filter((d) => { const h = new Date(d.start).getHours(); return h >= 5 && h < 9; }).length,
     prefs: Object.keys(st.prefs).length, items: Object.keys(st.got).length, rare: Object.keys(st.got).filter((id) => rarityOf(id) === 3).length,
     gifts: st.gifts.length, linesPct: total ? Object.keys(heard).length / total : 0, lv: levelOf(totalPts()), photos: st.photos || 0,
@@ -2070,6 +2171,102 @@ function updateUmbrellaColor() {
 /* =========================================================
    Voice + speech bubble
    ========================================================= */
+/* ---------- recorded character voices (VOICEVOX) ----------
+   Each character can have a voice pack: voice/<character>/index.json lists the recorded clips, and
+   voice/<character>/<fingerprint>.m4a holds each one. A line is played from recordings only when every
+   clip it needs exists; otherwise the device voice reads it. Japanese only. */
+__VOICECLIPS__
+const VoicePack = {
+  packs: new Map(), ctx: null, gain: null, analyser: null, data: null, bufs: new Map(), sources: [], until: 0,
+  load(pid) {
+    if (IN_CLAUDE || !PRESETS[pid]) return Promise.resolve(null);
+    if (!this.packs.has(pid)) {
+      this.packs.set(pid, fetch(`voice/${pid}/index.json`, { cache: 'no-cache' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((j) => (j && Array.isArray(j.clips) ? { credit: j.credit || '', v: j.v || '', keys: new Set(j.clips) } : null))
+        .catch(() => null)
+        .then((pack) => { this.packs.set(pid, pack); renderVoiceCredits(); return pack; }));
+    }
+    return Promise.resolve(this.packs.get(pid));
+  },
+  ready(pid) { const p = this.packs.get(pid); return p && !(p instanceof Promise) ? p : null; },
+  unlock() {
+    try {
+      if (!this.ctx) {
+        const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+        this.ctx = new AC();
+        this.gain = this.ctx.createGain();
+        this.analyser = this.ctx.createAnalyser(); this.analyser.fftSize = 512;
+        this.data = new Float32Array(this.analyser.fftSize);
+        this.gain.connect(this.analyser); this.analyser.connect(this.ctx.destination);
+      }
+      if (this.ctx.state === 'suspended') this.ctx.resume();
+      return true;
+    } catch { return false; }
+  },
+  buffer(pid, hash) {
+    const pack = this.ready(pid), key = `${pid}/${hash}`;
+    if (!this.bufs.has(key)) {
+      this.bufs.set(key, fetch(`voice/${pid}/${hash}.m4a?v=${pack ? pack.v : ''}`)
+        .then((r) => { if (!r.ok) throw new Error('clip ' + r.status); return r.arrayBuffer(); })
+        .then((b) => new Promise((res, rej) => this.ctx.decodeAudioData(b, res, rej))));
+      if (this.bufs.size > 120) this.bufs.delete(this.bufs.keys().next().value);
+    }
+    return this.bufs.get(key).catch((e) => { this.bufs.delete(key); throw e; });
+  },
+  stop() { for (const s of this.sources) { try { s.stop(); } catch {} } this.sources = []; this.until = 0; },
+  active() { return !!this.ctx && this.ctx.currentTime < this.until; },
+  // loudness of what is playing right now, 0..1 (drives the mouth)
+  level() {
+    if (!this.active()) return 0;
+    this.analyser.getFloatTimeDomainData(this.data);
+    let sum = 0; for (let i = 0; i < this.data.length; i++) sum += this.data[i] * this.data[i];
+    return clamp(Math.sqrt(sum / this.data.length) * 5, 0, 1);
+  },
+};
+// The clips that would voice this line, or null when it has to be the device voice.
+function clipsFor(tpl, vars) {
+  const p = persona();
+  if (!S().voicePack || !S().voice || lang() !== 'ja' || isCustom(p)) return null;
+  const pack = VoicePack.ready(p.id); if (!pack) return null;
+  const list = vcClips(tpl, vars, callName(), defaultCall(p));
+  if (!list || !list.length) return null;
+  const hashes = list.map(vcHash);
+  return hashes.every((h) => pack.keys.has(h)) ? hashes : null;
+}
+async function playClips(hashes, text, my, done) {
+  const pid = personaIdOf(persona()), V = VoicePack;
+  try {
+    if (!V.unlock()) throw new Error('no audio');
+    const bufs = await Promise.all(hashes.map((h) => V.buffer(pid, h)));
+    if (my !== sayToken) { done(); return; }
+    try { speechSynthesis.cancel(); } catch {}
+    V.stop();
+    V.gain.gain.value = clamp(Number(S().volume) || 1, 0, 1);
+    let at = V.ctx.currentTime + 0.03;
+    bufs.forEach((b, i) => {
+      const src = V.ctx.createBufferSource(); src.buffer = b; src.connect(V.gain); src.start(at);
+      V.sources.push(src);
+      at += b.duration + (i < bufs.length - 1 ? 0.08 : 0);
+    });
+    V.until = at;
+    Char.speaking = true;
+    setTimeout(() => { if (my === sayToken) Char.speaking = false; done(); }, (at - V.ctx.currentTime) * 1000 + 80);
+  } catch (e) {
+    console.warn('voice pack', e);
+    if (my !== sayToken || !speakNow(text, my, done)) done();
+  }
+}
+function renderVoiceCredits() {
+  const el = $('#voice-credits'); if (!el) return;
+  const list = [];
+  for (const id of PRESET_ORDER) { const pk = VoicePack.ready(id); if (pk && pk.credit) list.push(`${nameOf(PRESETS[id])}: ${pk.credit}`); }
+  el.textContent = list.length ? T('voiceCredits', { list: list.join(T('listSep')) }) : '';
+  const note = $('#voicepack-note'); if (!note) return;
+  const p = persona(), pk = !isCustom(p) && VoicePack.ready(p.id);
+  note.textContent = lang() !== 'ja' ? T('voicePackJaOnly') : pk ? T('voicePackHas', { credit: pk.credit || 'VOICEVOX' }) : T('voicePackNone');
+}
+
 const VOICE_PREF = {
   ja: /Nanami|Kyoko|O-ren|Haruka|Ayumi|Google 日本語/i,
   zh: /Xiaoxiao|Xiaoyi|Tingting|Huihui|Yaoyao|Google 普通话/i,
@@ -2110,7 +2307,8 @@ const onActivate = () => {
   activated = true;
   setTimeout(() => {
     const pv = pendingVoice; pendingVoice = null; $('#tap-voice').hidden = true;
-    if (pv && pv.my === sayToken && S().voice) speakNow(pv.text, pv.my, () => {});
+    VoicePack.unlock();
+    if (pv && pv.my === sayToken && S().voice) { if (pv.clips) playClips(pv.clips, pv.text, pv.my, () => {}); else speakNow(pv.text, pv.my, () => {}); }
   }, 0);
 };
 for (const ev of ['pointerup', 'click', 'keydown', 'touchend']) addEventListener(ev, onActivate, { capture: true });
@@ -2156,7 +2354,7 @@ function lineText(key, vars) {
   if (entry == null) entry = PRESETS.kohai.lines[lang()][key];
   let idx = 0;
   if (Array.isArray(entry)) { idx = pickIndex(key, entry.length); entry = entry[idx]; }
-  return { text: fill(entry, vars), idx };
+  return { text: fill(entry, vars), idx, tpl: entry };
 }
 // The line collection remembers every line heard, per character and language.
 function recordHeard(key, idx, text) {
@@ -2178,15 +2376,18 @@ function emoFor(key, idx) {
 function say(key, vars = {}, opts = {}) {
   const main = lineText(key, vars);
   let text = main.text, isNew = recordHeard(key, main.idx, main.text);
+  let clips = clipsFor(main.tpl, vars);
   if (opts.extra) {
     const ex = lineText(opts.extra, vars);
     text += T('joinSuffix') + ex.text;
     isNew = recordHeard(opts.extra, ex.idx, ex.text) || isNew;
+    const more = clipsFor(ex.tpl, vars);
+    clips = clips && more ? clips.concat(more) : null;
   }
   if (isNew && opts.toastNew !== false) toast(T('newLine'));
   const [emo, gest] = emoFor(key, main.idx);
   const speakIt = !opts.silent && !(S().verbosity === 'guide' && QUIET_IN_GUIDE.has(key));
-  return present(text, emo, gest, speakIt);
+  return present(text, emo, gest, speakIt, clips);
 }
 const estimateMs = (text) => Math.min(9000, 700 + [...text].length * (lang() === 'en' ? 55 : 120));
 function speakNow(text, my, done) {
@@ -2211,7 +2412,7 @@ function speakNow(text, my, done) {
   } catch (e) { console.warn(e); return false; }
 }
 let lastLineText = '';
-function present(text, emo, gest, speakIt) {
+function present(text, emo, gest, speakIt, clips = null) {
   const my = ++sayToken;
   lastLineText = text;
   Char.emotion = emo;
@@ -2233,11 +2434,13 @@ function present(text, emo, gest, speakIt) {
     };
     const estimate = estimateMs(text);
     pendingVoice = null; $('#tap-voice').hidden = true;
-    if (speakIt && Voice.ok && S().voice) {
+    VoicePack.stop();
+    if (speakIt && S().voice && (clips || Voice.ok)) {
       if (canSpeak()) {
+        if (clips) { playClips(clips, text, my, done); setTimeout(done, estimate + 8000); return; }
         if (speakNow(text, my, done)) { setTimeout(done, estimate + 4000); return; }
       } else {
-        pendingVoice = { my, text };
+        pendingVoice = { my, text, clips };
         $('#tap-voice').hidden = false;
       }
     }
@@ -2292,7 +2495,9 @@ const LEVEL_PTS = [0, 30, 80, 160, 300, 500];
 // Per drive: 10 + 1 per 10 minutes (max 12) + 5 for the pre-drive check + 5 for taking a break on a 90-minute+ drive.
 function drivePts(d) {
   const min = Number(d.min) || 0;
-  return 10 + Math.min(12, Math.floor(min / 10)) + (d.checked ? 5 : 0) + (min >= 90 && d.breaks > 0 ? 5 : 0) + (d.harsh === 0 && min >= 10 ? 3 : 0);
+  // older records only know "no sharp moves" (harsh === 0), which is the top grade
+  const grade = d.smooth ?? (d.harsh === 0 && min >= 10 ? 4 : null);
+  return 10 + Math.min(12, Math.floor(min / 10)) + (d.checked ? 5 : 0) + (min >= 90 && d.breaks > 0 ? 5 : 0) + (grade ? SMOOTH_PTS[grade] : 0);
 }
 const totalPts = () => Math.max(0, Store.state.drives.reduce((a, d) => a + drivePts(d), 0) + Store.state.gifts.reduce((a, g) => a + (Number(g.d) || 0), 0));
 function levelOf(pts) { let i = 0; LEVEL_PTS.forEach((min, k) => { if (pts >= min) i = k; }); return i; }
@@ -2353,6 +2558,7 @@ function renderHistory() {
     const b = document.createElement('span'); b.className = 't'; b.textContent = hm(d.min);
     const c = document.createElement('span'); c.className = 'm';
     c.textContent = [d.checked ? T('checked') : T('unchecked'), T('breaksN', { n: d.breaks || 0 })].join(T('listSep'));
+    if (d.smooth) { const sm = document.createElement('span'); sm.className = 'sm'; sm.textContent = ` ${stars(d.smooth)}`; sm.title = T('smoothLevels')[d.smooth]; c.append(sm); }
     const e = document.createElement('span'); e.className = 'k'; e.textContent = typeof d.km === 'number' ? `${fmtKm(d.km)} km` : '— km';
     hc.append(a, b, c, e);
     if (d.from || d.to) { const pl = document.createElement('span'); pl.className = 'pl'; placeLine(pl, d.from, d.to); hc.append(pl); }
@@ -2504,7 +2710,7 @@ function tick() {
     br.textContent = T('breakNow');
     br.classList.add('due');
     if (!busy) {
-      if (!drive.dueSaid) { drive.dueSaid = true; drive.nagAt = m + 30; say('breakDue', { t: fmtDur(m) }); }
+      if (!drive.dueSaid) { drive.dueSaid = true; drive.nagAt = m + 30; say('breakDue', { t: fmtDur(Math.max(30, Math.round(m / 30) * 30)) }); }
       else if (m >= drive.nagAt) { drive.nagAt = m + 30; say('breakNag'); }
     }
   } else {
@@ -2935,9 +3141,10 @@ function arrive() {
   delete document.body.dataset.driveChar;
   const km = d.gps === 'on' || d.demo ? d.km : null;
   const long = min >= 90;
-  const harsh = !d.demo && d.safety ? Safety.stop() : null;
-  const pts = d.demo ? 0 : drivePts({ min: Math.max(1, Math.round(min)), checked: d.checked, breaks: d.breaks, harsh: harsh ?? undefined });
-  pending = { start: new Date(d.startedAt).toISOString(), min: Math.max(1, Math.round(min)), rawMin: min, km, breaks: d.breaks, checked: d.checked, demo: d.demo, pts, harsh };
+  const sharp = !d.demo && d.safety ? Safety.stop() : null;
+  const smooth = sharp ? smoothGrade(min, sharp.light, sharp.strong) : null;
+  const pts = d.demo ? 0 : drivePts({ min: Math.max(1, Math.round(min)), checked: d.checked, breaks: d.breaks, smooth: smooth ?? undefined });
+  pending = { start: new Date(d.startedAt).toISOString(), min: Math.max(1, Math.round(min)), rawMin: min, km, breaks: d.breaks, checked: d.checked, demo: d.demo, pts, sharp, smooth };
   stopPip();
   if (!d.demo && S().placesOn && (d.startFix || d.lastFix || d.gps !== 'off')) {
     const p = pending;
@@ -2956,7 +3163,8 @@ function arrive() {
   if (!d.demo && tod() === 'late') extra = 'arriveLate';
   else if (long && d.breaks > 0) extra = 'arriveGoodBreak';
   else if (min >= Number(S().breakMin || 120) + 30 && d.breaks === 0) extra = 'arriveNoBreak';
-  else if (harsh === 0 && min >= 10) extra = 'arriveSmooth';
+  else if (smooth >= 3) extra = 'arriveSmooth';
+  else if (smooth === 1) extra = 'arriveRough';
   say(cat, {}, { extra });
 }
 function renderArrive() {
@@ -2966,8 +3174,11 @@ function renderArrive() {
   $('#sum-km').textContent = p.km != null ? `${fmtKm(p.km)} km` : '—';
   $('#sum-breaks').textContent = T('times', { n: p.breaks });
   $('#sum-pts').textContent = p.demo ? T('demoTag') : `+${p.pts}`;
-  $('#sum-harsh-box').hidden = p.harsh == null;
-  if (p.harsh != null) $('#sum-harsh').textContent = T('harshN', { n: p.harsh });
+  $('#sum-harsh-box').hidden = !p.sharp;
+  if (p.sharp) {
+    $('#sum-harsh').textContent = p.smooth ? `${stars(p.smooth)} ${T('smoothLevels')[p.smooth]}` : T('smoothShort');
+    $('#sum-harsh-detail').textContent = T('harshDetail', { a: p.sharp.light, b: p.sharp.strong });
+  }
   $('#share-summary').hidden = p.demo;
   const pe = $('#sum-places');
   if (p.placesLooking) { pe.hidden = false; pe.textContent = T('placeLooking'); }
@@ -2993,7 +3204,7 @@ $('#save-drive').addEventListener('click', () => {
     km: p.km != null ? Math.round(p.km * 10) / 10 : (Number.isFinite(kmIn) && kmIn > 0 ? Math.round(kmIn * 10) / 10 : null),
     breaks: p.breaks, checked: p.checked,
   };
-  if (p.harsh != null) rec.harsh = p.harsh;
+  if (p.sharp) { rec.sharpLight = p.sharp.light; rec.sharpStrong = p.sharp.strong; if (p.smooth) rec.smooth = p.smooth; }
   if (p.from) rec.from = p.from;
   if (p.to) rec.to = p.to;
   const beforeLv = levelOf(totalPts());
@@ -3242,6 +3453,8 @@ function renderSettings() {
   $('#set-name').value = S().callName || '';
   $('#set-name').placeholder = T('callPh', { call: defaultCall(p) });
   $('#set-voice').checked = !!S().voice;
+  $('#set-voicepack').checked = !!S().voicePack;
+  renderVoiceCredits();
   const sel = $('#set-voice-name'); sel.textContent = '';
   const auto = document.createElement('option'); auto.value = ''; auto.textContent = T('voiceAuto'); sel.append(auto);
   for (const v of Voice.list()) { const o = document.createElement('option'); o.value = v.name; o.textContent = v.name; sel.append(o); }
@@ -3280,7 +3493,8 @@ $('#set-lang').addEventListener('change', (e) => {
   say('hello');
 });
 $('#set-name').addEventListener('input', (e) => { S().callName = e.target.value.trim(); saveSoon(); });
-bindToggle('#set-voice', 'voice', () => { if (!S().voice && Voice.ok) speechSynthesis.cancel(); });
+bindToggle('#set-voice', 'voice', () => { if (!S().voice && Voice.ok) speechSynthesis.cancel(); if (!S().voice) VoicePack.stop(); });
+bindToggle('#set-voicepack', 'voicePack', () => VoicePack.stop());
 $('#set-voice-name').addEventListener('change', (e) => { S().voiceNames[lang()] = e.target.value; saveSoon(); Voice.pick(); renderSettings(); });
 bindRange('#set-pitch', 'pitchAdj');
 bindRange('#set-rate', 'rateMul');
@@ -3360,10 +3574,10 @@ async function bytesForLook(key) {
 }
 async function loadLookModel(key, onProgress) {
   if (key === 'michi') {
-    if (!Char.michiBuf) Char.michiBuf = await fetchBundledModel(onProgress);
+    if (!Char.michiBuf) Char.michiBuf = await fetchBundledModel('michi', onProgress);
     await loadModel(Char.michiBuf.slice(0));
   } else if (SAMPLE_LOOKS[key]) {
-    if (!sampleBufs.has(key)) sampleBufs.set(key, await fetchBundledModel(onProgress, `models/${key}${MODEL_URL.endsWith('.b64.txt') ? '.vrm.b64.txt' : '.vrm'}`));
+    if (!sampleBufs.has(key)) sampleBufs.set(key, await fetchBundledModel(key, onProgress));
     await loadModel(sampleBufs.get(key).slice(0));
   } else {
     const bytes = await bytesForLook(key);
@@ -3577,6 +3791,7 @@ $('#leave-go').addEventListener('click', () => { $('#leave-confirm').hidden = tr
 function setPersona(id) {
   S().persona = id; saveSoon();
   Voice.pick();
+  VoicePack.load(id);
   renderIdentity();
   renderPersonaSheet();
   closeSheets();
@@ -3746,7 +3961,7 @@ applyBubble();
 applyI18n();
 setMode('home');
 const glOK = initGL();
-const storeReady = Store.init().then(() => { Voice.pick(); applyTheme(); applyBubble(); applyI18n(); checkMedals(false); });
+const storeReady = Store.init().then(() => { Voice.pick(); applyTheme(); applyBubble(); applyI18n(); checkMedals(false); for (const id of PRESET_ORDER) VoicePack.load(id); });
 const settled = Promise.race([storeReady, new Promise((r) => setTimeout(r, 4000))]);
 const greet = () => settled.then(() => {
   if (!S().onboarded && Store.state.drives.length === 0) { openSheet('#sheet-welcome'); return; }
@@ -3819,5 +4034,5 @@ if (/[?&](fps|debug)\b/.test(location.search)) {
   Quality.meter.style.cssText = 'position:absolute;left:8px;bottom:8px;z-index:5;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;font:12px/1.4 monospace;pointer-events:none';
   stage.append(Quality.meter);
 }
-if (/[?&]debug\b/.test(location.search)) window.__dbg = { fetchRealStops, takePhoto, checkMedals, Safety, Pip, get now() { return clock ? clock.elapsedTime : 0; }, playMotion, Motion, parseVRMA, simulateMotion, Quality, Char, say, gesture, camera, Store, S, applyI18n, setPersona, answerStop, Weather, enterRest, grantItem, applyLook, setLook, get drive() { return drive; } };
+if (/[?&]debug\b/.test(location.search)) window.__dbg = { VoicePack, clipsFor, vcHash, smoothGrade, HAND, posePreview, renderNow: () => renderer.render(scene, camera), fetchRealStops, takePhoto, checkMedals, Safety, Pip, get now() { return clock ? clock.elapsedTime : 0; }, playMotion, Motion, parseVRMA, simulateMotion, Quality, Char, say, gesture, camera, Store, S, applyI18n, setPersona, answerStop, Weather, enterRest, grantItem, applyLook, setLook, get drive() { return drive; } };
 </script>

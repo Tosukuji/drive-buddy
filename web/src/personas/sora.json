@@ -123,7 +123,8 @@
    "anniv": "{name}と走りはじめて、もう{n}日か。…これからも助手席は空けといて。",
    "photo": "え、撮んの?…ちゃんと撮れよ。",
    "medal": "実績「{medal}」、達成。やるじゃん。",
-   "arriveSmooth": "運転もなめらかで、乗りやすかった。"
+   "arriveSmooth": "運転もなめらかで、乗りやすかった。",
+   "arriveRough": "ただ、ブレーキ急なとこ何回かあったぞ。車間、もうちょい空けよう。"
   },
   "zh": {
    "greetDawn": [
@@ -212,7 +213,8 @@
    "anniv": "和{name}一起出发已经{n}天了啊。……以后副驾驶也给我留着。",
    "photo": "诶，要拍吗？……拍好看点。",
    "medal": "成就「{medal}」达成。可以啊。",
-   "arriveSmooth": "开得也很平稳，坐着很舒服。"
+   "arriveSmooth": "开得也很平稳，坐着很舒服。",
+   "arriveRough": "不过有几次刹车挺急的。车距再拉开点。"
   },
   "ko": {
    "greetDawn": [
@@ -301,7 +303,8 @@
    "anniv": "{name}, 같이 달리기 시작한 지 벌써 {n}일이네. …앞으로도 조수석은 비워 둬.",
    "photo": "어, 찍게? …잘 찍어.",
    "medal": "업적 「{medal}」 달성. 제법인데.",
-   "arriveSmooth": "운전도 부드러워서 타기 편했어."
+   "arriveSmooth": "운전도 부드러워서 타기 편했어.",
+   "arriveRough": "근데 브레이크 급한 데 몇 번 있었어. 차간 거리 좀 더 둬."
   },
   "en": {
    "greetDawn": [
@@ -390,7 +393,8 @@
    "anniv": "{n} days since we started riding together, {name}. ...Keep the passenger seat open for me.",
    "photo": "Huh, a photo? ...Get my good side.",
    "medal": "Medal earned: {medal}. Not bad.",
-   "arriveSmooth": "Smooth driving, too. Easy ride."
+   "arriveSmooth": "Smooth driving, too. Easy ride.",
+   "arriveRough": "Though you braked hard a few times. Leave a bit more space ahead."
   }
  }
 }

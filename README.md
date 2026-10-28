@@ -10,6 +10,7 @@ My drive car app with claude
 - 図鑑(セリフ・おみやげ・都道府県・実績)、記念写真、今週のまとめ
 - 雨の演出(傘・ワイパー)、拡大縮小、吹き出しの濃さ、画面の色
 - VRMの読み込み・保存、モーション(VRMA)の読み込み
+- キャラボイス(VOICEVOX)に対応。声の作り方は [voice-export/README.md](voice-export/README.md)
 - SA・PA・道の駅の案内(デモ走行は見本の情報、実際の運転は OpenStreetMap の地図データで試験的に)
 - 日本語・中国語・韓国語・英語の切り替え
 
@@ -23,6 +24,8 @@ My drive car app with claude
 | `web/src/app.html` | アプリ本体(画面・動き) |
 | `web/src/personas/` | キャラごとのセリフ(4言語) |
 | `web/src/items.json` | おみやげ(47都道府県・どこでも・レア) |
+| `web/src/voiceclips.js` | セリフと録音ファイルの対応づけ(アプリとスクリプトで共通) |
+| `voice-export/` | VOICEVOXで声を作るためのセリフ一覧とスクリプト |
 | `web/src/i18n.json` | 画面の文言(4言語) |
 | `docs/` | 公開用に組み立てたサイト(GitHub Pages で配信) |
 | `dev/` | 組み立て・確認用のスクリプト |

@@ -391,7 +391,7 @@
    ],
    "smooth5": [
     "なめらか運転",
-    "急な操作0回のドライブを5回(試験的機能)"
+    "なめらか(★3以上)のドライブを5回(試験的機能)"
    ],
    "morning": [
     "朝のドライブ",
@@ -435,9 +435,9 @@
   "pipBtn": "小窓で表示(試験的)",
   "pipNote": "運転中の画面の「小窓で表示」で、キャラを小さな窓にしてGoogleマップなどと並べられます(試験的:端末によっては動きが止まります)。",
   "pipFail": "この端末・ブラウザでは小窓表示を使えませんでした。",
-  "safetyOn": "運転のなめらかさを数える(試験的)",
-  "safetyNote": "スマホの加速度センサーで、急ブレーキ・急発進らしい動きを数えます。ホルダーに固定しているときだけ正しく数えられます。0回ならなかよし度+3。",
-  "sumHarsh": "急な操作",
+  "safetyOn": "運転のなめらかさを評価する(試験的)",
+  "safetyNote": "スマホの加速度センサーで、ブレーキ・発進・ハンドルの急な揺れを数えます(段差などの上下の揺れは除外)。ドライブごとに「とてもなめらか/なめらか/ふつう/ちょっと急」の4段階で評価し、なかよし度は+3/+2/+1/0。スマホをホルダーに固定しているときだけ正しく測れます。",
+  "sumHarsh": "なめらかさ",
   "harshN": "{n}回",
   "safetyNoSensor": "この端末では加速度センサーを使えませんでした。",
   "events": {
@@ -451,7 +451,21 @@
    "nye": "大晦日"
   },
   "realStopNote": "位置情報と OpenStreetMap の地図データから案内しています。反対車線の施設や、閉まっている施設を案内することがあります。",
-  "infoHours": "営業時間は{h}。"
+  "infoHours": "営業時間は{h}。",
+  "smoothLevels": [
+   "",
+   "ちょっと急",
+   "ふつう",
+   "なめらか",
+   "とてもなめらか"
+  ],
+  "smoothShort": "5分未満のため評価なし",
+  "harshDetail": "急な操作:軽め{a}回・強め{b}回",
+  "voicePackOn": "キャラボイス(VOICEVOX)を使う",
+  "voicePackHas": "このキャラの声:{credit}",
+  "voicePackNone": "このキャラのキャラボイスはまだありません(端末の声で話します)。",
+  "voicePackJaOnly": "キャラボイスは日本語のときだけ使えます。",
+  "voiceCredits": "キャラボイス:{list}"
  },
  "zh": {
   "langName": "中文",
@@ -841,7 +855,7 @@
    ],
    "smooth5": [
     "平稳驾驶",
-    "急操作0次的驾驶达到5次(试验功能)"
+    "平稳(★3以上)的驾驶达到5次(试验功能)"
    ],
    "morning": [
     "清晨兜风",
@@ -885,9 +899,9 @@
   "pipBtn": "小窗显示(试验)",
   "pipNote": "在驾驶画面点「小窗显示」，角色会以小窗口显示，可以和地图App并排(试验功能：部分设备上动作会停止)。",
   "pipFail": "此设备或浏览器无法使用小窗显示。",
-  "safetyOn": "统计驾驶平稳度(试验)",
-  "safetyNote": "用手机的加速度传感器统计急刹车、急起步之类的动作。只有固定在手机支架上时才能正确统计。0次时亲密度+3。",
-  "sumHarsh": "急操作",
+  "safetyOn": "评价驾驶平稳度(试验)",
+  "safetyNote": "用手机的加速度传感器统计刹车、起步、转向时的急晃动(不计路面颠簸等上下晃动)。每次驾驶按「非常平稳/平稳/普通/有点急」4个等级评价，亲密度+3/+2/+1/0。只有手机固定在支架上时才准确。",
+  "sumHarsh": "平稳度",
   "harshN": "{n}次",
   "safetyNoSensor": "此设备无法使用加速度传感器。",
   "events": {
@@ -901,7 +915,21 @@
    "nye": "除夕"
   },
   "realStopNote": "根据位置信息和 OpenStreetMap 地图数据介绍。有时会介绍对向车道或已关闭的设施。",
-  "infoHours": "营业时间：{h}。"
+  "infoHours": "营业时间：{h}。",
+  "smoothLevels": [
+   "",
+   "有点急",
+   "普通",
+   "平稳",
+   "非常平稳"
+  ],
+  "smoothShort": "不足5分钟，不评价",
+  "harshDetail": "急操作：轻微{a}次・明显{b}次",
+  "voicePackOn": "使用角色语音(VOICEVOX)",
+  "voicePackHas": "该角色的声音：{credit}",
+  "voicePackNone": "该角色还没有角色语音(使用设备的声音)。",
+  "voicePackJaOnly": "角色语音仅在日语时可用。",
+  "voiceCredits": "角色语音：{list}"
  },
  "ko": {
   "langName": "한국어",
@@ -1294,7 +1322,7 @@
    ],
    "smooth5": [
     "부드러운 운전",
-    "급조작 0번인 드라이브 5번(시험 기능)"
+    "부드러움(★3 이상) 드라이브 5번(시험 기능)"
    ],
    "morning": [
     "아침 드라이브",
@@ -1338,9 +1366,9 @@
   "pipBtn": "작은 창으로 보기(시험)",
   "pipNote": "운전 화면의 「작은 창으로 보기」를 누르면 캐릭터를 작은 창으로 띄워 지도 앱과 나란히 볼 수 있어요(시험 기능: 기기에 따라 움직임이 멈출 수 있어요).",
   "pipFail": "이 기기나 브라우저에서는 작은 창을 쓸 수 없었어요.",
-  "safetyOn": "운전의 부드러움 세기(시험)",
-  "safetyNote": "휴대폰의 가속도 센서로 급제동・급출발 같은 움직임을 세요. 거치대에 고정했을 때만 정확해요. 0번이면 친밀도 +3.",
-  "sumHarsh": "급조작",
+  "safetyOn": "운전의 부드러움 평가(시험)",
+  "safetyNote": "휴대폰의 가속도 센서로 브레이크・출발・핸들 조작의 급한 흔들림을 세요(방지턱 같은 위아래 흔들림은 제외). 드라이브마다 「아주 부드러움/부드러움/보통/조금 급함」 4단계로 평가하고, 친밀도는 +3/+2/+1/0. 거치대에 고정했을 때만 정확해요.",
+  "sumHarsh": "부드러움",
   "harshN": "{n}번",
   "safetyNoSensor": "이 기기에서는 가속도 센서를 쓸 수 없었어요.",
   "events": {
@@ -1354,7 +1382,21 @@
    "nye": "섣달그믐"
   },
   "realStopNote": "위치 정보와 OpenStreetMap 지도 데이터로 안내하고 있어요. 반대 차선 시설이나 문을 닫은 시설을 안내할 수도 있어요.",
-  "infoHours": "영업시간은 {h}."
+  "infoHours": "영업시간은 {h}.",
+  "smoothLevels": [
+   "",
+   "조금 급함",
+   "보통",
+   "부드러움",
+   "아주 부드러움"
+  ],
+  "smoothShort": "5분 미만이라 평가 없음",
+  "harshDetail": "급조작: 약하게 {a}번・강하게 {b}번",
+  "voicePackOn": "캐릭터 보이스(VOICEVOX) 사용",
+  "voicePackHas": "이 캐릭터의 목소리: {credit}",
+  "voicePackNone": "이 캐릭터의 캐릭터 보이스는 아직 없어요(기기 목소리로 말해요).",
+  "voicePackJaOnly": "캐릭터 보이스는 일본어일 때만 쓸 수 있어요.",
+  "voiceCredits": "캐릭터 보이스: {list}"
  },
  "en": {
   "langName": "English",
@@ -1743,7 +1785,7 @@
    ],
    "smooth5": [
     "Smooth driver",
-    "5 drives with no sharp moves (experimental)"
+    "5 drives graded smooth (★3+) (experimental)"
    ],
    "morning": [
     "Early start",
@@ -1787,9 +1829,9 @@
   "pipBtn": "Small window (experimental)",
   "pipNote": "On the driving screen, \"Small window\" floats the character over other apps such as a map (experimental: it may freeze on some phones).",
   "pipFail": "Small window is not available on this phone or browser.",
-  "safetyOn": "Count sharp driving moves (experimental)",
-  "safetyNote": "Uses the phone's motion sensor to count what looks like sharp braking or starts. Only accurate when the phone is in a holder. Zero earns +3 bond.",
-  "sumHarsh": "Sharp moves",
+  "safetyOn": "Grade how smoothly I drive (experimental)",
+  "safetyNote": "Uses the phone's motion sensor to count sharp braking, starts and steering (up-and-down bumps are ignored). Each drive gets one of four grades: very smooth / smooth / average / a bit sharp, worth +3/+2/+1/0 bond. Only accurate with the phone in a holder.",
+  "sumHarsh": "Smoothness",
   "harshN": "{n}",
   "safetyNoSensor": "The motion sensor is not available on this phone.",
   "events": {
@@ -1803,6 +1845,20 @@
    "nye": "New Year's Eve"
   },
   "realStopNote": "Based on your location and OpenStreetMap data. It may point out places on the other carriageway or places that are closed.",
-  "infoHours": "Open {h}. "
+  "infoHours": "Open {h}. ",
+  "smoothLevels": [
+   "",
+   "A bit sharp",
+   "Average",
+   "Smooth",
+   "Very smooth"
+  ],
+  "smoothShort": "Under 5 minutes, no grade",
+  "harshDetail": "Sharp moves: {a} light, {b} strong",
+  "voicePackOn": "Use character voices (VOICEVOX)",
+  "voicePackHas": "This character's voice: {credit}",
+  "voicePackNone": "No character voice for this character yet (uses the device voice).",
+  "voicePackJaOnly": "Character voices are available in Japanese only.",
+  "voiceCredits": "Character voices: {list}"
  }
 }

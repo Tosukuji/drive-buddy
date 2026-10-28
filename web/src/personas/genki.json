@@ -123,7 +123,8 @@
    "anniv": "{name}と出会って{n}日!これからもいっぱい走ろうね!",
    "photo": "撮るの!?はい、ピース!",
    "medal": "実績「{medal}」ゲット!やったね!",
-   "arriveSmooth": "運転もなめらかで、すっごく快適だった!"
+   "arriveSmooth": "運転もなめらかで、すっごく快適だった!",
+   "arriveRough": "あ、でもブレーキがちょっと急だったかも!車間、少し多めにね!"
   },
   "zh": {
    "greetDawn": [
@@ -212,7 +213,8 @@
    "anniv": "和{name}认识{n}天啦！以后也要一起跑很多地方！",
    "photo": "要拍吗！？来，比个耶！",
    "medal": "拿到成就「{medal}」！太好了！",
-   "arriveSmooth": "开得也很平稳，超舒服的！"
+   "arriveSmooth": "开得也很平稳，超舒服的！",
+   "arriveRough": "啊，不过刹车好像有点急！车距要留多一点哦！"
   },
   "ko": {
    "greetDawn": [
@@ -301,7 +303,8 @@
    "anniv": "{name}, 만난 지 {n}일! 앞으로도 잔뜩 달리자!",
    "photo": "찍는 거야!? 자, 브이!",
    "medal": "업적 「{medal}」 획득! 야호!",
-   "arriveSmooth": "운전도 부드러워서 완전 편했어!"
+   "arriveSmooth": "운전도 부드러워서 완전 편했어!",
+   "arriveRough": "아, 근데 브레이크가 좀 급했던 것 같아! 차간 거리 넉넉하게!"
   },
   "en": {
    "greetDawn": [
@@ -390,7 +393,8 @@
    "anniv": "{n} days since we met, {name}! Let's keep driving lots more!",
    "photo": "A photo!? Peace sign!",
    "medal": "Got the {medal} medal! Woohoo!",
-   "arriveSmooth": "Your driving was super smooth, too. So comfy!"
+   "arriveSmooth": "Your driving was super smooth, too. So comfy!",
+   "arriveRough": "Oh, but the brakes were a bit sudden! Leave more room ahead, okay?"
   }
  }
 }

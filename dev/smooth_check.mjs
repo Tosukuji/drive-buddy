@@ -1,0 +1,36 @@
+// なめらか運転の判定と4段階評価の確認
+import { createRequire } from 'module';
+const { chromium } = createRequire(import.meta.url)('playwright');
+const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const ctx = await browser.newContext({ viewport: { width: 400, height: 860 }, locale: 'ja-JP', timezoneId: 'America/New_York' });
+await ctx.addInitScript(() => { if (!sessionStorage.getItem('s')) { sessionStorage.setItem('s', '1'); localStorage.setItem('drive-buddy-state-v1', JSON.stringify({ v: 3, settings: { lang: 'ja', onboarded: true, greetOn: false, persona: 'sora', safetyOn: true, placesOn: false, weatherOn: false }, drives: [] })); } });
+const page = await ctx.newPage();
+const errs = []; page.on('pageerror', (e) => errs.push(e.message));
+await page.route('https://fonts.**', (r) => r.abort());
+await page.goto('http://127.0.0.1:8766/?debug');
+await page.waitForFunction(() => document.querySelector('#loading').hidden && window.__dbg && __dbg.Char.vrm, null, { timeout: 90000 });
+console.log('評価の早見(分, 軽め, 強め → 段階):', JSON.stringify(await page.evaluate(() => [[60, 0, 0], [60, 1, 0], [60, 3, 0], [30, 2, 0], [60, 6, 0], [60, 2, 1], [30, 1, 1], [4, 0, 0]].map(([m, a, b]) => [m, a, b, __dbg.smoothGrade(m, a, b)]))));
+await page.click('#go-check'); await page.click('#depart-skip'); await page.waitForTimeout(400);
+const feed = (label, ax, ay, az, sec) => page.evaluate(([ax, ay, az, sec]) => {
+  const n = Math.round(sec / 0.016);
+  for (let i = 0; i < n; i++) dispatchEvent(new DeviceMotionEvent('devicemotion', { acceleration: { x: ax, y: ay, z: az }, accelerationIncludingGravity: { x: ax, y: 9.81 + ay, z: az }, interval: 16 }));
+  for (let i = 0; i < 20; i++) dispatchEvent(new DeviceMotionEvent('devicemotion', { acceleration: { x: 0.1, y: 0.1, z: 0.1 }, accelerationIncludingGravity: { x: 0.1, y: 9.9, z: 0.1 }, interval: 16 }));
+  return [__dbg.Safety.light, __dbg.Safety.strong];
+}, [ax, ay, az, sec]).then((r) => console.log(label.padEnd(16), '→ 軽め', r[0], '強め', r[1]));
+await feed('段差(上下5m/s²)', 0, 5, 0, 0.5);
+await feed('一瞬(0.2秒)', 3.5, 0, 0, 0.2);
+await page.evaluate(() => { __dbg.Safety.last = 0; });
+await feed('軽めのブレーキ', 0, 0, -3.0, 0.8);
+await page.evaluate(() => { __dbg.Safety.last = 0; });
+await feed('強めのブレーキ', 0, 0, -4.0, 0.6);
+await page.evaluate(() => { __dbg.drive.sim = 30 * 60; });
+await page.dispatchEvent('#arrive-btn', 'click', { detail: 0 }); await page.waitForTimeout(800);
+console.log('到着画面:', await page.$eval('#sum-harsh', (e) => e.textContent), '/', await page.$eval('#sum-harsh-detail', (e) => e.textContent), '/ なかよし', await page.$eval('#sum-pts', (e) => e.textContent));
+await page.waitForTimeout(3000);
+console.log('セリフ:', await page.evaluate(() => document.querySelector('#line-sr').textContent));
+await page.screenshot({ path: 'shots/smooth-arrive.png' });
+await page.click('#save-drive'); await page.waitForTimeout(500);
+await page.click('#open-history'); await page.waitForTimeout(300);
+console.log('記録の行:', await page.$eval('#hist-list li', (e) => e.textContent.replace(/\s+/g, ' ')));
+console.log(errs.join('\n') || 'エラーなし');
+await browser.close();

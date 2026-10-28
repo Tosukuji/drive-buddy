@@ -125,7 +125,8 @@
    "anniv": "{name}と出会って、もう{n}日なんですね〜。これからも、そばで見守らせてください。",
    "photo": "あら、撮ってくれるんですか〜?ちょっと照れますね。",
    "medal": "「{medal}」、達成ですね〜。こつこつ、えらいです。",
-   "arriveSmooth": "運転もなめらかで、ゆったり乗っていられました〜。"
+   "arriveSmooth": "運転もなめらかで、ゆったり乗っていられました〜。",
+   "arriveRough": "でも、ブレーキが少し急なときがありましたね〜。車間をゆったり取りましょうね。"
   },
   "zh": {
    "greetDawn": [
@@ -214,7 +215,8 @@
    "anniv": "和{name}相遇已经{n}天了呢～以后也让我在旁边守护你吧。",
    "photo": "哎呀，要帮我拍吗～？有点害羞呢。",
    "medal": "达成「{medal}」了呢～一点一点地，真了不起。",
-   "arriveSmooth": "开得很平稳，我坐得很放松～"
+   "arriveSmooth": "开得很平稳，我坐得很放松～",
+   "arriveRough": "不过有时候刹车有点急呢～车距慢慢留大一点吧。"
   },
   "ko": {
    "greetDawn": [
@@ -303,7 +305,8 @@
    "anniv": "{name}, 만난 지 벌써 {n}일이네요~. 앞으로도 곁에서 지켜볼게요.",
    "photo": "어머, 찍어 주는 거예요~? 좀 쑥스럽네요.",
    "medal": "「{medal}」 달성이네요~. 꾸준해서 대견해요.",
-   "arriveSmooth": "운전도 부드러워서 편안하게 타고 있었어요~."
+   "arriveSmooth": "운전도 부드러워서 편안하게 타고 있었어요~.",
+   "arriveRough": "그래도 브레이크가 조금 급할 때가 있었네요~. 차간 거리를 여유 있게 둬요."
   },
   "en": {
    "greetDawn": [
@@ -392,7 +395,8 @@
    "anniv": "It's already been {n} days since we met, {name}. Let me keep watching over you.",
    "photo": "Oh, you're taking my picture? How embarrassing.",
    "medal": "You earned {medal}. Little by little. I'm proud of you.",
-   "arriveSmooth": "Your driving was so smooth. I could just relax."
+   "arriveSmooth": "Your driving was so smooth. I could just relax.",
+   "arriveRough": "Though the braking was a little sudden at times. Let's leave plenty of room ahead."
   }
  }
 }
